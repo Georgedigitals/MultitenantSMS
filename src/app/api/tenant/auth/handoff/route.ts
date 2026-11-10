@@ -4,18 +4,19 @@ import { TENANT_COOKIE_NAME } from '@/lib/auth/tenant-auth';
 import { getTenantUrl } from '@/lib/tenant-url';
 import { IMPERSONATE_COOKIE_NAME } from '@/lib/auth/constants';
 import { checkRateLimit } from '@/lib/rate-limiter';
+import { getPublicUrl } from '@/lib/public-url';
 
 export async function GET(req: NextRequest) {
   const url = req.nextUrl;
   const ticket = url.searchParams.get('ticket');
 
   if (!ticket) {
-    return NextResponse.redirect(new URL('/login?error=missing_ticket', req.url));
+    return NextResponse.redirect(getPublicUrl('/login?error=missing_ticket', req));
   }
 
   const handoff = redeemSessionHandoffTicket(ticket);
   if (!handoff) {
-    return NextResponse.redirect(new URL('/login?error=invalid_ticket', req.url));
+    return NextResponse.redirect(getPublicUrl('/login?error=invalid_ticket', req));
   }
 
   // Enforce database-backed single-use redemption across server instances
@@ -24,7 +25,7 @@ export async function GET(req: NextRequest) {
     windowSeconds: 120,
   });
   if (!singleUse.success) {
-    return NextResponse.redirect(new URL('/login?error=invalid_ticket', req.url));
+    return NextResponse.redirect(getPublicUrl('/login?error=invalid_ticket', req));
   }
 
   // Get current subdomain from host or x-tenant-slug header
@@ -42,7 +43,7 @@ export async function GET(req: NextRequest) {
 
   // Verify handoff target slug matches current subdomain (preventing cross-tenant ticket stealing)
   if (currentSubdomain && currentSubdomain !== handoff.tenantSlug.toLowerCase()) {
-    return NextResponse.redirect(new URL('/login?error=tenant_mismatch', req.url));
+    return NextResponse.redirect(getPublicUrl('/login?error=tenant_mismatch', req));
   }
 
   const targetPath = handoff.nextPath?.startsWith('/') ? handoff.nextPath : '/dashboard';

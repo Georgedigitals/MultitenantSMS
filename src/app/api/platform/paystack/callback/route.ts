@@ -5,6 +5,7 @@ import { processSubscriptionPaymentWebhook, withWebhookLock } from '@/lib/webhoo
 import { processFeePaymentWebhook } from '@/lib/fees';
 import { processPaymentWebhook, createPinBatch, calculateBatchFees, fulfillPinStockSale } from '@/lib/pin';
 import { getTenantPaystackSecret } from '@/lib/tenant-payments';
+import { getPublicUrl } from '@/lib/public-url';
 
 function tenantUrl(req: NextRequest, slug: string, path: string) {
   const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost:3000').toLowerCase();
@@ -30,7 +31,7 @@ export async function GET(req: NextRequest) {
     console.error('[Paystack callback] Could not load payment configuration');
   }
   if (!reference || !secret) {
-    return NextResponse.redirect(new URL('/checkout/paystack?payment=failed', req.url));
+    return NextResponse.redirect(getPublicUrl('/checkout/paystack?payment=failed', req));
   }
 
   try {
@@ -43,7 +44,7 @@ export async function GET(req: NextRequest) {
     const transaction = result?.data;
     if (!response.ok || !result?.status || transaction?.status !== 'success' ||
         transaction?.reference !== reference || transaction?.currency !== 'NGN') {
-      return NextResponse.redirect(new URL('/checkout/paystack?payment=failed', req.url));
+      return NextResponse.redirect(getPublicUrl('/checkout/paystack?payment=failed', req));
     }
 
     const metadata = transaction.metadata || {};
@@ -55,9 +56,9 @@ export async function GET(req: NextRequest) {
       if (!pending || !plan || transaction.amount !== amountKobo || metadata.planId !== plan.id ||
           metadata.slug !== pending.slug ||
           String(transaction.customer?.email || '').toLowerCase() !== pending.adminEmail.toLowerCase()) {
-        return NextResponse.redirect(new URL('/checkout/paystack?payment=failed', req.url));
+        return NextResponse.redirect(getPublicUrl('/checkout/paystack?payment=failed', req));
       }
-      return NextResponse.redirect(new URL(`/checkout/paystack?reference=${encodeURIComponent(reference)}`, req.url));
+      return NextResponse.redirect(getPublicUrl(`/checkout/paystack?reference=${encodeURIComponent(reference)}`, req));
     }
 
     if (metadata.type === 'subscription') {
@@ -65,22 +66,22 @@ export async function GET(req: NextRequest) {
       const expectedChargeAmount = Number(metadata.chargeAmount ?? plan?.price);
       if (!plan || !Number.isFinite(expectedChargeAmount) || expectedChargeAmount <= 0 ||
           transaction.amount !== Math.round(expectedChargeAmount * 100) || !metadata.tenantId || !metadata.slug) {
-        return NextResponse.redirect(new URL('/checkout/paystack?payment=failed', req.url));
+        return NextResponse.redirect(getPublicUrl('/checkout/paystack?payment=failed', req));
       }
       const tenant = await prisma.tenant.findFirst({ where: { id: metadata.tenantId, slug: metadata.slug } });
-      if (!tenant) return NextResponse.redirect(new URL('/checkout/paystack?payment=failed', req.url));
+      if (!tenant) return NextResponse.redirect(getPublicUrl('/checkout/paystack?payment=failed', req));
       const settled = await processSubscriptionPaymentWebhook({
         provider: 'paystack', reference, amount: Number(transaction.amount) / 100, expectedAmount: expectedChargeAmount,
         expectedCurrentPlanId: typeof metadata.currentPlanId === 'string' ? metadata.currentPlanId : undefined,
         tenantId: tenant.id, tenantSlug: tenant.slug, planId: plan.id,
       });
-      if (!settled.success) return NextResponse.redirect(new URL('/checkout/paystack?payment=failed', req.url));
+      if (!settled.success) return NextResponse.redirect(getPublicUrl('/checkout/paystack?payment=failed', req));
       return NextResponse.redirect(tenantUrl(req, tenant.slug, `/dashboard/subscription?payment=success&ref=${encodeURIComponent(reference)}`));
     }
 
     if (typeof metadata.tenantId === 'string' && typeof metadata.slug === 'string' && /^[a-z0-9-]{3,63}$/.test(metadata.slug)) {
       const tenant = await prisma.tenant.findFirst({ where: { id: metadata.tenantId, slug: metadata.slug }, select: { id: true, slug: true } });
-      if (!tenant) return NextResponse.redirect(new URL('/checkout/paystack?payment=failed', req.url));
+      if (!tenant) return NextResponse.redirect(getPublicUrl('/checkout/paystack?payment=failed', req));
 
       // A return can arrive before Paystack's webhook. Settle from the verified
       // server-to-server transaction using the same durable lock and processors.
@@ -144,8 +145,8 @@ export async function GET(req: NextRequest) {
         }
         return { status: 'failed', reason: 'Unsupported payment purpose' };
       });
-      if (settled.result?.status === 'failed') return NextResponse.redirect(new URL('/checkout/paystack?payment=failed', req.url));
-      if (!settled.processed && !settled.duplicate) return NextResponse.redirect(new URL('/checkout/paystack?payment=failed', req.url));
+      if (settled.result?.status === 'failed') return NextResponse.redirect(getPublicUrl('/checkout/paystack?payment=failed', req));
+      if (!settled.processed && !settled.duplicate) return NextResponse.redirect(getPublicUrl('/checkout/paystack?payment=failed', req));
       const destination = metadata.type === 'fee_payment'
         ? `/results/check?payment=success&ref=${encodeURIComponent(reference)}`
         : metadata.type === 'result_pin'
@@ -161,5 +162,5 @@ export async function GET(req: NextRequest) {
     console.error('[Paystack callback] Verification or settlement failed');
   }
 
-  return NextResponse.redirect(new URL('/checkout/paystack?payment=failed', req.url));
+  return NextResponse.redirect(getPublicUrl('/checkout/paystack?payment=failed', req));
 }

@@ -3,6 +3,7 @@ import {
   destroySuperAdminSession,
   SUPER_ADMIN_COOKIE_NAME,
 } from '@/lib/auth/super-admin-auth';
+import { getPublicUrl } from '@/lib/public-url';
 
 export async function POST(req: NextRequest) {
   const token = req.cookies.get(SUPER_ADMIN_COOKIE_NAME)?.value;
@@ -11,7 +12,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Redirect to admin login page after sign-out (303 so browser converts POST→GET)
-  const res = NextResponse.redirect(new URL('/admin/login', req.url), { status: 303 });
+  const res = NextResponse.redirect(getPublicUrl('/admin/login', req), { status: 303 });
   res.cookies.set(SUPER_ADMIN_COOKIE_NAME, '', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',

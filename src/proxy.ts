@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { getPublicUrl } from '@/lib/public-url';
 
 const RESERVED_SLUGS = [
   'www',
@@ -132,7 +133,7 @@ export default function proxy(req: NextRequest) {
 
     // Guard non-public admin pages if no session cookie present at edge
     if (!isPublicAdminPath && !sessionCookie?.value) {
-      return NextResponse.redirect(new URL('/admin/login', req.url));
+      return NextResponse.redirect(getPublicUrl('/admin/login', req));
     }
 
     if (subdomain === 'admin') {
@@ -197,11 +198,11 @@ export default function proxy(req: NextRequest) {
     // If pathname redundantly includes the subdomain (e.g. apex.localhost:3000/apex or /apex/dashboard),
     // redirect 307 to the clean path to keep the browser address bar clean.
     if (url.pathname === `/${subdomain}`) {
-      return NextResponse.redirect(new URL(`/${url.search}`, req.url), 307);
+      return NextResponse.redirect(getPublicUrl(`/${url.search}`, req), 307);
     }
     if (url.pathname.startsWith(`/${subdomain}/`)) {
       const cleanPath = url.pathname.slice(subdomain.length + 1) || '/';
-      return NextResponse.redirect(new URL(`${cleanPath}${url.search}`, req.url), 307);
+      return NextResponse.redirect(getPublicUrl(`${cleanPath}${url.search}`, req), 307);
     }
 
     // If pathname starts with another candidate slug (e.g. apex.localhost:3000/beacon/dashboard)
@@ -227,7 +228,7 @@ export default function proxy(req: NextRequest) {
     if (url.pathname === '/pricing') {
       const sessionCookie = req.cookies.get('bms_tenant_session') || req.cookies.get('bms_sa_session');
       if (sessionCookie?.value) {
-        return NextResponse.redirect(new URL('/dashboard/subscription', req.url));
+        return NextResponse.redirect(getPublicUrl('/dashboard/subscription', req));
       }
       const hostPort = hostname.includes(':') ? `:${hostname.split(':')[1]}` : '';
       const isLocal = host.endsWith('.localhost') || host === 'localhost' || rootDomain === 'localhost';
@@ -266,7 +267,7 @@ export default function proxy(req: NextRequest) {
       const impersonateCookie = req.cookies.get('bms_impersonate_session');
 
       if (!sessionCookie?.value && !impersonateCookie?.value) {
-        const loginUrl = new URL('/login', req.url);
+        const loginUrl = getPublicUrl('/login', req);
         loginUrl.searchParams.set('next', url.pathname);
         return NextResponse.redirect(loginUrl);
       }

@@ -21,6 +21,10 @@
 		# The certificate authorization endpoint is only for Caddy's private Docker-network request.
 		@tls_authorization path /api/internal/tls/authorize
 		respond @tls_authorization 404
-		reverse_proxy app:3000
+		reverse_proxy app:3000 {
+			header_up Host {host}
+			header_up X-Forwarded-Host {host}
+			header_up X-Forwarded-Proto {scheme}
+		}
 	}
 }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { destroyTenantSession, TENANT_COOKIE_NAME } from '@/lib/auth/tenant-auth';
+import { getPublicUrl } from '@/lib/public-url';
 
 export async function POST(req: NextRequest) {
   let redirectTo = '/login';
@@ -57,7 +58,7 @@ export async function POST(req: NextRequest) {
   }
 
   // Redirect and clear cookie
-  const res = NextResponse.redirect(new URL(redirectTo, req.url), { status: 303 });
+  const res = NextResponse.redirect(getPublicUrl(redirectTo, req), { status: 303 });
   res.cookies.set(TENANT_COOKIE_NAME, '', {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
