@@ -744,16 +744,19 @@ export default function WebsiteAdminClient({
               1. Hero &amp; School Motto
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Main Heading</label>
-                <input
-                  type="text"
+              <div className="md:col-span-2">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Main Heading / Hero Title (Press Enter to create line breaks)
+                </label>
+                <textarea
+                  rows={2}
                   value={heroTitle}
                   onChange={(e) => setHeroTitle(e.target.value)}
+                  placeholder="e.g. Inspiring Excellence &amp; Character&#10;For Tomorrow's Visionary Leaders"
                   className="w-full px-3 py-2 border rounded-xl text-sm border-slate-300"
                 />
               </div>
-              <div>
+              <div className="md:col-span-2">
                 <label className="block text-xs font-semibold text-slate-700 mb-1">School Motto</label>
                 <input
                   type="text"
