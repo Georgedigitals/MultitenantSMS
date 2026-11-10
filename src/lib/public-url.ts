@@ -30,3 +30,4 @@ export function getPublicUrl(path: string, req: NextRequest): URL {
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
   return new URL(`${proto}://${host}${cleanPath}`);
 }
+

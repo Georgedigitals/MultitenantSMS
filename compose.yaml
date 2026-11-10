@@ -85,6 +85,8 @@ services:
     networks:
       - database
       - proxy
+    volumes:
+      - uploads_data:/app/public/uploads
     restart: unless-stopped
 
   caddy:
@@ -109,6 +111,7 @@ volumes:
   postgres_data:
   caddy_data:
   caddy_config:
+  uploads_data:
 
 networks:
   database:

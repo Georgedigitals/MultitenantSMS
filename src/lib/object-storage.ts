@@ -96,21 +96,30 @@ async function putS3CompatibleObject(
   return `${publicUrl.toString().replace(/\/$/, '')}/${encodeObjectKey(key)}`;
 }
 
-/** Stores a validated image in durable object storage in production. */
+/** Stores a validated image in durable object storage if configured, or persistent local storage. */
 export async function storePublicImage(
   key: string,
   body: Buffer,
   contentType: string,
 ): Promise<StoredObjectImage> {
-  if (process.env.NODE_ENV === 'production') {
+  const hasS3Config = Boolean(
+    process.env.OBJECT_STORAGE_ENDPOINT &&
+    process.env.OBJECT_STORAGE_BUCKET &&
+    process.env.OBJECT_STORAGE_ACCESS_KEY_ID &&
+    process.env.OBJECT_STORAGE_SECRET_ACCESS_KEY &&
+    process.env.OBJECT_STORAGE_PUBLIC_URL
+  );
+
+  if (hasS3Config) {
     return { key, url: await putS3CompatibleObject(key, body, contentType) };
   }
 
+  // Fallback to local storage (persisted via Docker uploads_data volume)
   const safeKey = encodeObjectKey(key);
   const target = path.resolve(process.cwd(), 'public', 'uploads', ...key.split('/'));
   const root = path.resolve(process.cwd(), 'public', 'uploads');
   if (!target.startsWith(`${root}${path.sep}`)) throw new Error('Invalid upload object key.');
   await fs.mkdir(path.dirname(target), { recursive: true });
-  await fs.writeFile(target, body, { flag: 'wx' });
+  await fs.writeFile(target, body);
   return { key, url: `/uploads/${safeKey}` };
 }
