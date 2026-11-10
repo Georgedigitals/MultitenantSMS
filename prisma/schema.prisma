@@ -1,0 +1,1455 @@
+datasource db {
+  provider = "postgresql"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum TenantStatus {
+  trial
+  active
+  suspended
+  cancelled
+  archived
+}
+
+enum EnrollmentStatus {
+  active
+  repeated
+  graduated
+  withdrawn
+}
+
+enum StaffRole {
+  teacher
+  admin
+}
+
+enum ResultStatus {
+  not_started
+  submitted
+  form_teacher_reviewed
+  published
+}
+
+enum AttendanceStatus {
+  present
+  absent
+  late
+}
+
+enum StaffAttendanceStatus {
+  present
+  late
+  absent
+  excused
+  half_day
+}
+
+enum LeaveRequestStatus {
+  pending
+  approved
+  rejected
+}
+
+enum PinStatus {
+  unused
+  active
+  expired
+}
+
+enum FeePaymentMethod {
+  gateway
+  cash
+  bank_transfer
+}
+
+enum PaymentVerificationStatus {
+  pending
+  approved
+  rejected
+}
+
+enum FeeAdjustmentType {
+  discount
+  waiver
+}
+
+enum NotificationRecipientType {
+  school_admin
+  staff
+  parent
+  student
+  super_admin
+}
+
+enum JobStatus {
+  queued
+  processing
+  completed
+  failed
+}
+
+enum JobType {
+  bulk_report_cards
+  bulk_sms_dispatch
+  bulk_whatsapp_dispatch
+  data_export
+  notification_delivery
+}
+
+enum BackupTrigger {
+  manual
+  automated_scheduled
+  pre_promotion
+  pre_migration
+}
+
+enum BackupStatus {
+  pending
+  completed
+  failed
+  restored
+}
+
+model SuperAdmin {
+  id             String              @id @default(cuid())
+  email          String              @unique
+  name           String
+  passwordHash   String              @map("password_hash")
+  createdAt      DateTime            @default(now()) @map("created_at")
+  updatedAt      DateTime            @updatedAt @map("updated_at")
+  impersonations ImpersonationLog[]
+  sessions       SuperAdminSession[]
+  passwordResetTokens SuperAdminPasswordResetToken[]
+
+  @@map("super_admins")
+}
+
+model Plan {
+  id                 String        @id @default(cuid())
+  name               String        @unique
+  studentCeiling     Int           @map("student_ceiling")
+  price              Decimal       @default(0.00) @db.Decimal(10, 2)
+  pinRequired        Boolean       @default(true) @map("pin_required")
+  platformFeePercent Decimal       @default(10.00) @map("platform_fee_percent") @db.Decimal(5, 2)
+  createdAt          DateTime      @default(now()) @map("created_at")
+  updatedAt          DateTime      @updatedAt @map("updated_at")
+  tenants            Tenant[]
+  features           PlanFeature[]
+
+  @@map("plans")
+}
+
+model PlatformSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("platform_settings")
+}
+
+model Feature {
+  id           String                  @id @default(cuid())
+  key          String                  @unique
+  name         String
+  description  String?
+  createdAt    DateTime                @default(now()) @map("created_at")
+  updatedAt    DateTime                @updatedAt @map("updated_at")
+  planDefaults PlanFeature[]
+  overrides    TenantFeatureOverride[]
+
+  @@map("features")
+}
+
+model PlanFeature {
+  planId           String  @map("plan_id")
+  featureKey       String  @map("feature_key")
+  enabledByDefault Boolean @default(true) @map("enabled_by_default")
+  plan             Plan    @relation(fields: [planId], references: [id], onDelete: Cascade)
+  feature          Feature @relation(fields: [featureKey], references: [key], onDelete: Cascade)
+
+  @@id([planId, featureKey])
+  @@map("plan_features")
+}
+
+model TenantFeatureOverride {
+  tenantId   String  @map("tenant_id")
+  featureKey String  @map("feature_key")
+  enabled    Boolean @default(true)
+  tenant     Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  feature    Feature @relation(fields: [featureKey], references: [key], onDelete: Cascade)
+
+  @@id([tenantId, featureKey])
+  @@map("tenant_feature_overrides")
+}
+
+model Tenant {
+  id                         String       @id @default(cuid())
+  slug                       String       @unique
+  name                       String
+  planId                     String       @map("plan_id")
+  status                     TenantStatus @default(trial)
+  trialEndsAt                DateTime?    @map("trial_ends_at")
+  lowestClassLevelId         String?      @map("lowest_class_level_id")
+  highestClassLevelId        String?      @map("highest_class_level_id")
+  branding                   Json         @default("{\"primaryColor\":\"#0F172A\",\"accentColor\":\"#2563EB\",\"logoUrl\":null,\"fontHeading\":\"Inter\",\"fontBody\":\"Inter\"}")
+  pinPrice                   Decimal      @default(1000.00) @map("pin_price") @db.Decimal(10, 2)
+  annualContractPrice        Decimal?     @map("annual_contract_price") @db.Decimal(10, 2)
+  subscriptionStartedAt      DateTime?    @map("subscription_started_at")
+  subscriptionExpiresAt      DateTime?    @map("subscription_expires_at")
+  blockPromotionOnFeeBalance Boolean      @default(false) @map("block_promotion_on_fee_balance")
+  bankName                   String?      @map("bank_name")
+  bankAccountNumber          String?      @map("bank_account_number")
+  bankAccountName            String?      @map("bank_account_name")
+  hasOnlinePayment           Boolean      @default(true) @map("has_online_payment")
+  hasOnlinePinPayment        Boolean      @default(false) @map("has_online_pin_payment")
+  blockResultOnFeeBalance    Boolean      @default(true) @map("block_result_on_fee_balance")
+  workStartTime              String?      @default("07:30") @map("work_start_time")
+  lateThresholdTime          String?      @default("07:45") @map("late_threshold_time")
+  workEndTime                String?      @default("15:30") @map("work_end_time")
+  campusLatitude             Float?       @map("campus_latitude")
+  campusLongitude            Float?       @map("campus_longitude")
+  campusRadiusMeters         Int?         @default(200) @map("campus_radius_meters")
+  enableGeofenceAttendance   Boolean      @default(false) @map("enable_geofence_attendance")
+  admissionNumberPrefix      String?      @map("admission_number_prefix")
+  archivedAt                 DateTime?    @map("archived_at")
+  createdAt                  DateTime     @default(now()) @map("created_at")
+  updatedAt                  DateTime     @updatedAt @map("updated_at")
+
+  plan                    Plan                     @relation(fields: [planId], references: [id])
+  lowestClassLevel        ClassLevel?              @relation("TenantLowestClass", fields: [lowestClassLevelId], references: [id])
+  highestClassLevel       ClassLevel?              @relation("TenantHighestClass", fields: [highestClassLevelId], references: [id])
+  domainAliases           DomainAlias[]
+  admissionNumberCounters AdmissionNumberCounter[]
+  featureOverrides        TenantFeatureOverride[]
+  impersonationLogs       ImpersonationLog[]
+  sessions                AcademicSession[]
+  students                Student[]
+  staff                   Staff[]
+  subjects                Subject[]
+  feeItems                FeeItem[]
+  siteContents            SiteContent[]
+  galleryImages           GalleryImage[]
+  notifications           Notification[]
+  users                   TenantUser[]
+  authSessions            TenantSession[]
+  assessmentComponents    AssessmentComponent[]
+  gradingScales           GradingScale[]
+  resultAuditLogs         ResultAuditLog[]
+  auditLogs               AuditLog[]
+  smsConfiguration        SmsConfiguration?
+  smsLogs                 SmsLog[]
+  whatsAppLogs            WhatsAppLog[]
+  cbtExams                CbtExam[]
+  transportVehicles       TransportVehicle[]
+  transportRoutes         TransportRoute[]
+  pinBatches              PinBatch[]
+  generatedPins           GeneratedPin[]
+  backgroundJobs          BackgroundJob[]
+  backups                 TenantBackup[]
+  emailConfiguration      EmailConfiguration?
+  conversations           Conversation[]
+  messages                Message[]
+  guardians               Guardian[]
+  feePaymentVerifications FeePaymentVerification[]
+  pinTransferVerifications PinTransferVerification[]
+  staffAttendances        StaffAttendance[]
+  staffLeaveRequests      StaffLeaveRequest[]
+  timetablePeriods        TimetablePeriod[]
+  timetableSlots          TimetableSlot[]
+  reportCardAssessments   ReportCardAssessment[]
+  paymentGateway          TenantPaymentGateway?
+  paymentIntents          PaymentIntent[]
+  pinSettlements          PinSettlement[]
+
+  @@map("tenants")
+}
+
+model DomainAlias {
+  id                String    @id @default(cuid())
+  tenantId          String    @map("tenant_id")
+  domain            String    @unique
+  verifiedAt        DateTime? @map("verified_at")
+  verificationToken String    @map("verification_token")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  tenant            Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("domain_aliases")
+}
+
+model ClassLevel {
+  id                     String                  @id @default(cuid())
+  name                   String                  @unique
+  orderIndex             Int                     @unique @map("order_index")
+  tenantsLowest          Tenant[]                @relation("TenantLowestClass")
+  tenantsHighest         Tenant[]                @relation("TenantHighestClass")
+  enrollments            Enrollment[]
+  teachingAssignments    TeachingAssignment[]
+  formTeacherAssignments FormTeacherAssignment[]
+  reviews                ClassResultReview[]
+  reportCardAssessments  ReportCardAssessment[]
+  feeItems               FeeItem[]
+  gradingScalesLowest    GradingScale[]          @relation("GradingScaleLowest")
+  gradingScalesHighest   GradingScale[]          @relation("GradingScaleHighest")
+  cbtExams               CbtExam[]
+  timetableSlots         TimetableSlot[]
+
+  @@map("class_levels")
+}
+
+model AcademicSession {
+  id        String   @id @default(cuid())
+  tenantId  String   @map("tenant_id")
+  label     String
+  startDate DateTime @map("start_date")
+  endDate   DateTime @map("end_date")
+  isCurrent Boolean  @default(false) @map("is_current")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant                 Tenant                  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  terms                  Term[]
+  enrollments            Enrollment[]
+  teachingAssignments    TeachingAssignment[]
+  formTeacherAssignments FormTeacherAssignment[]
+  timetableSlots         TimetableSlot[]
+
+  @@unique([tenantId, label])
+  @@map("academic_sessions")
+}
+
+model Term {
+  id              String   @id @default(cuid())
+  sessionId       String   @map("session_id")
+  name            String
+  startDate       DateTime @map("start_date")
+  endDate         DateTime @map("end_date")
+  isCurrent       Boolean  @default(false) @map("is_current")
+  totalSchoolDays Int?     @map("total_school_days")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  session                 AcademicSession          @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  resultEntries           ResultEntry[]
+  reviews                 ClassResultReview[]
+  pins                    ResultPIN[]
+  feeItems                FeeItem[]
+  feePayments             FeePayment[]
+  assessmentComponents    AssessmentComponent[]
+  attendanceRecords       AttendanceRecord[]
+  cbtExams                CbtExam[]
+  feePaymentVerifications FeePaymentVerification[]
+  pinTransferVerifications PinTransferVerification[]
+  generatedPins           GeneratedPin[]
+  reportCardAssessments   ReportCardAssessment[]
+
+  @@unique([sessionId, name])
+  @@map("terms")
+}
+
+model Student {
+  id                  String   @id @default(cuid())
+  tenantId            String   @map("tenant_id")
+  admissionNumber     String?  @map("admission_number")
+  name                String
+  guardianContactInfo Json?    @map("guardian_contact_info")
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  tenant                  Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  enrollments             Enrollment[]
+  resultEntries           ResultEntry[]
+  pins                    ResultPIN[]
+  resultPinUsages         ResultPinUsage[]
+  feeAdjustments          StudentFeeAdjustment[]
+  feePayments             FeePayment[]
+  attendanceRecords       AttendanceRecord[]
+  userAccount             TenantUser?
+  cbtAttempts             CbtStudentAttempt[]
+  busSubscriptions        StudentBusSubscription[]
+  guardians               StudentGuardian[]
+  feePaymentVerifications FeePaymentVerification[]
+  pinTransferVerifications PinTransferVerification[]
+  generatedPins           GeneratedPin[]
+  reportCardAssessments   ReportCardAssessment[]
+
+  @@unique([tenantId, admissionNumber])
+  @@map("students")
+}
+
+model Enrollment {
+  id           String           @id @default(cuid())
+  studentId    String           @map("student_id")
+  classLevelId String           @map("class_level_id")
+  sessionId    String           @map("session_id")
+  status       EnrollmentStatus @default(active)
+  createdAt    DateTime         @default(now()) @map("created_at")
+
+  student    Student         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  classLevel ClassLevel      @relation(fields: [classLevelId], references: [id])
+  session    AcademicSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, sessionId])
+  @@map("enrollments")
+}
+
+model Staff {
+  id          String    @id @default(cuid())
+  tenantId    String    @map("tenant_id")
+  name        String
+  roleBase    StaffRole @default(teacher) @map("role_base")
+  contactInfo Json?     @map("contact_info")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  tenant                 Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  teachingAssignments    TeachingAssignment[]
+  formTeacherAssignments FormTeacherAssignment[]
+  resultEntries          ResultEntry[]
+  classReviews           ClassResultReview[]
+  recordedPayments       FeePayment[]
+  markedAttendances      AttendanceRecord[]       @relation("AttendanceMarker")
+  reviewedVerifications  FeePaymentVerification[] @relation("VerificationReviewer")
+  reviewedPinTransfers   PinTransferVerification[] @relation("PinTransferReviewer")
+  userAccount            TenantUser?
+  staffCode              String?                  @map("staff_code")
+  attendancePin          String?                  @default("1234") @map("attendance_pin")
+  attendances            StaffAttendance[]
+  leaveRequests          StaffLeaveRequest[]
+  reportCardAssessments  ReportCardAssessment[]
+  timetableSlots         TimetableSlot[]
+
+  @@map("staff")
+}
+
+model TeachingAssignment {
+  id           String   @id @default(cuid())
+  staffId      String   @map("staff_id")
+  classLevelId String   @map("class_level_id")
+  subjectId    String   @map("subject_id")
+  sessionId    String   @map("session_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  staff      Staff           @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  classLevel ClassLevel      @relation(fields: [classLevelId], references: [id])
+  subject    Subject         @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  session    AcademicSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@map("teaching_assignments")
+}
+
+model FormTeacherAssignment {
+  id           String   @id @default(cuid())
+  staffId      String   @map("staff_id")
+  classLevelId String   @map("class_level_id")
+  sessionId    String   @map("session_id")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  staff      Staff           @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  classLevel ClassLevel      @relation(fields: [classLevelId], references: [id])
+  session    AcademicSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+
+  @@unique([classLevelId, sessionId])
+  @@map("form_teacher_assignments")
+}
+
+model Subject {
+  id        String   @id @default(cuid())
+  tenantId  String   @map("tenant_id")
+  name      String
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant              Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  teachingAssignments TeachingAssignment[]
+  resultEntries       ResultEntry[]
+  cbtExams            CbtExam[]
+  timetableSlots      TimetableSlot[]
+
+  @@unique([tenantId, name])
+  @@map("subjects")
+}
+
+model ResultEntry {
+  id        String       @id @default(cuid())
+  studentId String       @map("student_id")
+  subjectId String       @map("subject_id")
+  termId    String       @map("term_id")
+  teacherId String       @map("teacher_id")
+  scoreData Json         @map("score_data")
+  grade     String? // §5A.7 — frozen at publish time, never recomputed
+  comment   String?
+  status    ResultStatus @default(not_started)
+  createdAt DateTime     @default(now()) @map("created_at")
+  updatedAt DateTime     @updatedAt @map("updated_at")
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  subject Subject @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  term    Term    @relation(fields: [termId], references: [id], onDelete: Cascade)
+  teacher Staff   @relation(fields: [teacherId], references: [id])
+
+  @@unique([studentId, subjectId, termId])
+  @@map("result_entries")
+}
+
+model ClassResultReview {
+  id                 String    @id @default(cuid())
+  classLevelId       String    @map("class_level_id")
+  termId             String    @map("term_id")
+  formTeacherId      String    @map("form_teacher_id")
+  overallRemarks     String?   @map("overall_remarks")
+  submittedToAdminAt DateTime? @map("submitted_to_admin_at")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  classLevel  ClassLevel @relation(fields: [classLevelId], references: [id])
+  term        Term       @relation(fields: [termId], references: [id], onDelete: Cascade)
+  formTeacher Staff      @relation(fields: [formTeacherId], references: [id])
+
+  @@unique([classLevelId, termId])
+  @@map("class_result_reviews")
+}
+
+model ReportCardAssessment {
+  id                 String   @id @default(cuid())
+  tenantId           String   @map("tenant_id")
+  studentId          String   @map("student_id")
+  classLevelId       String   @map("class_level_id")
+  termId             String   @map("term_id")
+  formTeacherId      String   @map("form_teacher_id")
+  affectiveRatings   Json     @map("affective_ratings")
+  psychomotorRatings Json     @map("psychomotor_ratings")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  tenant      Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  student     Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  classLevel  ClassLevel @relation(fields: [classLevelId], references: [id])
+  term        Term       @relation(fields: [termId], references: [id], onDelete: Cascade)
+  formTeacher Staff      @relation(fields: [formTeacherId], references: [id])
+
+  @@unique([tenantId, studentId, termId])
+  @@index([tenantId, classLevelId, termId])
+  @@map("report_card_assessments")
+}
+
+model ResultPIN {
+  id          String    @id @default(cuid())
+  studentId   String    @map("student_id")
+  termId      String    @map("term_id")
+  code        String    @unique
+  pricePaid   Decimal   @map("price_paid") @db.Decimal(10, 2)
+  platformFee Decimal   @map("platform_fee") @db.Decimal(10, 2)
+  schoolNet   Decimal   @map("school_net") @db.Decimal(10, 2)
+  paymentRef  String    @map("payment_ref")
+  status      PinStatus @default(unused)
+  usesCount   Int       @default(0) @map("uses_count")
+  maxUses     Int       @default(5) @map("max_uses")
+  activatedAt DateTime? @map("activated_at")
+  expiresAt   DateTime  @map("expires_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  term    Term    @relation(fields: [termId], references: [id], onDelete: Cascade)
+  usages  ResultPinUsage[]
+  transferVerification PinTransferVerification?
+  settlementId String? @map("settlement_id")
+  settlement   PinSettlement? @relation(fields: [settlementId], references: [id], onDelete: SetNull)
+
+  @@index([studentId, termId])
+  @@map("result_pins")
+}
+
+model ResultPinUsage {
+  id          String   @id @default(cuid())
+  resultPinId String   @map("result_pin_id")
+  studentId   String   @map("student_id")
+  usedAt      DateTime @default(now()) @map("used_at")
+
+  resultPin ResultPIN @relation(fields: [resultPinId], references: [id], onDelete: Cascade)
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@map("result_pin_usages")
+}
+
+model PinSettlement {
+  id                 String   @id @default(cuid())
+  tenantId           String   @map("tenant_id")
+  grossAmount        Decimal  @map("gross_amount") @db.Decimal(10, 2)
+  platformFeeAmount  Decimal  @map("platform_fee_amount") @db.Decimal(10, 2)
+  schoolNetAmount    Decimal  @map("school_net_amount") @db.Decimal(10, 2)
+  payoutReference    String   @map("payout_reference")
+  settledBy          String   @map("settled_by")
+  settledAt          DateTime @default(now()) @map("settled_at")
+  createdAt          DateTime @default(now()) @map("created_at")
+
+  tenant Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  pins   ResultPIN[]
+
+  @@unique([tenantId, payoutReference])
+  @@index([tenantId, settledAt])
+  @@map("pin_settlements")
+}
+
+model ImpersonationLog {
+  id           String    @id @default(cuid())
+  superAdminId String    @map("super_admin_id")
+  tenantId     String    @map("tenant_id")
+  reason       String
+  startedAt    DateTime  @default(now()) @map("started_at")
+  endedAt      DateTime? @map("ended_at")
+
+  superAdmin SuperAdmin @relation(fields: [superAdminId], references: [id], onDelete: Cascade)
+  tenant     Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("impersonation_logs")
+}
+
+model FeeItem {
+  id           String   @id @default(cuid())
+  tenantId     String   @map("tenant_id")
+  termId       String   @map("term_id")
+  classLevelId String?  @map("class_level_id")
+  name         String
+  amount       Decimal  @db.Decimal(10, 2)
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  tenant      Tenant                 @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  term        Term                   @relation(fields: [termId], references: [id], onDelete: Cascade)
+  classLevel  ClassLevel?            @relation(fields: [classLevelId], references: [id])
+  adjustments StudentFeeAdjustment[]
+
+  @@map("fee_items")
+}
+
+model StudentFeeAdjustment {
+  id              String            @id @default(cuid())
+  studentId       String            @map("student_id")
+  feeItemId       String            @map("fee_item_id")
+  adjustmentType  FeeAdjustmentType @map("adjustment_type")
+  amountOrPercent Decimal           @map("amount_or_percent") @db.Decimal(10, 2)
+  createdAt       DateTime          @default(now()) @map("created_at")
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  feeItem FeeItem @relation(fields: [feeItemId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, feeItemId])
+  @@map("student_fee_adjustments")
+}
+
+model FeePayment {
+  id         String           @id @default(cuid())
+  studentId  String           @map("student_id")
+  termId     String           @map("term_id")
+  amount     Decimal          @db.Decimal(10, 2)
+  method     FeePaymentMethod
+  paymentRef String?          @map("payment_ref")
+  recordedBy String?          @map("recorded_by")
+  paidAt     DateTime         @default(now()) @map("paid_at")
+  createdAt  DateTime         @default(now()) @map("created_at")
+
+  student       Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  term          Term    @relation(fields: [termId], references: [id], onDelete: Cascade)
+  recordedStaff Staff?  @relation(fields: [recordedBy], references: [id])
+
+  @@map("fee_payments")
+}
+
+model TenantPaymentGateway {
+  id                    String   @id @default(cuid())
+  tenantId              String   @unique @map("tenant_id")
+  paystackSecretCipher  String   @map("paystack_secret_cipher") @db.Text
+  enabled               Boolean  @default(false)
+  createdAt             DateTime @default(now()) @map("created_at")
+  updatedAt             DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("tenant_payment_gateways")
+}
+
+model PaymentIntent {
+  id         String   @id @default(cuid())
+  tenantId   String   @map("tenant_id")
+  reference  String   @unique
+  purpose    String
+  studentId  String?  @map("student_id")
+  termId     String?  @map("term_id")
+  amount     Decimal  @db.Decimal(10, 2)
+  payerEmail String   @map("payer_email")
+  status     String   @default("initializing")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, purpose, status])
+  @@map("payment_intents")
+}
+
+model SiteContent {
+  id        String   @id @default(cuid())
+  tenantId  String   @map("tenant_id")
+  page      String
+  content   Json     @default("{}")
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, page])
+  @@map("site_contents")
+}
+
+model GalleryImage {
+  id         String   @id @default(cuid())
+  tenantId   String   @map("tenant_id")
+  imageUrl   String   @map("image_url")
+  caption    String?
+  album      String?
+  uploadedAt DateTime @default(now()) @map("uploaded_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("gallery_images")
+}
+
+model Notification {
+  id            String                    @id @default(cuid())
+  tenantId      String                    @map("tenant_id")
+  recipientId   String                    @map("recipient_id")
+  recipientType NotificationRecipientType @map("recipient_type")
+  type          String
+  message       String
+  link          String?
+  readAt        DateTime?                 @map("read_at")
+  createdAt     DateTime                  @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, recipientId, readAt])
+  @@map("notifications")
+}
+
+model SuperAdminSession {
+  id           String   @id @default(cuid())
+  superAdminId String   @map("super_admin_id")
+  tokenHash    String   @unique @map("token_hash")
+  expiresAt    DateTime @map("expires_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  superAdmin SuperAdmin @relation(fields: [superAdminId], references: [id], onDelete: Cascade)
+
+  @@map("super_admin_sessions")
+}
+
+model SuperAdminPasswordResetToken {
+  id           String   @id @default(cuid())
+  superAdminId String   @map("super_admin_id")
+  tokenHash    String   @unique @map("token_hash")
+  expiresAt    DateTime @map("expires_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  superAdmin   SuperAdmin @relation(fields: [superAdminId], references: [id], onDelete: Cascade)
+
+  @@index([superAdminId])
+  @@index([expiresAt])
+  @@map("super_admin_password_reset_tokens")
+}
+
+enum TenantUserRole {
+  school_admin
+  teacher
+  parent
+  student
+}
+
+model TenantUser {
+  id           String         @id @default(cuid())
+  tenantId     String         @map("tenant_id")
+  username     String
+  passwordHash String         @map("password_hash")
+  role         TenantUserRole
+  staffId      String?        @unique @map("staff_id")
+  studentId    String?        @unique @map("student_id")
+  guardianId   String?        @unique @map("guardian_id")
+  isActive     Boolean        @default(true) @map("is_active")
+  createdAt    DateTime       @default(now()) @map("created_at")
+  updatedAt    DateTime       @updatedAt @map("updated_at")
+
+  tenant                   Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  staff                    Staff?                    @relation(fields: [staffId], references: [id], onDelete: SetNull)
+  student                  Student?                  @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  guardian                 Guardian?                 @relation(fields: [guardianId], references: [id], onDelete: SetNull)
+  sessions                 TenantSession[]
+  resultAuditLogs          ResultAuditLog[]
+  conversationParticipants ConversationParticipant[]
+  sentMessages             Message[]
+
+  @@unique([tenantId, username])
+  @@map("tenant_users")
+}
+
+model TenantSession {
+  id        String   @id @default(cuid())
+  tenantId  String   @map("tenant_id")
+  userId    String   @map("user_id")
+  tokenHash String   @unique @map("token_hash")
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   TenantUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("tenant_sessions")
+}
+
+model AssessmentComponent {
+  id            String   @id @default(cuid())
+  tenantId      String   @map("tenant_id")
+  termId        String?  @map("term_id") // nullable — if null, applies to all terms until overridden
+  name          String // e.g. "1st CA", "2nd CA", "Exam"
+  maxScore      Int      @map("max_score")
+  weightPercent Decimal  @map("weight_percent") @db.Decimal(5, 2)
+  orderIndex    Int      @map("order_index")
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  term   Term?  @relation(fields: [termId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, termId, name])
+  @@map("assessment_components")
+}
+
+model GradingScale {
+  id                  String   @id @default(cuid())
+  tenantId            String   @map("tenant_id")
+  lowestClassLevelId  String   @map("lowest_class_level_id")
+  highestClassLevelId String   @map("highest_class_level_id")
+  minScore            Decimal  @map("min_score") @db.Decimal(5, 2)
+  maxScore            Decimal  @map("max_score") @db.Decimal(5, 2)
+  grade               String // e.g. "A", "B1"
+  remark              String // e.g. "Excellent", "Very Good"
+  createdAt           DateTime @default(now()) @map("created_at")
+  updatedAt           DateTime @updatedAt @map("updated_at")
+
+  tenant            Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  lowestClassLevel  ClassLevel @relation("GradingScaleLowest", fields: [lowestClassLevelId], references: [id])
+  highestClassLevel ClassLevel @relation("GradingScaleHighest", fields: [highestClassLevelId], references: [id])
+
+  @@map("grading_scales")
+}
+
+model AttendanceRecord {
+  id        String           @id @default(cuid())
+  studentId String           @map("student_id")
+  termId    String           @map("term_id")
+  date      DateTime         @db.Date
+  status    AttendanceStatus @default(present)
+  markedBy  String           @map("marked_by")
+  createdAt DateTime         @default(now()) @map("created_at")
+  updatedAt DateTime         @updatedAt @map("updated_at")
+
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  term    Term    @relation(fields: [termId], references: [id], onDelete: Cascade)
+  marker  Staff   @relation("AttendanceMarker", fields: [markedBy], references: [id])
+
+  @@unique([studentId, date])
+  @@index([studentId, termId])
+  @@map("attendance_records")
+}
+
+model ResultAuditLog {
+  id        String   @id @default(cuid())
+  tenantId  String   @map("tenant_id")
+  action    String // "reopen_results" | "reopen_attendance" | "reopen_assessment_components"
+  targetId  String   @map("target_id")
+  reason    String
+  userId    String   @map("user_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  tenant Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  user   TenantUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("result_audit_logs")
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  tenantId   String   @map("tenant_id")
+  actorId    String?  @map("actor_id")
+  actorName  String   @map("actor_name")
+  actorRole  String   @map("actor_role")
+  action     String
+  entityType String   @map("entity_type")
+  entityId   String?  @map("entity_id")
+  details    Json     @default("{}")
+  ipAddress  String?  @map("ip_address")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, action])
+  @@index([tenantId, entityType])
+  @@map("audit_logs")
+}
+
+model SmsConfiguration {
+  id              String   @id @default(cuid())
+  tenantId        String   @unique @map("tenant_id")
+  provider        String   @default("termii") // "termii" | "twilio"
+  apiKey          String?  @map("api_key")
+  senderId        String   @default("SchoolBMS") @map("sender_id")
+  autoResultAlert Boolean  @default(true) @map("auto_result_alert")
+  autoFeeAlert    Boolean  @default(true) @map("auto_fee_alert")
+  autoAbsentAlert Boolean  @default(false) @map("auto_absent_alert")
+  createdAt       DateTime @default(now()) @map("created_at")
+  updatedAt       DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("sms_configurations")
+}
+
+model EmailConfiguration {
+  id        String   @id @default(cuid())
+  tenantId  String   @unique @map("tenant_id")
+  host      String
+  port      Int      @default(465)
+  secure    Boolean  @default(true)
+  user      String
+  pass      String
+  fromName  String?  @map("from_name")
+  fromEmail String?  @map("from_email")
+  replyTo   String?  @map("reply_to")
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("email_configurations")
+}
+
+model SmsLog {
+  id       String   @id @default(cuid())
+  tenantId String   @map("tenant_id")
+  phone    String
+  message  String
+  status   String   @default("sent") // "sent" | "failed"
+  sentAt   DateTime @default(now()) @map("sent_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("sms_logs")
+}
+
+model WhatsAppLog {
+  id       String   @id @default(cuid())
+  tenantId String   @map("tenant_id")
+  phone    String
+  template String
+  payload  Json?
+  status   String   @default("delivered")
+  sentAt   DateTime @default(now()) @map("sent_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("whatsapp_logs")
+}
+
+model CbtExam {
+  id           String   @id @default(cuid())
+  tenantId     String   @map("tenant_id")
+  subjectId    String   @map("subject_id")
+  classLevelId String   @map("class_level_id")
+  termId       String   @map("term_id")
+  title        String
+  durationMins Int      @default(45) @map("duration_mins")
+  totalMarks   Int      @default(100) @map("total_marks")
+  isPublished  Boolean  @default(false) @map("is_published")
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  tenant     Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  subject    Subject             @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  classLevel ClassLevel          @relation(fields: [classLevelId], references: [id], onDelete: Cascade)
+  term       Term                @relation(fields: [termId], references: [id], onDelete: Cascade)
+  questions  CbtQuestion[]
+  attempts   CbtStudentAttempt[]
+
+  @@map("cbt_exams")
+}
+
+model CbtQuestion {
+  id            String @id @default(cuid())
+  examId        String @map("exam_id")
+  questionText  String @map("question_text")
+  optionA       String @map("option_a")
+  optionB       String @map("option_b")
+  optionC       String @map("option_c")
+  optionD       String @map("option_d")
+  correctOption String @map("correct_option") // "A" | "B" | "C" | "D"
+  points        Int    @default(5)
+  orderIndex    Int    @default(1) @map("order_index")
+
+  exam CbtExam @relation(fields: [examId], references: [id], onDelete: Cascade)
+
+  @@map("cbt_questions")
+}
+
+model CbtStudentAttempt {
+  id          String    @id @default(cuid())
+  examId      String    @map("exam_id")
+  studentId   String    @map("student_id")
+  score       Int       @default(0)
+  maxScore    Int       @default(100) @map("max_score")
+  answers     Json? // Stored answers object { questionId: selectedOption }
+  startedAt   DateTime  @default(now()) @map("started_at")
+  submittedAt DateTime? @map("submitted_at")
+
+  exam    CbtExam @relation(fields: [examId], references: [id], onDelete: Cascade)
+  student Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([examId, studentId])
+  @@map("cbt_student_attempts")
+}
+
+model TransportVehicle {
+  id          String   @id @default(cuid())
+  tenantId    String   @map("tenant_id")
+  vehicleNo   String   @map("vehicle_no")
+  driverName  String   @map("driver_name")
+  driverPhone String   @map("driver_phone")
+  capacity    Int      @default(30)
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  tenant Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  routes TransportRoute[]
+
+  @@map("transport_vehicles")
+}
+
+model TransportRoute {
+  id          String   @id @default(cuid())
+  tenantId    String   @map("tenant_id")
+  vehicleId   String?  @map("vehicle_id")
+  routeName   String   @map("route_name")
+  pickupTime  String   @default("07:00 AM") @map("pickup_time")
+  dropoffTime String   @default("03:30 PM") @map("dropoff_time")
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  tenant        Tenant                   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  vehicle       TransportVehicle?        @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+  subscriptions StudentBusSubscription[]
+
+  @@map("transport_routes")
+}
+
+model StudentBusSubscription {
+  id        String   @id @default(cuid())
+  studentId String   @map("student_id")
+  routeId   String   @map("route_id")
+  stopName  String   @default("Main Gate Stop") @map("stop_name")
+  status    String   @default("active")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  student Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  route   TransportRoute @relation(fields: [routeId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, routeId])
+  @@map("student_bus_subscriptions")
+}
+
+model PinBatch {
+  id               String    @id @default(cuid())
+  tenantId         String    @map("tenant_id")
+  batchNumber      String    @unique @map("batch_number")
+  quantity         Int       @default(0)
+  maxUsesPerPin    Int       @default(5) @map("max_uses_per_pin")
+  pricePerPin      Decimal   @default(1000.00) @map("price_per_pin") @db.Decimal(10, 2)
+  platformFeeTotal Decimal   @default(0.00) @map("platform_fee_total") @db.Decimal(10, 2)
+  platformFeePercent Decimal @default(0.00) @map("platform_fee_percent") @db.Decimal(5, 2)
+  paymentRef       String?   @map("payment_ref")
+  status           String    @default("completed")
+  paidAt           DateTime? @map("paid_at")
+  createdAt        DateTime  @default(now()) @map("created_at")
+
+  tenant Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  pins   GeneratedPin[]
+
+  @@map("pin_batches")
+}
+
+model GeneratedPin {
+  id           String   @id @default(cuid())
+  batchId      String   @map("batch_id")
+  tenantId     String   @map("tenant_id")
+  serialNumber String   @unique @map("serial_number")
+  pinCode      String   @unique @map("pin_code")
+  pricePaid    Decimal  @default(1000.00) @map("price_paid") @db.Decimal(10, 2)
+  isUsed       Boolean  @default(false) @map("is_used")
+  usesCount    Int      @default(0) @map("uses_count")
+  studentId    String?  @map("student_id")
+  termId       String?  @map("term_id")
+  onlineSaleReference String? @unique @map("online_sale_reference")
+  reservedUntil DateTime? @map("reserved_until")
+  soldAt       DateTime? @map("sold_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  batch  PinBatch   @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  tenant Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  usages PinUsage[]
+  transferVerification PinTransferVerification?
+  student Student? @relation(fields: [studentId], references: [id], onDelete: SetNull)
+  term Term? @relation(fields: [termId], references: [id], onDelete: SetNull)
+
+  @@map("generated_pins")
+}
+
+model PinUsage {
+  id        String   @id @default(cuid())
+  pinId     String   @map("pin_id")
+  studentId String?  @map("student_id")
+  usedAt    DateTime @default(now()) @map("used_at")
+  ipAddress String?  @map("ip_address")
+
+  pin GeneratedPin @relation(fields: [pinId], references: [id], onDelete: Cascade)
+
+  @@map("pin_usages")
+}
+
+model BackgroundJob {
+  id          String    @id @default(cuid())
+  tenantId    String    @map("tenant_id")
+  type        JobType
+  status      JobStatus @default(queued)
+  payload     Json      @default("{}")
+  progress    Int       @default(0)
+  result      Json?
+  error       String?
+  attempts    Int       @default(0)
+  maxAttempts Int       @default(3) @map("max_attempts")
+  startedAt   DateTime? @map("started_at")
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, status])
+  @@index([tenantId, type])
+  @@map("background_jobs")
+}
+
+model WebhookReceipt {
+  id          String    @id @default(cuid())
+  provider    String
+  reference   String
+  eventType   String?   @map("event_type")
+  bodyHash    String    @map("body_hash")
+  status      String    @default("processing")
+  attempts    Int       @default(1)
+  lastError   String?   @map("last_error")
+  processedAt DateTime? @map("processed_at")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@unique([provider, reference])
+  @@index([status, updatedAt])
+  @@map("webhook_receipts")
+}
+
+model PendingRegistration {
+  id           String   @id @default(cuid())
+  reference    String   @unique
+  slug         String
+  passwordHash String   @map("password_hash")
+  payload      Json
+  expiresAt    DateTime @map("expires_at")
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@index([expiresAt])
+  @@index([slug, createdAt])
+  @@map("pending_registrations")
+}
+
+model RateLimitBucket {
+  key             String   @id
+  count           Int      @default(0)
+  windowStartedAt DateTime @map("window_started_at")
+  expiresAt       DateTime @map("expires_at")
+
+  @@index([expiresAt])
+  @@map("rate_limit_buckets")
+}
+
+model TenantBackup {
+  id           String        @id @default(cuid())
+  tenantId     String        @map("tenant_id")
+  name         String
+  trigger      BackupTrigger @default(manual)
+  status       BackupStatus  @default(pending)
+  snapshotData Json          @map("snapshot_data")
+  sizeBytes    Int           @default(0) @map("size_bytes")
+  createdById  String?       @map("created_by_id")
+  restoredAt   DateTime?     @map("restored_at")
+  restoredById String?       @map("restored_by_id")
+  metadata     Json          @default("{}")
+  createdAt    DateTime      @default(now()) @map("created_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, createdAt])
+  @@index([tenantId, status])
+  @@map("tenant_backups")
+}
+
+enum ConversationType {
+  direct
+  announcement
+  class_channel
+}
+
+model Conversation {
+  id        String           @id @default(cuid())
+  tenantId  String           @map("tenant_id")
+  type      ConversationType @default(direct)
+  title     String?
+  createdAt DateTime         @default(now()) @map("created_at")
+  updatedAt DateTime         @updatedAt @map("updated_at")
+
+  tenant       Tenant                    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  participants ConversationParticipant[]
+  messages     Message[]
+
+  @@index([tenantId, updatedAt])
+  @@map("conversations")
+}
+
+model ConversationParticipant {
+  id             String    @id @default(cuid())
+  conversationId String    @map("conversation_id")
+  userId         String    @map("user_id")
+  lastReadAt     DateTime? @map("last_read_at")
+  createdAt      DateTime  @default(now()) @map("created_at")
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         TenantUser   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@map("conversation_participants")
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  conversationId String   @map("conversation_id")
+  tenantId       String   @map("tenant_id")
+  senderId       String   @map("sender_id")
+  content        String   @db.Text
+  attachments    Json?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  tenant       Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  sender       TenantUser   @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+  @@map("messages")
+}
+
+model Guardian {
+  id           String   @id @default(cuid())
+  tenantId     String   @map("tenant_id")
+  name         String
+  contactInfo  Json     @map("contact_info")
+  relationship String?
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  tenant   Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  students StudentGuardian[]
+  userAccount TenantUser?
+
+  @@map("guardians")
+}
+
+model AdmissionNumberCounter {
+  tenantId  String @map("tenant_id")
+  prefix    String
+  year      Int
+  lastValue Int    @map("last_value")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@id([tenantId, prefix, year])
+  @@map("admission_number_counters")
+}
+
+model StudentGuardian {
+  id               String   @id @default(cuid())
+  studentId        String   @map("student_id")
+  guardianId       String   @map("guardian_id")
+  isPrimaryContact Boolean  @default(false) @map("is_primary_contact")
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  student  Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  guardian Guardian @relation(fields: [guardianId], references: [id], onDelete: Cascade)
+
+  @@unique([studentId, guardianId])
+  @@map("student_guardians")
+}
+
+model FeePaymentVerification {
+  id              String                    @id @default(cuid())
+  tenantId        String                    @map("tenant_id")
+  studentId       String                    @map("student_id")
+  termId          String                    @map("term_id")
+  amount          Decimal                   @db.Decimal(10, 2)
+  senderName      String                    @map("sender_name")
+  bankName        String                    @map("bank_name")
+  transactionRef  String?                   @map("transaction_ref")
+  proofUrl        String?                   @map("proof_url")
+  status          PaymentVerificationStatus @default(pending)
+  rejectionReason String?                   @map("rejection_reason")
+  reviewedById    String?                   @map("reviewed_by_id")
+  reviewedAt      DateTime?                 @map("reviewed_at")
+  createdAt       DateTime                  @default(now()) @map("created_at")
+  updatedAt       DateTime                  @updatedAt @map("updated_at")
+
+  tenant   Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  student  Student @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  term     Term    @relation(fields: [termId], references: [id], onDelete: Cascade)
+  reviewer Staff?  @relation("VerificationReviewer", fields: [reviewedById], references: [id])
+
+  @@index([tenantId, status])
+  @@index([studentId, termId])
+  @@map("fee_payment_verifications")
+}
+
+model PinTransferVerification {
+  id              String                    @id @default(cuid())
+  tenantId        String                    @map("tenant_id")
+  studentId       String                    @map("student_id")
+  termId          String                    @map("term_id")
+  amount          Decimal                   @db.Decimal(10, 2)
+  senderName      String                    @map("sender_name")
+  bankName        String                    @map("bank_name")
+  transactionRef  String?                   @map("transaction_ref")
+  proofUrl        String?                   @map("proof_url")
+  status          PaymentVerificationStatus @default(pending)
+  rejectionReason String?                   @map("rejection_reason")
+  reviewedById    String?                   @map("reviewed_by_id")
+  reviewedAt      DateTime?                 @map("reviewed_at")
+  resultPinId     String?                   @unique @map("result_pin_id")
+  generatedPinId  String?                   @unique @map("generated_pin_id")
+  createdAt       DateTime                  @default(now()) @map("created_at")
+  updatedAt       DateTime                  @updatedAt @map("updated_at")
+
+  tenant    Tenant     @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  student   Student    @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  term      Term       @relation(fields: [termId], references: [id], onDelete: Cascade)
+  reviewer  Staff?     @relation("PinTransferReviewer", fields: [reviewedById], references: [id])
+  resultPin ResultPIN? @relation(fields: [resultPinId], references: [id], onDelete: SetNull)
+  generatedPin GeneratedPin? @relation(fields: [generatedPinId], references: [id], onDelete: SetNull)
+
+  @@unique([tenantId, transactionRef])
+  @@index([tenantId, status])
+  @@index([studentId, termId])
+  @@map("pin_transfer_verifications")
+}
+
+model StaffAttendance {
+  id           String                @id @default(cuid())
+  tenantId     String                @map("tenant_id")
+  staffId      String                @map("staff_id")
+  date         DateTime              @db.Date
+  clockInTime  DateTime?             @map("clock_in_time")
+  clockOutTime DateTime?             @map("clock_out_time")
+  status       StaffAttendanceStatus @default(present)
+  minutesLate  Int                   @default(0) @map("minutes_late")
+  method       String                @default("kiosk") @map("method")
+  markedBy     String?               @map("marked_by")
+  notes        String?
+  createdAt    DateTime              @default(now()) @map("created_at")
+  updatedAt    DateTime              @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  staff  Staff  @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, date])
+  @@index([tenantId, date])
+  @@index([tenantId, staffId])
+  @@map("staff_attendances")
+}
+
+model StaffLeaveRequest {
+  id         String             @id @default(cuid())
+  tenantId   String             @map("tenant_id")
+  staffId    String             @map("staff_id")
+  leaveType  String             @map("leave_type")
+  startDate  DateTime           @map("start_date") @db.Date
+  endDate    DateTime           @map("end_date") @db.Date
+  reason     String
+  status     LeaveRequestStatus @default(pending)
+  reviewedBy String?            @map("reviewed_by")
+  reviewedAt DateTime?          @map("reviewed_at")
+  adminNotes String?            @map("admin_notes")
+  createdAt  DateTime           @default(now()) @map("created_at")
+  updatedAt  DateTime           @updatedAt @map("updated_at")
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  staff  Staff  @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, staffId])
+  @@map("staff_leave_requests")
+}
+
+model TimetablePeriod {
+  id         String   @id @default(cuid())
+  tenantId   String   @map("tenant_id")
+  name       String
+  startTime  String   @map("start_time")
+  endTime    String   @map("end_time")
+  orderIndex Int      @map("order_index")
+  isBreak    Boolean  @default(false) @map("is_break")
+  createdAt  DateTime @default(now()) @map("created_at")
+  updatedAt  DateTime @updatedAt @map("updated_at")
+
+  tenant Tenant          @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  slots  TimetableSlot[]
+
+  @@unique([tenantId, orderIndex])
+  @@map("timetable_periods")
+}
+
+model TimetableSlot {
+  id           String   @id @default(cuid())
+  tenantId     String   @map("tenant_id")
+  sessionId    String?  @map("session_id")
+  classLevelId String   @map("class_level_id")
+  dayOfWeek    Int      @map("day_of_week")
+  periodId     String   @map("period_id")
+  subjectId    String?  @map("subject_id")
+  staffId      String?  @map("staff_id")
+  room         String?
+  createdAt    DateTime @default(now()) @map("created_at")
+  updatedAt    DateTime @updatedAt @map("updated_at")
+
+  tenant     Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  session    AcademicSession? @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  classLevel ClassLevel       @relation(fields: [classLevelId], references: [id], onDelete: Cascade)
+  period     TimetablePeriod  @relation(fields: [periodId], references: [id], onDelete: Cascade)
+  subject    Subject?         @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  staff      Staff?           @relation(fields: [staffId], references: [id], onDelete: SetNull)
+
+  @@unique([classLevelId, dayOfWeek, periodId])
+  @@index([tenantId, classLevelId])
+  @@index([tenantId, staffId, dayOfWeek, periodId])
+  @@map("timetable_slots")
+}

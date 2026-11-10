@@ -1,0 +1,47 @@
+import { NextRequest, NextResponse } from 'next/server';
+import prisma from '@/lib/prisma';
+import { getTenantContext } from '@/lib/tenant';
+import { getTenantUserFromCookies } from '@/lib/auth/tenant-auth';
+import { verifyPassword, hashPassword } from '@/lib/auth/passwords';
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { slug, currentPassword, newPassword } = body;
+
+    if (!slug || !currentPassword || !newPassword) {
+      return NextResponse.json({ error: 'slug, currentPassword, and newPassword are required' }, { status: 400 });
+    }
+    if (newPassword.length < 8) {
+      return NextResponse.json({ error: 'New password must be at least 8 characters' }, { status: 400 });
+    }
+
+    const tenant = await getTenantContext({ slug });
+    if (!tenant) return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
+
+    const auth = await getTenantUserFromCookies(tenant.id);
+    if (!auth) return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
+
+    // Fetch the full user record (need passwordHash)
+    const user = await prisma.tenantUser.findUnique({ where: { id: auth.user.id } });
+    if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 });
+
+    // Verify current password
+    const isMatch = await verifyPassword(currentPassword, user.passwordHash);
+    if (!isMatch) {
+      return NextResponse.json({ error: 'Current password is incorrect' }, { status: 401 });
+    }
+
+    // Hash and save new password
+    const newHash = await hashPassword(newPassword);
+    await prisma.tenantUser.update({
+      where: { id: user.id },
+      data: { passwordHash: newHash },
+    });
+
+    return NextResponse.json({ success: true, message: 'Password updated successfully' });
+  } catch (err: any) {
+    console.error('[Change Password Error]', err);
+    return NextResponse.json({ error: err.message || 'Failed to update password' }, { status: 500 });
+  }
+}

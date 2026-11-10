@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f6f4ed">
+  <title>BMS — School days, moving together</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <style>
+    :root { --paper:#f6f4ed; --white:#fffefa; --ink:#1f2924; --muted:#59665e; --green:#234f38; --green-dark:#183b2a; --leaf:#b8cd7b; --gold:#e6b957; --line:#d8dbd1; --serif:'DM Serif Display',Georgia,serif; --sans:'DM Sans',Arial,sans-serif; }
+    * { box-sizing:border-box; }
+    html { scroll-behavior:smooth; }
+    body { margin:0; color:var(--ink); background:var(--paper); font-family:var(--sans); -webkit-font-smoothing:antialiased; }
+    a { color:inherit; text-decoration:none; }
+    button { font:inherit; }
+    :focus-visible { outline:3px solid #a86b24; outline-offset:3px; }
+    .skip { position:absolute; top:-80px; left:16px; z-index:10; padding:12px 16px; background:white; }
+    .skip:focus { top:12px; }
+    .wrap { width:min(1440px,100%); margin:auto; padding-inline:clamp(20px,4.4vw,68px); }
+    .top { height:78px; display:flex; align-items:center; justify-content:space-between; gap:24px; }
+    .brand { display:flex; align-items:center; gap:11px; font-weight:700; letter-spacing:-.03em; }
+    .brand-mark { width:38px; height:38px; display:grid; place-items:center; color:white; background:var(--green); font:20px var(--serif); }
+    .brand span:last-child { font-size:15px; }
+    .nav { display:flex; align-items:center; gap:30px; color:#435149; font-size:13px; }
+    .nav a:hover,.footer a:hover { text-decoration:underline; text-underline-offset:4px; }
+    .actions { display:flex; align-items:center; gap:22px; font-size:13px; font-weight:600; }
+    .btn { min-height:46px; display:inline-flex; align-items:center; justify-content:center; gap:12px; padding:0 19px; color:white; background:var(--green); font-size:13px; font-weight:700; transition:background .18s ease; }
+    .btn:hover { background:var(--green-dark); }
+    .menu { display:none; min-height:42px; padding:0 13px; border:1px solid var(--line); color:var(--ink); background:transparent; }
+    .mobile-menu { display:none; position:relative; }
+    .mobile-menu summary { list-style:none; cursor:pointer; }
+    .mobile-menu summary::-webkit-details-marker { display:none; }
+    .mobile-nav { position:absolute; top:calc(100% + 12px); right:0; z-index:5; width:min(88vw,300px); flex-direction:column; gap:0; padding:8px 15px; color:var(--ink); background:var(--white); }
+    .mobile-menu[open] .mobile-nav { display:flex; }
+    .mobile-nav a { padding:14px 4px; border-bottom:1px solid var(--line); font-size:13px; }
+    .mobile-nav a:last-child { border:0; }
+    .hero { display:grid; grid-template-columns:.9fr 1.1fr; min-height:610px; background:var(--green-dark); color:white; }
+    .hero-copy { align-self:center; padding:clamp(35px,6vw,88px) clamp(24px,6vw,84px); }
+    .hero h1 { max-width:10ch; margin:0; font:normal clamp(50px,6.4vw,88px)/.99 var(--serif); letter-spacing:-.045em; text-wrap:balance; }
+    .hero-copy p { max-width:450px; margin:25px 0 0; color:#e1e8df; font-size:16px; line-height:1.7; }
+    .hero-actions { display:flex; flex-wrap:wrap; align-items:center; gap:22px; margin-top:31px; }
+    .hero .btn { color:var(--green-dark); background:var(--leaf); }
+    .hero .btn:hover { background:#c8db93; }
+    .text-action { display:inline-flex; gap:10px; align-items:center; font-size:13px; font-weight:600; }
+    .hero-photo { position:relative; min-height:100%; overflow:hidden; background:#6c795d; }
+    .hero-photo img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; object-position:center; }
+    .photo-credit { position:absolute; right:16px; bottom:14px; padding:7px 10px; color:white; background:#152219bf; font-size:10px; }
+    .photo-credit a { text-decoration:underline; }
+    .ribbon { background:var(--gold); color:#1f2924; }
+    .ribbon-inner { display:flex; align-items:center; justify-content:space-between; gap:22px; padding-block:22px; font-size:13px; font-weight:600; }
+    .ribbon strong { font:normal 20px var(--serif); }
+    .section { padding-block:clamp(76px,10vw,138px); }
+    .intro-row { display:grid; grid-template-columns:.95fr 1.05fr; align-items:end; gap:48px; }
+    h2 { max-width:14ch; margin:0; font:normal clamp(38px,5vw,64px)/1.05 var(--serif); letter-spacing:-.035em; text-wrap:balance; }
+    .intro-row p,.section-copy { max-width:540px; margin:0; color:var(--muted); font-size:16px; line-height:1.75; }
+    .workflow { display:grid; grid-template-columns:repeat(4,1fr); margin-top:58px; border-top:1px solid var(--line); }
+    .workflow article { padding:24px 22px 4px 0; }
+    .workflow article+article { padding-left:22px; border-left:1px solid var(--line); }
+    .workflow h3 { margin:0; font-size:16px; font-weight:700; }
+    .workflow p { max-width:235px; margin:10px 0 0; color:var(--muted); font-size:13px; line-height:1.65; }
+    .showcase { background:#e9ede2; }
+    .showcase-inner { display:grid; grid-template-columns:.72fr 1.28fr; align-items:center; gap:clamp(38px,7vw,100px); }
+    .showcase-copy h2 { max-width:10ch; }
+    .showcase-copy p { margin:20px 0 0; }
+    .showcase-copy .text-action { margin-top:25px; color:var(--green); }
+    .screen { color:#28342d; background:#fffefa; border:1px solid #d4dbcf; }
+    .screen-top { display:flex; align-items:center; justify-content:space-between; gap:18px; padding:18px 21px; border-bottom:1px solid #e6e9e2; }
+    .screen-name { font-size:13px; font-weight:700; }
+    .screen-sub { margin-top:4px; color:#748078; font-size:10px; }
+    .screen-term { padding:8px 10px; color:#33503d; background:#eef2e8; font-size:10px; font-weight:700; }
+    .screen-body { padding:20px 21px 24px; }
+    .screen-title { margin:0 0 16px; font-size:14px; font-weight:700; }
+    .screen-row { display:grid; grid-template-columns:1.2fr .8fr .8fr; gap:14px; padding:13px 0; border-top:1px solid #e8ebe5; font-size:11px; }
+    .screen-row.head { color:#788179; font-size:9px; font-weight:700; text-transform:uppercase; letter-spacing:.07em; }
+    .screen-row span:last-child { color:#476b48; font-weight:600; }
+    .screen-caption { padding:12px 21px; color:#6b756d; background:#f6f7f2; font-size:10px; }
+    .story { display:grid; grid-template-columns:.72fr 1.28fr; gap:clamp(40px,8vw,118px); align-items:start; }
+    .story h2 { font-size:clamp(38px,4.5vw,58px); }
+    .story-list { border-top:1px solid var(--line); }
+    .story-item { display:grid; grid-template-columns:190px 1fr; gap:24px; padding:23px 0; border-bottom:1px solid var(--line); }
+    .story-item h3 { margin:0; font-size:15px; }
+    .story-item p { margin:0; color:var(--muted); font-size:14px; line-height:1.7; }
+    .plans { color:white; background:var(--green); }
+    .plans-inner { display:grid; grid-template-columns:.85fr 1.15fr; gap:70px; align-items:start; }
+    .plans h2 { max-width:10ch; }
+    .plans p { max-width:430px; color:#e1e8df; font-size:15px; line-height:1.7; }
+    .plans .text-action { margin-top:8px; color:#e2eca9; }
+    .plan-list { border-top:1px solid #ffffff65; }
+    .plan-line { display:grid; grid-template-columns:150px 1fr auto; align-items:center; gap:20px; padding:20px 0; border-bottom:1px solid #ffffff65; }
+    .plan-line strong { font:normal 23px var(--serif); }
+    .plan-line span { color:#e1e8df; font-size:13px; line-height:1.55; }
+    .plan-line a { color:#e2eca9; font-size:12px; font-weight:700; white-space:nowrap; }
+    .custom-note { margin-top:18px!important; font-size:12px!important; }
+    .close { display:grid; grid-template-columns:1fr auto; gap:30px; align-items:center; padding-block:76px; }
+    .close h2 { max-width:14ch; font-size:clamp(37px,4vw,54px); }
+    .close p { margin:14px 0 0; color:var(--muted); font-size:14px; line-height:1.7; }
+    .footer { color:#e8eee7; background:#1d2922; }
+    .footer-main { display:grid; grid-template-columns:1.4fr repeat(3,1fr); gap:35px; padding-block:55px 48px; }
+    .footer-brand { max-width:285px; }
+    .footer-brand .brand-mark { color:var(--green-dark); background:var(--leaf); }
+    .footer-brand p { color:#bfc9c0; font-size:12px; line-height:1.7; }
+    .footer h3 { margin:3px 0 18px; font-size:12px; }
+    .footer-col { display:flex; flex-direction:column; align-items:start; gap:12px; font-size:12px; color:#d4ddd5; }
+    .footer-bottom { display:flex; justify-content:space-between; gap:20px; padding-block:17px; border-top:1px solid #ffffff32; color:#bfc9c0; font-size:10px; }
+    @media(max-width:900px) {
+      .nav { gap:16px; }
+      .actions .login { display:none; }
+      .hero { min-height:540px; grid-template-columns:.9fr 1.1fr; }
+      .workflow { grid-template-columns:repeat(2,1fr); }
+      .workflow article:nth-child(3) { padding-left:0; border-left:0; }
+      .workflow article:nth-child(n+3) { border-top:1px solid var(--line); padding-top:20px; }
+      .showcase-inner,.story,.plans-inner { grid-template-columns:1fr; }
+      .showcase-copy { display:grid; grid-template-columns:.8fr 1.2fr; align-items:end; gap:25px; }
+      .showcase-copy h2 { grid-row:span 2; }
+      .showcase-copy p { margin:0; }
+      .showcase-copy .text-action { margin-top:0; }
+      .plans-inner { gap:35px; }
+      .plans h2 { max-width:16ch; }
+      .footer-main { grid-template-columns:1.2fr 1fr 1fr; }
+      .footer-brand { grid-column:1/-1; }
+    }
+    @media(max-width:650px) {
+      .wrap { padding-inline:20px; }
+      .top { height:68px; }
+      .nav,.actions .login { display:none; }
+      .menu { display:inline-flex; align-items:center; }
+      .mobile-menu { display:block; }
+      .actions { gap:9px; }
+      .actions .btn { min-height:42px; padding-inline:12px; font-size:11px; }
+      .hero { grid-template-columns:1fr; }
+      .hero-copy { padding:55px 24px 46px; }
+      .hero h1 { max-width:10ch; font-size:clamp(51px,13vw,72px); }
+      .hero-copy p { font-size:14px; }
+      .hero-photo { min-height:370px; }
+      .ribbon-inner { align-items:flex-start; flex-direction:column; gap:12px; padding-block:17px; }
+      .ribbon strong { font-size:18px; }
+      .section { padding-block:76px; }
+      .intro-row { grid-template-columns:1fr; gap:17px; }
+      h2 { font-size:43px; }
+      .intro-row p,.section-copy { font-size:14px; }
+      .workflow { margin-top:34px; }
+      .workflow article { padding:18px 12px 18px 0; }
+      .workflow article+article { padding-left:13px; }
+      .workflow h3 { font-size:14px; }
+      .workflow p { font-size:12px; }
+      .showcase-copy { display:block; }
+      .showcase-copy p { margin-top:15px; }
+      .showcase-copy .text-action { margin-top:18px; }
+      .screen { margin-top:29px; }
+      .screen-top,.screen-body { padding-inline:14px; }
+      .screen-row { grid-template-columns:1fr .75fr .72fr; gap:8px; font-size:9px; }
+      .screen-row.head { font-size:8px; }
+      .screen-caption { padding-inline:14px; }
+      .story { gap:30px; }
+      .story-item { grid-template-columns:1fr; gap:8px; padding:17px 0; }
+      .story-item p { font-size:13px; }
+      .plan-line { grid-template-columns:1fr auto; gap:8px 12px; }
+      .plan-line strong { font-size:21px; }
+      .plan-line span { grid-column:1/-1; grid-row:2; font-size:12px; }
+      .plan-line a { grid-column:2; grid-row:1; }
+      .close { grid-template-columns:1fr; gap:23px; padding-block:64px; }
+      .close .btn { width:100%; }
+      .footer-main { grid-template-columns:1fr 1fr; gap:32px 20px; }
+      .footer-brand { grid-column:1/-1; }
+      .footer-bottom { flex-direction:column; }
+    }
+    @media(prefers-reduced-motion:reduce) { html { scroll-behavior:auto; } *,*::before,*::after { transition:none!important; } }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="wrap top">
+    <a class="brand" href="#top" aria-label="BMS home"><span class="brand-mark">B</span><span>BMS</span></a>
+    <nav class="nav" aria-label="Main navigation"><a href="#product">How it works</a><a href="#plans">Plans</a><a href="http://localhost:3000/schools">School directory</a></nav>
+    <div class="actions"><a class="login" href="http://localhost:3000/admin/login">Sign in</a><a class="btn" href="http://localhost:3000/register">Set up your school <span aria-hidden="true">→</span></a><details class="mobile-menu"><summary class="menu">Menu</summary><nav class="mobile-nav" aria-label="Mobile navigation"><a href="#product">How it works</a><a href="#plans">Plans</a><a href="http://localhost:3000/schools">School directory</a><a href="http://localhost:3000/admin/login">Sign in</a></nav></details></div>
+  </header>
+
+  <main id="main">
+    <section class="wrap hero" id="top">
+      <div class="hero-copy">
+        <h1>Keep the school day moving.</h1>
+        <p>Give your team one clear place for attendance, fee follow-up, family updates and end-of-term results.</p>
+        <div class="hero-actions"><a class="btn" href="http://localhost:3000/register">Set up your school <span aria-hidden="true">→</span></a><a class="text-action" href="#product">See how BMS works <span aria-hidden="true">↓</span></a></div>
+      </div>
+      <div class="hero-photo">
+        <img src="https://images.unsplash.com/photo-1744809482817-9a9d4fc280af?auto=format&amp;fit=crop&amp;fm=jpg&amp;q=85&amp;w=1400" alt="A teacher working with students in a classroom in Accra, Ghana" width="1400" height="1050">
+        <span class="photo-credit">Photo: <a href="https://unsplash.com/photos/a-teacher-instructs-students-in-a-classroom-CXa6E3krENE" target="_blank" rel="noreferrer">David Geneugelijk / Unsplash</a></span>
+      </div>
+    </section>
+
+    <div class="ribbon"><div class="wrap ribbon-inner"><strong>One school day. One connected workspace.</strong><span>Attendance&nbsp; · &nbsp;Fees&nbsp; · &nbsp;Results&nbsp; · &nbsp;Families</span></div></div>
+
+    <section class="wrap section" id="product">
+      <div class="intro-row"><h2>Less chasing. A clearer next step.</h2><p>School work moves between people all day. BMS helps owners and staff keep the important records together, so a task can move from the class register to the school office and on to families.</p></div>
+      <div class="workflow">
+        <article><h3>Take attendance</h3><p>Record who is in class and keep the daily register in one place.</p></article>
+        <article><h3>Follow fee records</h3><p>See fee items, payments received and balances needing attention.</p></article>
+        <article><h3>Prepare term results</h3><p>Move scores through review and publish report cards to families.</p></article>
+        <article><h3>Keep families informed</h3><p>Share the updates and documents enabled for your school’s plan.</p></article>
+      </div>
+    </section>
+
+    <section class="showcase section">
+      <div class="wrap showcase-inner">
+        <div class="showcase-copy"><h2>See what needs attention today.</h2><p>School leaders can review practical work at a glance, then follow through in the part of the system where it belongs.</p><a class="text-action" href="http://localhost:3000/services">Explore the school workflows <span aria-hidden="true">→</span></a></div>
+        <div class="screen" aria-label="Illustrative school workspace preview">
+          <div class="screen-top"><div><div class="screen-name">School office</div><div class="screen-sub">Illustrative workspace preview</div></div><span class="screen-term">CURRENT TERM</span></div>
+          <div class="screen-body"><p class="screen-title">Work waiting for follow-up</p><div class="screen-row head"><span>School record</span><span>Next step</span><span>Status</span></div><div class="screen-row"><span>Class attendance</span><span>Review register</span><span>Ready</span></div><div class="screen-row"><span>Fee payments</span><span>Check receipts</span><span>In progress</span></div><div class="screen-row"><span>Term results</span><span>Approve reports</span><span>In review</span></div></div>
+          <div class="screen-caption">Illustrative interface only · No real school or student records</div>
+        </div>
+      </div>
+    </section>
+
+    <section class="wrap section">
+      <div class="story"><h2>Built around the people who run a school.</h2><div class="story-list">
+        <article class="story-item"><h3>For school owners</h3><p>Keep an overview of enrolment, school operations and term progress without asking each team to rebuild the same picture.</p></article>
+        <article class="story-item"><h3>For teachers</h3><p>Record attendance and assessment work in the same system the school uses to review and publish results.</p></article>
+        <article class="story-item"><h3>For families</h3><p>Give parents access to the school information and results their school has chosen to share with them.</p></article>
+      </div></div>
+    </section>
+
+    <section class="plans section" id="plans">
+      <div class="wrap plans-inner"><div><h2>Choose the room your school needs.</h2><p>Plans are organised around student capacity and the tools included. Compare the details before you register.</p><a class="text-action" href="http://localhost:3000/pricing">See the full plan comparison <span aria-hidden="true">→</span></a><p class="custom-note">A school’s own custom domain is available on the Enterprise plan.</p></div>
+        <div class="plan-list"><div class="plan-line"><strong>Starter</strong><span>Result PINs, SMS alerts and in-app notifications.</span><a href="http://localhost:3000/pricing">Details →</a></div><div class="plan-line"><strong>Growth</strong><span>Adds fee tracking, a public gallery, WhatsApp messages and online exams.</span><a href="http://localhost:3000/pricing">Details →</a></div><div class="plan-line"><strong>Enterprise</strong><span>Adds a custom school domain, grading controls and transport management.</span><a href="http://localhost:3000/pricing">Details →</a></div></div>
+      </div>
+    </section>
+
+    <section class="wrap close"><div><h2>Make the school day easier to keep on track.</h2><p>Start with the plan that fits your school and set up your workspace.</p></div><a class="btn" href="http://localhost:3000/register">Register your school <span aria-hidden="true">→</span></a></section>
+  </main>
+
+  <footer class="footer"><div class="wrap footer-main">
+    <div class="footer-brand"><a class="brand" href="#top"><span class="brand-mark">B</span><span>BMS</span></a><p>School management software for the work that keeps a school moving.</p></div>
+    <div><h3>Explore</h3><nav class="footer-col" aria-label="Explore"><a href="#product">How it works</a><a href="http://localhost:3000/services">Features</a><a href="http://localhost:3000/pricing">Plans</a></nav></div>
+    <div><h3>For schools</h3><nav class="footer-col" aria-label="For schools"><a href="http://localhost:3000/register">Register your school</a><a href="http://localhost:3000/schools">School directory</a><a href="http://localhost:3000/admin/login">Sign in</a></nav></div>
+    <div><h3>About BMS</h3><nav class="footer-col" aria-label="About BMS"><a href="http://localhost:3000/about">About</a><a href="http://localhost:3000/services">Support and features</a></nav></div>
+  </div><div class="wrap footer-bottom"><span>© 2026 BMS · School management for every school day.</span><span>Classroom photo by <a href="https://unsplash.com/photos/a-teacher-instructs-students-in-a-classroom-CXa6E3krENE" target="_blank" rel="noreferrer">David Geneugelijk / Unsplash</a></span></div></footer>
+</body>
+</html>

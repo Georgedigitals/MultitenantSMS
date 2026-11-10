@@ -15,10 +15,18 @@
 
 # next.js
 /.next/
+/.next-module-control-check/
 /out/
 
 # production
 /build
+
+# Local/demo database files and uploaded test assets must never be committed.
+/prisma/pgdata*/
+/public/uploads/
+/prisma-engines/
+/scratch/
+scratch_*.ts
 
 # misc
 .DS_Store
@@ -32,6 +40,9 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+!.env.production.example
+!.env.seed.example
 
 # vercel
 .vercel

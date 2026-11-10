@@ -8,8 +8,8 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --font-sans: Arial, Helvetica, sans-serif;
+  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -22,5 +22,557 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: Arial, Helvetica, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 5mm 6mm;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .print\:hidden,
+  .print-hidden {
+    display: none !important;
+  }
+
+  /* Universal Report Card Print Formatting - STRICTLY SINGLE A4 PAGE */
+  .report-card-sheet {
+    display: block !important;
+    visibility: visible !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  .report-card-sheet * {
+    visibility: visible !important;
+  }
+
+  .report-card-main-grid,
+  .report-card-grade-grid {
+    display: grid !important;
+    grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+  }
+
+  .report-card-main-grid> :first-child,
+  .report-card-grade-grid> :first-child {
+    grid-column: span 7 / span 7 !important;
+  }
+
+  .report-card-main-grid> :nth-child(2),
+  .report-card-grade-grid> :nth-child(2) {
+    grid-column: span 5 / span 5 !important;
+  }
+
+  /* Batch print page breaks between students */
+  .report-card-sheet.print\:break-after-page,
+  .report-card-sheet.break-after-page {
+    break-after: page !important;
+    page-break-after: always !important;
+  }
+
+  .report-card-sheet[style],
+  .report-card-sheet img {
+    print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+  }
+}
+
+/* ── Admin Control Plane Design Tokens ──────────────────────────────────────── */
+
+/* Light Mode (default) */
+:root,
+[data-admin-theme="light"] {
+  --adm-bg: #f4f7f5;
+  --adm-bg-secondary: #ffffff;
+  --adm-sidebar-bg: #ffffff;
+  --adm-header-bg: rgba(255, 255, 255, 0.96);
+  --adm-card-bg: #ffffff;
+  --adm-card-border: #e5e9ed;
+  --adm-surface: #f2f7f3;
+  --adm-surface-hover: #edf4ee;
+  --adm-divider: #e5e9ed;
+  --adm-text-primary: #102d43;
+  --adm-text-secondary: #425c6b;
+  --adm-text-muted: #657580;
+  --adm-text-faint: #8693a0;
+  --adm-input-bg: #ffffff;
+  --adm-input-border: #cfd8cf;
+  --adm-badge-bg: #e7f4ea;
+  --adm-accent: #17834b;
+  --adm-accent-subtle: #e7f4ea;
+  --adm-accent-border: #c9e5d1;
+  --adm-warning: #795719;
+}
+
+/* Dark Mode */
+[data-admin-theme="dark"] {
+  --adm-bg: #08283d;
+  --adm-bg-secondary: #0b2f48;
+  --adm-sidebar-bg: #0b2f48;
+  --adm-header-bg: rgba(11, 47, 72, 0.96);
+  --adm-card-bg: #102d43;
+  --adm-card-border: rgba(255, 255, 255, 0.12);
+  --adm-surface: rgba(255, 255, 255, 0.06);
+  --adm-surface-hover: rgba(255, 255, 255, 0.1);
+  --adm-divider: rgba(255, 255, 255, 0.12);
+  --adm-text-primary: #ffffff;
+  --adm-text-secondary: #d4e0e6;
+  --adm-text-muted: #adc1cd;
+  --adm-text-faint: #8aa1af;
+  --adm-input-bg: #0b2f48;
+  --adm-input-border: rgba(255, 255, 255, 0.2);
+  --adm-badge-bg: rgba(99, 210, 139, 0.14);
+  --adm-accent: #63d28b;
+  --adm-accent-subtle: rgba(99, 210, 139, 0.14);
+  --adm-accent-border: rgba(99, 210, 139, 0.35);
+  --adm-warning: #f3d58c;
+}
+
+/* Theme-aware admin utility classes */
+.adm-shell {
+  background: var(--adm-bg);
+  color: var(--adm-text-primary);
+  font-family: Arial, Helvetica, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.adm-shell h1,
+.adm-shell h2,
+.adm-shell h3,
+.adm-shell h4 {
+  letter-spacing: -0.02em;
+}
+
+.adm-sidebar {
+  background: var(--adm-sidebar-bg);
+  border-color: var(--adm-divider);
+  color: var(--adm-text-primary);
+}
+
+.adm-header {
+  background: var(--adm-header-bg);
+  border-color: var(--adm-divider);
+}
+
+.adm-card {
+  background: var(--adm-card-bg);
+  border-color: var(--adm-card-border);
+  color: var(--adm-text-primary);
+}
+
+.adm-surface {
+  background: var(--adm-surface);
+  color: var(--adm-text-primary);
+}
+
+.adm-surface-hover:hover {
+  background: var(--adm-surface-hover);
+}
+
+.adm-divider {
+  border-color: var(--adm-divider);
+}
+
+.adm-text-primary {
+  color: var(--adm-text-primary);
+}
+
+.adm-text-secondary {
+  color: var(--adm-text-secondary);
+}
+
+.adm-text-muted {
+  color: var(--adm-text-muted);
+}
+
+.adm-text-faint {
+  color: var(--adm-text-faint);
+}
+
+.adm-text-accent {
+  color: var(--adm-accent);
+}
+
+.adm-text-warning {
+  color: var(--adm-warning);
+}
+
+.adm-card-bg-replace {
+  background: var(--adm-card-bg);
+}
+
+.adm-accent-subtle {
+  background: var(--adm-accent-subtle);
+}
+
+.adm-accent-border {
+  border-color: var(--adm-accent-border);
+}
+
+.adm-input {
+  background: var(--adm-input-bg);
+  border-color: var(--adm-input-border);
+  color: var(--adm-text-primary);
+  font-size: inherit;
+}
+
+.adm-input::placeholder {
+  color: var(--adm-text-muted);
+}
+
+.adm-input:focus {
+  outline: none;
+  border-color: var(--adm-accent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--adm-accent) 22%, transparent);
+}
+
+.adm-badge {
+  background: var(--adm-badge-bg);
+  color: var(--adm-text-secondary);
+}
+
+.adm-status-active {
+  background: #e7f4ea;
+  color: #177343;
+}
+
+.adm-status-trial {
+  background: #fbf2dc;
+  color: #795719;
+}
+
+.adm-status-neutral {
+  background: #eef1f3;
+  color: #586b78;
+}
+
+.adm-status-error {
+  background: #fff0ed;
+  color: #983b2e;
+}
+
+html[data-admin-theme="dark"] .adm-status-active {
+  background: rgba(99, 210, 139, 0.14);
+  color: #9be8b2;
+}
+
+html[data-admin-theme="dark"] .adm-status-trial {
+  background: rgba(239, 190, 88, 0.14);
+  color: #f3d58c;
+}
+
+html[data-admin-theme="dark"] .adm-status-neutral {
+  background: rgba(255, 255, 255, 0.08);
+  color: #d4e0e6;
+}
+
+html[data-admin-theme="dark"] .adm-status-error {
+  background: rgba(233, 120, 105, 0.14);
+  color: #ffb2a7;
+}
+
+/* Modal panels (dark overlay bg → use card token) */
+.adm-modal-panel {
+  background: var(--adm-card-bg);
+  border-color: var(--adm-card-border);
+  color: var(--adm-text-primary);
+}
+
+/* Inherit color into all child elements of themed containers */
+.adm-card *,
+.adm-surface *,
+.adm-modal-panel * {
+  --tw-text-opacity: 1;
+}
+
+/* Transition on theme change */
+.adm-shell,
+.adm-sidebar,
+.adm-header,
+.adm-card,
+.adm-surface,
+.adm-input,
+.adm-modal-panel {
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+/* ── Light mode: override residual text-white on text elements ────────────────
+   AdminThemeProvider sets data-admin-theme="light" on <html>.
+   This overrides text-white on headings, paragraphs, divs, spans, table cells
+   so they render as dark navy (#0f172a) instead of invisible white.
+   Button elements are excluded so coloured buttons keep their white labels.     */
+html[data-admin-theme="light"] h1.text-white,
+html[data-admin-theme="light"] h2.text-white,
+html[data-admin-theme="light"] h3.text-white,
+html[data-admin-theme="light"] h4.text-white,
+html[data-admin-theme="light"] h5.text-white,
+html[data-admin-theme="light"] h6.text-white,
+html[data-admin-theme="light"] p.text-white,
+html[data-admin-theme="light"] div.text-white,
+html[data-admin-theme="light"] span.text-white:not([class*="bg-"]),
+html[data-admin-theme="light"] td.text-white,
+html[data-admin-theme="light"] th.text-white,
+html[data-admin-theme="light"] label.text-white,
+html[data-admin-theme="light"] strong.text-white,
+html[data-admin-theme="light"] code.text-white {
+  color: var(--adm-text-primary) !important;
+}
+
+/* Ensure adm-text-primary always wins in light mode */
+html[data-admin-theme="light"] .adm-text-primary {
+  color: var(--adm-text-primary) !important;
+}
+
+/* In dark mode, text-white remains white (no override needed) */
+
+/* BMS school registration wizard */
+.register-page {
+  --register-ink: #102d43;
+  --register-body: #425966;
+  --register-muted: #5d6d78;
+  --register-accent: #17834b;
+  --register-ground: #0A2E47;
+  --register-line: #dce6e0;
+  background: var(--register-ground) !important;
+  color: var(--register-ink) !important;
+}
+
+.register-page header {
+  background: #0A2E47 !important;
+  border-color: rgb(255 255 255 / 12%) !important;
+}
+
+.register-page header [class~="text-white"] {
+  color: #fff !important;
+}
+
+.register-page header .bg-blue-600,
+.register-page .bg-blue-600 {
+  background-color: var(--register-accent) !important;
+  background-image: none !important;
+  box-shadow: none !important;
+}
+
+.register-page footer {
+  border-color: var(--register-line) !important;
+}
+
+.register-content {
+  color: var(--register-ink);
+}
+
+.register-progress {
+  border: 1px solid var(--register-line);
+  border-radius: 14px;
+  padding: 16px;
+  background: #fff;
+}
+
+.register-step {
+  min-height: 42px;
+}
+
+.register-step-number {
+  border-radius: 999px !important;
+}
+
+.register-step.is-current .register-step-number,
+.register-step.is-complete .register-step-number {
+  color: #fff !important;
+}
+
+.register-step-label {
+  color: var(--register-muted) !important;
+}
+
+.register-step.is-current .register-step-label {
+  color: var(--register-ink) !important;
+}
+
+.register-step-number.bg-blue-600 {
+  color: #fff !important;
+}
+
+.register-step.is-complete .register-step-number {
+  background: #17834b !important;
+}
+
+[data-registration-form] {
+  background: #fff !important;
+  border: 1px solid var(--register-line) !important;
+  border-radius: 16px !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  color: var(--register-ink) !important;
+}
+
+[data-registration-form] [class~="bg-slate-950"] {
+  background-color: #f4f7f5 !important;
+}
+
+[data-registration-form] [class~="bg-slate-950/60"] {
+  background-color: #f7faf8 !important;
+}
+
+[data-registration-form] [class~="bg-slate-900"] {
+  background-color: #eef3ef !important;
+}
+
+[data-registration-form] [class~="bg-slate-800"] {
+  background-color: #e8efea !important;
+}
+
+[data-registration-form] [class~="bg-slate-900/90"] {
+  background-color: #fff !important;
+}
+
+[data-registration-form] [class~="text-white"] {
+  color: var(--register-ink) !important;
+}
+
+[data-registration-form] [class~="text-slate-100"],
+[data-registration-form] [class~="text-slate-200"],
+[data-registration-form] [class~="text-slate-300"] {
+  color: var(--register-body) !important;
+}
+
+[data-registration-form] [class~="text-slate-400"],
+[data-registration-form] [class~="text-slate-500"] {
+  color: var(--register-muted) !important;
+}
+
+[data-registration-form] [class~="text-blue-400"],
+[data-registration-form] [class~="text-blue-300"],
+[data-registration-form] [class~="text-teal-400"] {
+  color: var(--register-accent) !important;
+}
+
+[data-registration-form] [class~="bg-teal-950"] {
+  background-color: #eaf4ed !important;
+}
+
+[data-registration-form] [class~="border-teal-800"] {
+  border-color: #bfd9c7 !important;
+}
+
+[data-registration-form] [class~="border-slate-800"],
+[data-registration-form] [class~="border-slate-900"] {
+  border-color: var(--register-line) !important;
+}
+
+[data-registration-form] [class~="border-blue-500"] {
+  border-color: var(--register-accent) !important;
+}
+
+[data-registration-form] [class~="bg-blue-950/60"] {
+  background-color: #eaf4ed !important;
+}
+
+[data-registration-form] [class~="ring-blue-500/40"] {
+  --tw-ring-color: rgb(23 131 75 / 18%) !important;
+}
+
+[data-registration-form] [class~="hover:border-slate-700"]:hover {
+  border-color: #b7c9bd !important;
+}
+
+[data-registration-form] [class~="hover:bg-blue-500"]:hover {
+  background-color: #126d3d !important;
+}
+
+[data-registration-form] [class~="focus:border-blue-500"]:focus,
+[data-registration-form] [class~="focus-within:border-blue-500"]:focus-within {
+  border-color: var(--register-accent) !important;
+}
+
+[data-registration-form] [class~="focus:ring-blue-500"]:focus {
+  --tw-ring-color: rgb(23 131 75 / 20%) !important;
+}
+
+[data-registration-form] [class~="bg-emerald-600"] {
+  background-color: var(--register-accent) !important;
+}
+
+.register-content button[class~="bg-[#17834b]"] {
+  color: #fff !important;
+}
+
+[data-registration-form] button:focus-visible {
+  outline: 2px solid var(--register-accent);
+  outline-offset: 2px;
+}
+
+[data-registration-form] [class~="bg-red-950/80"] {
+  color: #873b31 !important;
+  background-color: #fff3f0 !important;
+  border-color: #eed0c9 !important;
+}
+
+[data-registration-form] [class~="text-red-300"] {
+  color: #873b31 !important;
+}
+
+[data-registration-form] [class~="shadow-lg"],
+[data-registration-form] [class~="shadow-xl"],
+[data-registration-form] [class~="shadow-2xl"] {
+  box-shadow: none !important;
+}
+
+[data-registration-form] [class~="font-mono"][class~="uppercase"] {
+  font-family: inherit;
+  letter-spacing: normal;
+}
+
+[data-registration-form] input,
+[data-registration-form] textarea,
+[data-registration-form] select {
+  color: var(--register-ink) !important;
+  border-color: var(--register-line) !important;
+}
+
+[data-registration-form] input::placeholder,
+[data-registration-form] textarea::placeholder {
+  color: #71818a !important;
+}
+
+@media (max-width: 1023px) {
+  .register-progress {
+    padding: 12px;
+  }
+
+  .register-step {
+    min-height: 36px;
+  }
+}
+
+@media (max-width: 767px) {
+  .register-progress {
+    padding: 10px 8px;
+  }
+
+  .register-step-number {
+    width: 32px !important;
+    height: 32px !important;
+  }
 }

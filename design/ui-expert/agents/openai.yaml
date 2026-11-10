@@ -1,0 +1,4 @@
+interface:
+  display_name: "UI Expert"
+  short_description: "Design distinctive, production-ready interfaces"
+  default_prompt: "Apply the UI Expert skill to design or improve this interface."

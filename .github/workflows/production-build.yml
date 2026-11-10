@@ -1,0 +1,62 @@
+name: Production build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: production-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: bms_ci
+          POSTGRES_PASSWORD: bms_ci_only
+          POSTGRES_DB: bms_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U bms_ci -d bms_ci"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      NODE_ENV: production
+      DATABASE_URL: postgresql://bms_ci:bms_ci_only@localhost:5432/bms_ci?sslmode=disable
+      NEXT_PUBLIC_ROOT_DOMAIN: example.test
+      SESSION_SECRET: ci-only-session-secret-not-for-production
+      NEXTAUTH_SECRET: ci-only-nextauth-secret-not-for-production
+      PAYSTACK_SECRET_KEY: sk_test_ci_only
+      FLUTTERWAVE_SECRET_HASH: ci-only-flutterwave-secret
+      SMTP_HOST: localhost
+      SMTP_USER: ci@example.test
+      SMTP_PASS: ci-only
+      OBJECT_STORAGE_ENDPOINT: https://objects.example.test
+      OBJECT_STORAGE_BUCKET: bms-ci
+      OBJECT_STORAGE_REGION: us-east-1
+      OBJECT_STORAGE_ACCESS_KEY_ID: ci-only
+      OBJECT_STORAGE_SECRET_ACCESS_KEY: ci-only
+      OBJECT_STORAGE_PUBLIC_URL: https://assets.example.test/bms-ci
+      SUPER_ADMIN_EMAIL: admin@example.test
+      SUPER_ADMIN_PASSWORD: ci-only-super-admin-password-not-for-production
+      ALLOW_AUTO_PROVISION_TENANT: "false"
+
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run db:generate
+      - run: npm run db:migrate:deploy
+      - run: npm run db:seed
+      - run: npx tsc --noEmit
+      - run: npm run build -- --webpack
