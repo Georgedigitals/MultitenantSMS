@@ -54,7 +54,7 @@ export default async function PricingPage() {
     },
     {
       q: 'How does billing work?',
-      a: 'The listed subscription price is for one academic term. Your school can change plans as its needs change.',
+      a: 'The listed subscription price is for one full academic year (annual session). Your school can change plans as its needs change.',
     },
   ];
 
@@ -69,7 +69,7 @@ export default async function PricingPage() {
             <h1 className="max-w-[13ch] text-4xl font-extrabold leading-[1.08] tracking-[-.04em] sm:text-5xl">Choose a plan for your school</h1>
           </div>
           <p className="max-w-lg text-sm leading-6 text-[#d4e0e7] md:justify-self-end">
-            Compare the student limit, the tools included and the fee on result PIN sales. All prices shown are for one academic term.
+            Compare the student limit, the tools included and the fee on result PIN sales. All prices shown are for one academic year.
           </p>
         </header>
 
@@ -93,7 +93,7 @@ export default async function PricingPage() {
 
                     <div className="mt-7">
                       <p className="text-3xl font-semibold tracking-tight text-[#26362b]">₦{Number(p.price).toLocaleString()}</p>
-                      <p className="mt-1 text-sm text-[#697269]">per academic term</p>
+                      <p className="mt-1 text-sm text-[#697269]">per academic year</p>
                     </div>
 
                     <div className="mt-6 space-y-3 border-y border-[#d9dfd5] py-4 text-sm">

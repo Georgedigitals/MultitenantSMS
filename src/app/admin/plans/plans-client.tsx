@@ -355,7 +355,7 @@ export function PlansClient({ initialPlans, initialFeatures, initialAvailableCap
 
  <div className="mb-5">
  <span className="text-3xl font-bold adm-text-primary">₦{Number(p.price).toLocaleString()}</span>
- <span className="adm-text-muted text-xs"> / term</span>
+ <span className="adm-text-muted text-xs"> / year</span>
  </div>
 
  <div className="space-y-1.5 adm-surface border adm-divider p-4 rounded-xl mb-5 text-xs font-mono">
@@ -505,7 +505,7 @@ export function PlansClient({ initialPlans, initialFeatures, initialAvailableCap
  </div>
 
  <div>
- <label className="block text-xs font-mono uppercase adm-text-muted mb-1">Price per Academic Term (₦)</label>
+ <label className="block text-xs font-mono uppercase adm-text-muted mb-1">Price per Academic Year (₦)</label>
  <input
  type="number"
  value={editingPlan.price}

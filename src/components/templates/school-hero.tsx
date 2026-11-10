@@ -53,6 +53,15 @@ export function SchoolHero({ data, variant }: { data: PublicSiteData; variant: S
   const primary = branding.primaryColor;
   const accent = branding.accentColor;
 
+  const getCleanHeadline = (rawTitle?: string) => {
+    if (!rawTitle) return `Welcome to ${schoolName}`;
+    const trimmed = rawTitle.trim();
+    if (trimmed.toLowerCase() === tenant.slug.toLowerCase()) {
+      return `Welcome to ${schoolName}`;
+    }
+    return trimmed;
+  };
+
   if (variant === 'vanguard') {
     return (
       <section className="relative overflow-hidden bg-[#10283c] text-white" style={{ '--school-accent': accent } as CSSProperties}>
@@ -62,8 +71,8 @@ export function SchoolHero({ data, variant }: { data: PublicSiteData; variant: S
             <p className="mb-7 flex items-center gap-3 text-xs font-bold uppercase tracking-[0.24em] text-white/65">
               <span className="h-1 w-9" style={{ backgroundColor: accent }} /> {schoolName}
             </p>
-            <h1 className="max-w-[12ch] text-4xl font-semibold leading-[1.08] tracking-[-0.045em] sm:text-5xl lg:text-6xl" style={{ fontFamily: 'var(--brand-font-heading, Georgia, serif)' }}>
-              {slide?.title}
+            <h1 className="max-w-2xl text-4xl font-semibold leading-[1.12] tracking-[-0.035em] sm:text-5xl lg:text-6xl" style={{ fontFamily: 'var(--brand-font-heading, Georgia, serif)' }}>
+              {getCleanHeadline(slide?.title)}
             </h1>
             {hero.motto && <p className="mt-5 text-sm font-semibold uppercase tracking-[0.16em]" style={{ color: accent }}>{hero.motto}</p>}
             <p className="mt-6 max-w-xl text-base leading-7 text-white/75 sm:text-lg sm:leading-8">{slide?.subtitle || hero.subtitle}</p>
@@ -112,7 +121,7 @@ export function SchoolHero({ data, variant }: { data: PublicSiteData; variant: S
         <div className="mx-auto grid min-h-[610px] max-w-[1360px] items-center gap-10 px-5 py-12 sm:px-8 lg:grid-cols-[0.95fr_1.05fr] lg:gap-16 lg:px-14 lg:py-16">
           <div className="order-2 lg:order-1">
             <p className="mb-6 text-xs font-bold uppercase tracking-[0.19em]" style={{ color: primary }}>{schoolName} <span className="mx-2 text-[#c8bba8]">/</span> Learning together</p>
-            <h1 className="max-w-[13ch] text-4xl font-semibold leading-[1.08] tracking-[-0.04em] sm:text-5xl lg:text-[3.65rem]" style={{ fontFamily: 'var(--brand-font-heading, Georgia, serif)' }}>{slide?.title}</h1>
+            <h1 className="max-w-2xl text-4xl font-semibold leading-[1.12] tracking-[-0.035em] sm:text-5xl lg:text-[3.65rem]" style={{ fontFamily: 'var(--brand-font-heading, Georgia, serif)' }}>{getCleanHeadline(slide?.title)}</h1>
             <p className="mt-6 max-w-xl text-base leading-7 text-[#59675f] sm:text-lg sm:leading-8">{slide?.subtitle || hero.subtitle}</p>
             {hero.motto && <p className="mt-5 text-sm italic text-[#68756a]">“{hero.motto}”</p>}
             <div className="mt-8 flex flex-wrap gap-3">
@@ -151,7 +160,7 @@ export function SchoolHero({ data, variant }: { data: PublicSiteData; variant: S
       <div className="mx-auto grid min-h-[620px] max-w-[1400px] items-center gap-11 px-5 py-14 sm:px-8 lg:grid-cols-[0.9fr_1.1fr] lg:gap-14 lg:px-14 lg:py-16">
         <div className="relative z-10">
             <p className="mb-6 flex items-center gap-3 text-xs font-bold uppercase tracking-[0.2em] text-[#75694e]"><span className="h-1 w-8 bg-[#a58a4a]" /> {schoolName}</p>
-          <h1 className="max-w-[12ch] text-4xl font-semibold leading-[1.08] tracking-[-0.045em] text-[#132e44] sm:text-5xl lg:text-[3.8rem]" style={{ fontFamily: 'var(--brand-font-heading, Georgia, serif)' }}>{slide?.title}</h1>
+          <h1 className="max-w-2xl text-4xl font-semibold leading-[1.12] tracking-[-0.035em] text-[#132e44] sm:text-5xl lg:text-[3.8rem]" style={{ fontFamily: 'var(--brand-font-heading, Georgia, serif)' }}>{getCleanHeadline(slide?.title)}</h1>
           <p className="mt-6 max-w-xl text-base leading-7 text-[#59636a] sm:text-lg sm:leading-8">{slide?.subtitle || hero.subtitle}</p>
           {hero.motto && <p className="mt-5 border-l-2 border-[#a58a4a] pl-4 text-sm font-medium italic text-[#6f674f]">{hero.motto}</p>}
           <div className="mt-8 flex flex-wrap items-center gap-3">
