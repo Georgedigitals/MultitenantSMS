@@ -3,6 +3,7 @@ import { getTenantContext } from '@/lib/tenant';
 import { getTenantUserFromCookies } from '@/lib/auth/tenant-auth';
 import { calculateBatchFees } from '@/lib/pin';
 import { randomUUID } from 'node:crypto';
+import { getPublicUrl } from '@/lib/public-url';
 
 export async function POST(req: NextRequest) {
   try {
@@ -24,7 +25,7 @@ export async function POST(req: NextRequest) {
     const quantity = Number(body.quantity);
     const pricePerPin = Number(body.pricePerPin);
     if (!Number.isInteger(quantity) || quantity < 1 || quantity > 10_000 ||
-        !Number.isFinite(pricePerPin) || pricePerPin < 100 || pricePerPin > 1_000_000) {
+      !Number.isFinite(pricePerPin) || pricePerPin < 100 || pricePerPin > 1_000_000) {
       return NextResponse.json({ error: 'Choose 1–10,000 PINs and a unit price between ₦100 and ₦1,000,000.' }, { status: 400 });
     }
 
@@ -48,7 +49,7 @@ export async function POST(req: NextRequest) {
           email: adminEmail,
           amount: Math.round(feeCalc.totalPlatformFee * 100), // in kobo
           reference,
-          callback_url: `${origin}/api/platform/paystack/callback`,
+          callback_url: getPublicUrl('/api/platform/paystack/callback', req).toString(),
           metadata: {
             type: 'pin_batch',
             tenantId: tenant.id,

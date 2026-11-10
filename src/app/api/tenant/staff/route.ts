@@ -86,47 +86,83 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Only school admin can create staff members' }, { status: 403 });
     }
 
-    const db = getTenantDb(tenant.id);
-    const autoCode = `STF-${randomBytes(3).toString('hex').toUpperCase()}`;
-    const autoPin = String(Math.floor(1000 + Math.random() * 9000));
-
-    const staff = await db.staff.create({
-      data: {
-        name: name.trim(),
-        roleBase: roleBase as StaffRole,
-        contactInfo: contactInfo || null,
-        staffCode: autoCode,
-        attendancePin: autoPin,
-      } as any,
-    });
-
     // Determine unique username and password for TenantUser login
     const initialPassword = randomBytes(18).toString('base64url');
     const passwordHash = await hashPassword(initialPassword);
 
-    let targetUsername = rawEmail || `${name.toLowerCase().replace(/[^a-z0-9]/g, '')}@${tenant.slug}.edu`;
-
-    // Ensure username is unique for this tenant
-    let existingUser = await prisma.tenantUser.findUnique({
-      where: { tenantId_username: { tenantId: tenant.id, username: targetUsername } },
-    });
-    if (existingUser) {
-      return NextResponse.json({ error: 'This email is already used by another account in this school. Use a different login email.' }, { status: 409 });
-    }
+    let targetUsername = rawEmail
+      ? rawEmail.toLowerCase().trim()
+      : `${name.toLowerCase().replace(/[^a-z0-9]/g, '')}@${tenant.slug}.edu`;
 
     const assignedRole = roleBase === 'admin' ? TenantUserRole.school_admin : TenantUserRole.teacher;
+    const autoCode = `STF-${randomBytes(3).toString('hex').toUpperCase()}`;
+    const autoPin = String(Math.floor(1000 + Math.random() * 9000));
 
-    const userAccount = await prisma.tenantUser.create({
-      data: {
-        tenantId: tenant.id,
-        username: targetUsername,
-        passwordHash,
-        role: assignedRole,
-        staffId: staff.id,
-        isActive: true,
-      },
-      select: { id: true, username: true, role: true, isActive: true },
-    });
+    let staffRecord: any;
+    let userAccount: any;
+
+    try {
+      const txResult = await prisma.$transaction(async (tx) => {
+        // Ensure username is unique for this tenant
+        const existingUser = await tx.tenantUser.findUnique({
+          where: { tenantId_username: { tenantId: tenant.id, username: targetUsername } },
+        });
+        if (existingUser) {
+          throw new Error('DUPLICATE_LOGIN');
+        }
+
+        // Check if staff with identical email or phone already exists in this school
+        if (rawEmail) {
+          const allStaff = await tx.staff.findMany({
+            where: { tenantId: tenant.id },
+            select: { id: true, contactInfo: true },
+          });
+          const emailExists = allStaff.some((s) => {
+            const c = s.contactInfo as any;
+            return c?.email && String(c.email).toLowerCase().trim() === rawEmail.toLowerCase().trim();
+          });
+          if (emailExists) {
+            throw new Error('DUPLICATE_STAFF_EMAIL');
+          }
+        }
+
+        const staff = await tx.staff.create({
+          data: {
+            tenantId: tenant.id,
+            name: name.trim(),
+            roleBase: roleBase as StaffRole,
+            contactInfo: contactInfo || null,
+            staffCode: autoCode,
+            attendancePin: autoPin,
+          },
+        });
+
+        const user = await tx.tenantUser.create({
+          data: {
+            tenantId: tenant.id,
+            username: targetUsername,
+            passwordHash,
+            role: assignedRole,
+            staffId: staff.id,
+            isActive: true,
+          },
+          select: { id: true, username: true, role: true, isActive: true },
+        });
+
+        return { staff, user };
+      });
+
+      staffRecord = txResult.staff;
+      userAccount = txResult.user;
+    } catch (err: any) {
+      if (err.message === 'DUPLICATE_LOGIN' || err.message === 'DUPLICATE_STAFF_EMAIL') {
+        return NextResponse.json(
+          { error: 'A staff member with this email or username already exists in this school.' },
+          { status: 409 }
+        );
+      }
+      throw err;
+    }
 
     // Fire welcome email non-blocking if staff email is available
     const staffEmail = rawEmail;
@@ -153,7 +189,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       {
         staff: {
-          ...staff,
+          ...staffRecord,
           userAccount,
         },
         credentials: {

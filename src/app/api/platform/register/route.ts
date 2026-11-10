@@ -168,15 +168,18 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // 2. Create DomainAlias for local subdomain testing
-    await tx.domainAlias.create({
-      data: {
-        tenantId: tenant.id,
-        domain: `${cleanSlug}.localhost:3000`,
-        verifiedAt: new Date(),
-        verificationToken: `token_${cleanSlug}_auto`,
-      },
-    });
+    // 2. In local development only, create a domain alias for localhost testing
+    const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost:3000').toLowerCase();
+    if (rootDomain.includes('localhost')) {
+      await tx.domainAlias.create({
+        data: {
+          tenantId: tenant.id,
+          domain: `${cleanSlug}.localhost:3000`,
+          verifiedAt: new Date(),
+          verificationToken: `token_${cleanSlug}_auto`,
+        },
+      });
+    }
 
     // 3. Create Initial Academic Session (2024/2025) & Terms
     const session = await tx.academicSession.create({

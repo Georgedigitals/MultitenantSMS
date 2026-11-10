@@ -1,10 +1,11 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getTenantUserFromCookies } from '@/lib/auth/tenant-auth';
 import { tenantHasFeature } from '@/lib/features';
 import { initializeFeePayment } from '@/lib/fees';
 import prisma from '@/lib/prisma';
+import { getPublicUrl } from '@/lib/public-url';
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const auth = await getTenantUserFromCookies();
     if (!auth) {
@@ -49,7 +50,7 @@ export async function POST(request: Request) {
       termId,
       Number(amount),
       customerEmail,
-      `${new URL(request.url).origin}/api/platform/paystack/callback`
+      getPublicUrl('/api/platform/paystack/callback', request).toString()
     );
 
     return NextResponse.json(result);

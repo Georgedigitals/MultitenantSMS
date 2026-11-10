@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getTenantUserFromCookies } from '@/lib/auth/tenant-auth';
 import { randomUUID } from 'node:crypto';
+import { getPublicUrl } from '@/lib/public-url';
 
 export async function POST(req: NextRequest) {
   try {
@@ -129,7 +130,7 @@ export async function POST(req: NextRequest) {
           email: adminEmail,
           amount: Math.round(chargeAmount * 100), // Paystack expects kobo
           reference,
-          callback_url: `${req.nextUrl.origin}/api/platform/paystack/callback`,
+          callback_url: getPublicUrl('/api/platform/paystack/callback', req).toString(),
           metadata: {
             type: isUpgrade ? 'subscription' : 'registration',
             schoolName,

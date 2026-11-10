@@ -54,18 +54,24 @@ interface WebsiteAdminClientProps {
       mission?: string;
       vision?: string;
       principalMessage?: string;
+      anthem?: string;
+      coreValues?: string[];
     };
     academics: {
       text: string;
       highlights: string[];
+      curricula?: string[];
     };
     admissions?: {
       text: string;
+      requirements?: string[];
+      feeGuideText?: string;
     };
     contact: {
       email: string | null;
       phone: string | null;
       address: string | null;
+      officeHours?: string;
     };
     gallery: Array<{ id: string; imageUrl: string; caption: string | null; album: string | null }>;
   };
@@ -118,18 +124,32 @@ export default function WebsiteAdminClient({
   const [principalMessage, setPrincipalMessage] = useState(initialSiteData.about.principalMessage || '');
   const [mission, setMission] = useState(initialSiteData.about.mission || '');
   const [vision, setVision] = useState(initialSiteData.about.vision || '');
+  const [aboutAnthem, setAboutAnthem] = useState(initialSiteData.about.anthem || '');
+  const [coreValues, setCoreValues] = useState((initialSiteData.about.coreValues || []).join(', '));
 
   // Content state - Academics & Admissions
   const [academicsText, setAcademicsText] = useState(initialSiteData.academics.text);
   const [academicHighlights, setAcademicHighlights] = useState(
-    initialSiteData.academics.highlights.join('\n')
+    (initialSiteData.academics.highlights || []).join('\n')
+  );
+  const [curricula, setCurricula] = useState(
+    (initialSiteData.academics.curricula || []).join('\n')
   );
   const [admissionsText, setAdmissionsText] = useState(initialSiteData.admissions?.text || '');
+  const [admissionsRequirements, setAdmissionsRequirements] = useState(
+    (initialSiteData.admissions?.requirements || []).join('\n')
+  );
+  const [admissionsFeeGuide, setAdmissionsFeeGuide] = useState(
+    initialSiteData.admissions?.feeGuideText || ''
+  );
 
   // Content state - Contact
   const [contactEmail, setContactEmail] = useState(initialSiteData.contact.email || '');
   const [contactPhone, setContactPhone] = useState(initialSiteData.contact.phone || '');
   const [contactAddress, setContactAddress] = useState(initialSiteData.contact.address || '');
+  const [contactOfficeHours, setContactOfficeHours] = useState(
+    initialSiteData.contact.officeHours || ''
+  );
 
   // Gallery state
   const [galleryList, setGalleryList] = useState(initialSiteData.gallery);
@@ -245,12 +265,14 @@ export default function WebsiteAdminClient({
             heroSubtitle,
             motto: heroMotto || null,
             heroImageUrl: heroImageUrl || null,
-            featuredStudent: {
-              name: featuredStudentName.trim(),
-              className: featuredStudentClass.trim(),
-              achievement: featuredStudentAchievement.trim(),
-              imageUrl: featuredStudentImage || null,
-            },
+            featuredStudent: featuredStudentName.trim()
+              ? {
+                  name: featuredStudentName.trim(),
+                  className: featuredStudentClass.trim(),
+                  achievement: featuredStudentAchievement.trim(),
+                  imageUrl: featuredStudentImage || null,
+                }
+              : null,
           },
         },
         {
@@ -261,6 +283,8 @@ export default function WebsiteAdminClient({
             principalMessage: principalMessage || null,
             mission: mission || null,
             vision: vision || null,
+            anthem: aboutAnthem || null,
+            coreValues: coreValues.split(',').map((x) => x.trim()).filter(Boolean),
           },
         },
         {
@@ -268,17 +292,25 @@ export default function WebsiteAdminClient({
           content: {
             text: academicsText,
             highlights: academicHighlights.split('\n').filter((x) => x.trim()),
+            curricula: curricula.split('\n').filter((x) => x.trim()),
           },
         },
         {
           page: 'admissions',
           content: {
             text: admissionsText,
+            requirements: admissionsRequirements.split('\n').filter((x) => x.trim()),
+            feeGuideText: admissionsFeeGuide || null,
           },
         },
         {
           page: 'contact',
-          content: { email: contactEmail, phone: contactPhone, address: contactAddress },
+          content: {
+            email: contactEmail,
+            phone: contactPhone,
+            address: contactAddress,
+            officeHours: contactOfficeHours || null,
+          },
         },
       ];
 
@@ -757,10 +789,28 @@ export default function WebsiteAdminClient({
 
           {/* Featured Student */}
           <div className="space-y-4 pt-6 border-t border-slate-100">
-            <h3 className="font-bold text-xs uppercase tracking-wider text-indigo-600">
-              2. Scholar of the Term (Featured Student)
-            </h3>
-            <p className="text-xs text-slate-500">Celebrate a student achievement banner on the public homepage.</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-xs uppercase tracking-wider text-indigo-600">
+                  2. Scholar of the Term (Featured Student Spotlight)
+                </h3>
+                <p className="text-xs text-slate-500">Celebrate a student achievement banner on the public homepage. Clear all fields if not needed.</p>
+              </div>
+              {featuredStudentName && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setFeaturedStudentName('');
+                    setFeaturedStudentClass('');
+                    setFeaturedStudentAchievement('');
+                    setFeaturedStudentImage('');
+                  }}
+                  className="px-3 py-1.5 rounded-lg text-xs font-bold text-red-600 hover:bg-red-50 border border-red-200 transition cursor-pointer"
+                >
+                  Clear / Disable Spotlight
+                </button>
+              )}
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">Student Name</label>
@@ -849,6 +899,30 @@ export default function WebsiteAdminClient({
                   />
                 </div>
               </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Core Values (Separated by commas)
+                </label>
+                <input
+                  type="text"
+                  value={coreValues}
+                  onChange={(e) => setCoreValues(e.target.value)}
+                  placeholder="e.g. Excellence, Integrity, Innovation, Discipline, Empathy"
+                  className="w-full px-3 py-2 border rounded-xl text-sm border-slate-300"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  School Anthem &amp; Pledge Lyrics
+                </label>
+                <textarea
+                  value={aboutAnthem}
+                  onChange={(e) => setAboutAnthem(e.target.value)}
+                  rows={3}
+                  placeholder="Forward ever, backward never, shining brightly as the stars..."
+                  className="w-full px-3 py-2 border rounded-xl text-sm border-slate-300"
+                />
+              </div>
             </div>
           </div>
 
@@ -879,12 +953,48 @@ export default function WebsiteAdminClient({
                 />
               </div>
               <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Curricula &amp; Accreditations Offered (One per line)
+                </label>
+                <textarea
+                  value={curricula}
+                  onChange={(e) => setCurricula(e.target.value)}
+                  rows={3}
+                  placeholder="e.g. Nigerian National Curriculum (NERDC)&#10;British Cambridge Assessment Curriculum&#10;Advanced STEM &amp; Robotics"
+                  className="w-full px-3 py-2 border rounded-xl text-sm border-slate-300 font-mono text-xs"
+                />
+              </div>
+              <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">Admissions Callout Text</label>
                 <textarea
                   value={admissionsText}
                   onChange={(e) => setAdmissionsText(e.target.value)}
                   rows={2}
                   placeholder="Information regarding applications, entrance assessments, and registration deadlines..."
+                  className="w-full px-3 py-2 border rounded-xl text-sm border-slate-300"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Admission Requirements (One per line)
+                </label>
+                <textarea
+                  value={admissionsRequirements}
+                  onChange={(e) => setAdmissionsRequirements(e.target.value)}
+                  rows={3}
+                  placeholder="e.g. Completed Online Admission Form&#10;Previous 2 terms report card&#10;Birth Certificate &amp; 2 passport photos"
+                  className="w-full px-3 py-2 border rounded-xl text-sm border-slate-300 font-mono text-xs"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Tuition &amp; Fee Policy Guide Note
+                </label>
+                <textarea
+                  value={admissionsFeeGuide}
+                  onChange={(e) => setAdmissionsFeeGuide(e.target.value)}
+                  rows={2}
+                  placeholder="Our tuition structure is transparent and structured across terms..."
                   className="w-full px-3 py-2 border rounded-xl text-sm border-slate-300"
                 />
               </div>
@@ -921,6 +1031,16 @@ export default function WebsiteAdminClient({
                   type="text"
                   value={contactAddress}
                   onChange={(e) => setContactAddress(e.target.value)}
+                  className="w-full px-3 py-2 border rounded-xl text-sm border-slate-300"
+                />
+              </div>
+              <div className="md:col-span-2">
+                <label className="block text-xs font-semibold text-slate-700 mb-1">Administrative Working Hours</label>
+                <input
+                  type="text"
+                  value={contactOfficeHours}
+                  onChange={(e) => setContactOfficeHours(e.target.value)}
+                  placeholder="e.g. Monday – Friday: 7:30 AM – 4:30 PM"
                   className="w-full px-3 py-2 border rounded-xl text-sm border-slate-300"
                 />
               </div>

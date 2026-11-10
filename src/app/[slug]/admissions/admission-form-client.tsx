@@ -106,7 +106,7 @@ export function AdmissionFormClient({ tenantSlug, schoolName, primaryColor }: Ad
             required
             value={parentName}
             onChange={(e) => setParentName(e.target.value)}
-            placeholder="e.g. Dr. George Abraham"
+            placeholder="e.g. Dr. John Doe"
             className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
@@ -120,7 +120,7 @@ export function AdmissionFormClient({ tenantSlug, schoolName, primaryColor }: Ad
             required
             value={parentPhone}
             onChange={(e) => setParentPhone(e.target.value)}
-            placeholder="e.g. +234 811 045 4293"
+            placeholder="e.g. +234 801 234 5678"
             className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
@@ -149,7 +149,7 @@ export function AdmissionFormClient({ tenantSlug, schoolName, primaryColor }: Ad
             required
             value={studentName}
             onChange={(e) => setStudentName(e.target.value)}
-            placeholder="e.g. David George"
+            placeholder="e.g. Alex Doe"
             className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>

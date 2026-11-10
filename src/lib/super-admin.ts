@@ -89,10 +89,10 @@ export async function getPlatformFinancialOverview(): Promise<PlatformFinancialO
   });
   const pinBatches = await prisma.pinBatch.findMany();
 
-  // 1. Subscription Revenue (sum of active/trial tenant contracted annual prices)
+  // 1. Subscription Revenue (sum of active paid tenant contracted annual prices)
   let subscriptionRevenue = 0;
   for (const t of tenants) {
-    if (t.status === 'active' || t.status === 'trial') {
+    if (t.status === 'active') {
       const contractedAmount = Number(t.annualContractPrice ?? t.plan.price);
       subscriptionRevenue += contractedAmount;
     }

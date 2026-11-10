@@ -4,6 +4,7 @@ import { getTenantContext } from '@/lib/tenant';
 import { prisma } from '@/lib/prisma';
 import { getTenantPaystackSecret } from '@/lib/tenant-payments';
 import { fulfillPinStockSale } from '@/lib/pin';
+import { getPublicUrl } from '@/lib/public-url';
 
 async function resolveExpiredReservations(tenantId: string, secret: string) {
   const expired = await prisma.generatedPin.findMany({
@@ -164,7 +165,7 @@ export async function POST(req: NextRequest) {
         email: customerEmail,
         amount: Math.round(Number(intent.amount) * 100),
         reference: paymentReference,
-        callback_url: `${req.nextUrl.origin}/api/platform/paystack/callback`,
+        callback_url: getPublicUrl('/api/platform/paystack/callback', req).toString(),
         metadata: { type: 'result_pin', tenantId: tenant.id, slug: tenant.slug, studentId: student.id, termId: term.id },
       }),
       signal: AbortSignal.timeout(10_000),

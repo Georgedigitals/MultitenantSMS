@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getTenantContext } from '@/lib/tenant';
 import prisma from '@/lib/prisma';
 import { calculateStudentFeeBalance, initializeFeePayment } from '@/lib/fees';
+import { getPublicUrl } from '@/lib/public-url';
 
 export async function POST(req: NextRequest) {
   try {
@@ -78,7 +79,7 @@ export async function POST(req: NextRequest) {
       term.id,
       numericAmount,
       payerEmail,
-      `${req.nextUrl.origin}/api/platform/paystack/callback`,
+      getPublicUrl('/api/platform/paystack/callback', req).toString(),
     );
     return NextResponse.json({ success: true, authorizationUrl: result.authorizationUrl, paymentRef: result.paymentRef, amount: result.amount });
   } catch (error: any) {

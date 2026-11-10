@@ -44,3 +44,4 @@ export async function GET(
     return new NextResponse('Not Found', { status: 404 });
   }
 }
+

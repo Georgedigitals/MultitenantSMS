@@ -70,15 +70,18 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // Auto-provision DomainAlias for local subdomain testing
-    await prisma.domainAlias.create({
-      data: {
-        tenantId: tenant.id,
-        domain: `${cleanSlug}.localhost:3000`,
-        verifiedAt: new Date(),
-        verificationToken: `token_${cleanSlug}_sa_auto`,
-      },
-    }).catch(() => {});
+    // Auto-provision DomainAlias only in local development
+    const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost:3000').toLowerCase();
+    if (rootDomain.includes('localhost')) {
+      await prisma.domainAlias.create({
+        data: {
+          tenantId: tenant.id,
+          domain: `${cleanSlug}.localhost:3000`,
+          verifiedAt: new Date(),
+          verificationToken: `token_${cleanSlug}_sa_auto`,
+        },
+      }).catch(() => {});
+    }
 
     // Auto-provision Initial Academic Session (2024/2025) & Terms
     const session = await prisma.academicSession.create({

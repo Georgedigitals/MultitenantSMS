@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { TenantStatus } from '@prisma/client';
 import { getTenantUrl } from '@/lib/tenant-url';
 
+const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'eduorg.ng';
+
 interface Plan {
  id: string;
  name: string;
@@ -273,7 +275,7 @@ export function TenantsClient({ initialTenants, availablePlans }: TenantsClientP
  status: data.tenant.status,
  plan: createdPlan,
  adminEmail: `admin@${data.tenant.slug}.edu`,
- domainAliases: [{ id: 'alias_1', domain: `${data.tenant.slug}.localhost:3000`, verifiedAt: new Date().toISOString() }],
+ domainAliases: [],
  featureOverrides: [],
  _count: { students: 0, staff: 1, sessions: 1 },
  };
@@ -763,7 +765,7 @@ export function TenantsClient({ initialTenants, availablePlans }: TenantsClientP
  <div className="space-y-2">
  {(domainModalTenant.domainAliases || []).length === 0 ? (
  <div className="p-4 text-center text-xs adm-text-muted adm-surface rounded-xl border adm-divider">
- No custom domain aliases configured. Default subdomain: <code className="text-blue-400 font-mono">{domainModalTenant.slug}.localhost:3000</code>
+ No custom domain aliases configured. Default subdomain: <code className="text-blue-400 font-mono">{domainModalTenant.slug}.{ROOT_DOMAIN}</code>
  </div>
  ) : (
  (domainModalTenant.domainAliases || []).map((da) => (
@@ -883,7 +885,7 @@ export function TenantsClient({ initialTenants, availablePlans }: TenantsClientP
  onChange={(e) => setNewSlug(e.target.value.toLowerCase())}
  className="w-full px-3.5 py-2.5 adm-surface border adm-divider rounded-xl adm-text-primary font-mono focus:outline-none focus:border-blue-500"
  />
- <p className="text-[10px] adm-text-muted mt-1">Will be accessible at {newSlug || 'slug'}.localhost:3000</p>
+ <p className="text-[10px] adm-text-muted mt-1">Will be accessible at {newSlug || 'slug'}.{ROOT_DOMAIN}</p>
  </div>
 
  <div>
