@@ -54,7 +54,7 @@ jobs:
         with:
           node-version: 22
           cache: npm
-      - run: npm ci
+      - run: npm ci --include=dev
       - run: npm run db:generate
       - run: npm run db:migrate:deploy
       - run: npm run db:seed
