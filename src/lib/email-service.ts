@@ -237,6 +237,40 @@ export async function dispatchEmail(options: SendEmailOptions): Promise<{ succes
 }
 
 /**
+ * Resolves a branding logo URL to a fully-qualified, absolute HTTPS URL suitable for email clients.
+ * Converts local relative paths like `/uploads/...` to `https://<slug>.<rootDomain>/uploads/...`
+ */
+function resolveEmailLogoUrl(slug?: string, rawLogoUrl?: string | null): string | null {
+  if (!rawLogoUrl || typeof rawLogoUrl !== 'string') return null;
+  const trimmed = rawLogoUrl.trim();
+  if (!trimmed) return null;
+
+  // Already a full HTTPS URL
+  if (trimmed.startsWith('https://')) {
+    return trimmed;
+  }
+
+  // Upgrades HTTP URL to HTTPS in production
+  if (trimmed.startsWith('http://')) {
+    if (process.env.NODE_ENV === 'production' && !trimmed.includes('localhost') && !trimmed.includes('127.0.0.1')) {
+      return trimmed.replace('http://', 'https://');
+    }
+    return trimmed;
+  }
+
+  // Relative path (e.g. "/uploads/tenants/..." or "uploads/...")
+  if (slug) {
+    const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+    return getTenantUrl(slug, cleanPath);
+  }
+
+  const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'eduorg.ng').split(':')[0].toLowerCase();
+  const protocol = process.env.NODE_ENV === 'production' && !rootDomain.includes('localhost') ? 'https' : 'http';
+  const cleanPath = trimmed.startsWith('/') ? trimmed : `/${trimmed}`;
+  return `${protocol}://${rootDomain}${cleanPath}`;
+}
+
+/**
  * 1. PLATFORM WELCOME NOTIFICATION EMAIL (Platform -> Tenant Admin)
  * Sent upon new school registration from EduSaaS OS.
  * Uses Platform Branding (#0F172A theme, EduSaaS OS Logo).
@@ -337,7 +371,7 @@ export async function sendTenantBrandedPasswordResetEmail(options: {
   const branding = (tenant.branding as any) || {};
   const primaryColor = branding.primaryColor || '#1E3A8A';
   const accentColor = branding.accentColor || '#2563EB';
-  const logoUrl = branding.logoUrl || null;
+  const logoUrl = resolveEmailLogoUrl(tenant.slug, branding.logoUrl);
   const schoolName = tenant.name;
 
   const host = customDomainHost || 'localhost:3000';
@@ -355,7 +389,6 @@ export async function sendTenantBrandedPasswordResetEmail(options: {
           body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 24px; color: #0f172a; }
           .card { max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 24px; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); }
           .header { background-color: ${primaryColor}; padding: 32px; text-align: center; }
-          .header img { max-height: 60px; margin-bottom: 12px; }
           .header h1 { margin: 0; color: #ffffff; font-size: 22px; font-weight: 800; }
           .body { padding: 32px; }
           .greeting { font-size: 16px; font-weight: 700; color: #0f172a; margin-bottom: 12px; }
@@ -367,7 +400,7 @@ export async function sendTenantBrandedPasswordResetEmail(options: {
       <body>
         <div class="card">
           <div class="header">
-            ${logoUrl ? `<img src="${logoUrl}" alt="${schoolName} Logo">` : ''}
+            ${logoUrl ? `<div style="text-align: center; margin-bottom: 14px;"><img src="${logoUrl}" alt="${schoolName} Logo" style="max-height: 64px; max-width: 180px; width: auto; height: auto; object-fit: contain; border: 0; display: inline-block;"></div>` : ''}
             <h1>${schoolName}</h1>
           </div>
           <div class="body">
@@ -429,7 +462,7 @@ export async function sendTenantBrandedNotification(options: {
   const branding = (tenant.branding as any) || {};
   const primaryColor = branding.primaryColor || '#1E3A8A';
   const accentColor = branding.accentColor || '#2563EB';
-  const logoUrl = branding.logoUrl || null;
+  const logoUrl = resolveEmailLogoUrl(tenant.slug, branding.logoUrl);
   const schoolName = tenant.name;
 
   const html = `
@@ -441,7 +474,6 @@ export async function sendTenantBrandedNotification(options: {
           body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 24px; color: #0f172a; }
           .card { max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 24px; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); }
           .header { background-color: ${primaryColor}; padding: 32px; text-align: center; }
-          .header img { max-height: 60px; margin-bottom: 12px; }
           .header h1 { margin: 0; color: #ffffff; font-size: 22px; font-weight: 800; }
           .body { padding: 32px; }
           .greeting { font-size: 16px; font-weight: 700; color: #0f172a; margin-bottom: 12px; }
@@ -453,7 +485,7 @@ export async function sendTenantBrandedNotification(options: {
       <body>
         <div class="card">
           <div class="header">
-            ${logoUrl ? `<img src="${logoUrl}" alt="${schoolName} Logo">` : ''}
+            ${logoUrl ? `<div style="text-align: center; margin-bottom: 14px;"><img src="${logoUrl}" alt="${schoolName} Logo" style="max-height: 64px; max-width: 180px; width: auto; height: auto; object-fit: contain; border: 0; display: inline-block;"></div>` : ''}
             <h1>${schoolName}</h1>
           </div>
           <div class="body">
@@ -512,7 +544,7 @@ export async function sendWelcomeCredentialsEmail(options: {
   const branding = (tenant.branding as any) || {};
   const primaryColor = branding.primaryColor || '#1E3A8A';
   const accentColor = branding.accentColor || '#2563EB';
-  const logoUrl = branding.logoUrl || null;
+  const logoUrl = resolveEmailLogoUrl(slug, branding.logoUrl);
   const schoolName = tenant.name;
 
   const portalPath = role === 'student' || role === 'parent' ? '/portal' : '/login';
@@ -536,7 +568,6 @@ export async function sendWelcomeCredentialsEmail(options: {
           body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 24px; color: #0f172a; }
           .card { max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 24px; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); }
           .header { background: linear-gradient(135deg, ${primaryColor}, ${accentColor}); padding: 32px; text-align: center; }
-          .header img { max-height: 60px; margin-bottom: 12px; }
           .header h1 { margin: 0; color: #ffffff; font-size: 22px; font-weight: 800; }
           .header p { margin: 6px 0 0 0; color: rgba(255,255,255,0.85); font-size: 13px; }
           .body { padding: 32px; }
@@ -555,7 +586,7 @@ export async function sendWelcomeCredentialsEmail(options: {
       <body>
         <div class="card">
           <div class="header">
-            ${logoUrl ? `<img src="${logoUrl}" alt="${schoolName} Logo">` : ''}
+            ${logoUrl ? `<div style="text-align: center; margin-bottom: 14px;"><img src="${logoUrl}" alt="${schoolName} Logo" style="max-height: 64px; max-width: 180px; width: auto; height: auto; object-fit: contain; border: 0; display: inline-block;"></div>` : ''}
             <h1>${schoolName}</h1>
             <p>${activationUrl ? 'Activate Your Portal Account' : 'Your Portal Account Has Been Created'}</p>
           </div>
@@ -647,7 +678,7 @@ export async function sendResultPinPurchaseEmail(options: {
   const branding = (tenant.branding as any) || {};
   const primaryColor = branding.primaryColor || '#0F172A';
   const accentColor = branding.accentColor || '#2563EB';
-  const logoUrl = branding.logoUrl || null;
+  const logoUrl = resolveEmailLogoUrl(slug, branding.logoUrl);
   const schoolName = tenant.name;
 
   const checkResultUrl = getTenantUrl(
@@ -664,7 +695,6 @@ export async function sendResultPinPurchaseEmail(options: {
           body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f8fafc; margin: 0; padding: 24px; color: #0f172a; }
           .card { max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e2e8f0; border-radius: 24px; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); }
           .header { background: linear-gradient(135deg, ${primaryColor}, ${accentColor}); padding: 32px; text-align: center; }
-          .header img { max-height: 60px; margin-bottom: 12px; }
           .header h1 { margin: 0; color: #ffffff; font-size: 22px; font-weight: 800; }
           .header p { margin: 6px 0 0 0; color: rgba(255,255,255,0.9); font-size: 13px; font-weight: 500; }
           .body { padding: 32px; }
@@ -682,7 +712,7 @@ export async function sendResultPinPurchaseEmail(options: {
       <body>
         <div class="card">
           <div class="header">
-            ${logoUrl ? `<img src="${logoUrl}" alt="${schoolName} Logo">` : ''}
+            ${logoUrl ? `<div style="text-align: center; margin-bottom: 14px;"><img src="${logoUrl}" alt="${schoolName} Logo" style="max-height: 64px; max-width: 180px; width: auto; height: auto; object-fit: contain; border: 0; display: inline-block;"></div>` : ''}
             <h1>${schoolName}</h1>
             <p>Official Online Result Checker PIN Receipt</p>
           </div>
