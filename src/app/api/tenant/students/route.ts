@@ -638,6 +638,7 @@ export async function PATCH(req: NextRequest) {
       ...(guardianName !== undefined && { guardianName: guardianName ? guardianName.trim() : null }),
       ...(guardianEmail !== undefined && { guardianEmail: guardianEmail ? guardianEmail.trim() : null }),
       ...(guardianPhone !== undefined && { guardianPhone: guardianPhone ? guardianPhone.trim() : null }),
+      ...(body.bloodGroup !== undefined && { bloodGroup: body.bloodGroup || null }),
     };
 
     // Update Student record with fail-safe resilience

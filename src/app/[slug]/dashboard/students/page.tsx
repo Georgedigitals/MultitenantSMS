@@ -515,6 +515,7 @@ export default async function StudentsPage({ params, searchParams }: StudentsPag
                               club: guardian?.club || guardian?.society || '',
                               favColor: guardian?.favColor || guardian?.favoriteColor || '',
                               avatarUrl: guardian?.avatarUrl || '',
+                              bloodGroup: guardian?.bloodGroup || (e.student.guardianContactInfo as any)?.bloodGroup || '',
                               currentClassLevelId: e.classLevel.id,
                               departmentTrack: guardian?.departmentTrack || 'general',
                             }}

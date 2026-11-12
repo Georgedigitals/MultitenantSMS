@@ -44,6 +44,7 @@ export function AddStudentModal({
   const [guardianEmail, setGuardianEmail] = useState('');
   const [gender, setGender] = useState('');
   const [dob, setDob] = useState('');
+  const [bloodGroup, setBloodGroup] = useState('');
   const [height, setHeight] = useState('');
   const [weight, setWeight] = useState('');
   const [club, setClub] = useState('');
@@ -101,6 +102,7 @@ export function AddStudentModal({
     setGuardianEmail('');
     setGender('');
     setDob('');
+    setBloodGroup('');
     setHeight('');
     setWeight('');
     setClub('');
@@ -161,6 +163,7 @@ export function AddStudentModal({
             email: guardianEmail.trim() || undefined,
             gender: gender || undefined,
             dob: dob || undefined,
+            bloodGroup: bloodGroup || undefined,
             height: height.trim() || undefined,
             weight: weight.trim() || undefined,
             club: club.trim() || undefined,
@@ -643,6 +646,24 @@ export function AddStudentModal({
                             onChange={(e) => setDob(e.target.value)}
                             className="w-full text-xs rounded-xl border border-slate-300 px-3 py-2.5"
                           />
+                        </div>
+                        <div>
+                          <label className="block text-[11px] font-semibold text-slate-600 mb-1">Blood Group</label>
+                          <select
+                            value={bloodGroup}
+                            onChange={(e) => setBloodGroup(e.target.value)}
+                            className="w-full text-xs rounded-xl border border-slate-300 px-3 py-2.5 font-bold"
+                          >
+                            <option value="">Not specified</option>
+                            <option value="O+">O+</option>
+                            <option value="O-">O-</option>
+                            <option value="A+">A+</option>
+                            <option value="A-">A-</option>
+                            <option value="B+">B+</option>
+                            <option value="B-">B-</option>
+                            <option value="AB+">AB+</option>
+                            <option value="AB-">AB-</option>
+                          </select>
                         </div>
                         <div>
                           <label className="block text-[11px] font-semibold text-slate-600 mb-1">Height</label>

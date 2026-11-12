@@ -19,6 +19,7 @@ export function AddStaffModal({ slug }: AddStaffModalProps) {
   const [roleBase, setRoleBase] = useState<'teacher' | 'admin'>('teacher');
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
+  const [bloodGroup, setBloodGroup] = useState('');
   const [avatarUrl, setAvatarUrl] = useState('');
 
   // Success credentials display
@@ -29,6 +30,7 @@ export function AddStaffModal({ slug }: AddStaffModalProps) {
     setRoleBase('teacher');
     setEmail('');
     setPhone('');
+    setBloodGroup('');
     setAvatarUrl('');
     setError(null);
     setCredentials(null);
@@ -69,6 +71,7 @@ export function AddStaffModal({ slug }: AddStaffModalProps) {
           contactInfo: {
             email: email.trim() || undefined,
             phone: phone.trim() || undefined,
+            bloodGroup: bloodGroup || undefined,
             avatarUrl: avatarUrl || undefined,
           },
         }),
@@ -216,21 +219,44 @@ export function AddStaffModal({ slug }: AddStaffModalProps) {
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                      Email Address
-                    </label>
-                    <input
-                      type="email"
-                      placeholder="e.g. teacher@school.edu"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      className="w-full text-xs rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-slate-800 shadow-2xs focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-hidden transition"
-                    />
-                    <p className="text-[11px] text-slate-400 mt-1">
-                      A temporary password will be sent to this email, or by SMS if only a phone is provided.
-                    </p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Email Address
+                      </label>
+                      <input
+                        type="email"
+                        placeholder="e.g. teacher@school.edu"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        className="w-full text-xs rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-slate-800 shadow-2xs focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-hidden transition"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Blood Group
+                      </label>
+                      <select
+                        value={bloodGroup}
+                        onChange={(e) => setBloodGroup(e.target.value)}
+                        className="w-full text-xs rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-slate-800 shadow-2xs focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-hidden transition font-bold"
+                      >
+                        <option value="">Not specified</option>
+                        <option value="O+">O+</option>
+                        <option value="O-">O-</option>
+                        <option value="A+">A+</option>
+                        <option value="A-">A-</option>
+                        <option value="B+">B+</option>
+                        <option value="B-">B-</option>
+                        <option value="AB+">AB+</option>
+                        <option value="AB-">AB-</option>
+                      </select>
+                    </div>
                   </div>
+                  <p className="text-[11px] text-slate-400">
+                    A temporary password will be sent to this email, or by SMS if only a phone is provided.
+                  </p>
 
                   <div>
                     <ImageUploadInput label="Passport photo" value={avatarUrl} onChange={setAvatarUrl} endpoint="/api/tenant/upload" folder="staff" helperText="Used on staff ID cards. PNG, JPEG or WebP up to 5MB." previewShape="square" />

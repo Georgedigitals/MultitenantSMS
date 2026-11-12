@@ -291,7 +291,7 @@ export default function IdCardsClient({
                       </div>
                       <div className="flex justify-between items-center border-b border-slate-100 pb-0.5">
                         <span className="text-slate-400 uppercase text-[9px] font-bold">Blood Group</span>
-                        <span className="font-bold text-slate-800">{card.bloodGroup || 'O+'}</span>
+                        <span className="font-bold text-slate-800">{card.bloodGroup || '—'}</span>
                       </div>
                       <div className="flex justify-between items-center">
                         <span className="text-slate-400 uppercase text-[9px] font-bold">Expires</span>

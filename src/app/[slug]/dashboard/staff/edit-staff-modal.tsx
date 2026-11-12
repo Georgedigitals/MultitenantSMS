@@ -16,6 +16,7 @@ interface StaffToEdit {
     phone?: string;
     designation?: string;
     avatarUrl?: string;
+    bloodGroup?: string;
   } | null;
 }
 
@@ -39,6 +40,7 @@ export function EditStaffModal({ slug, staff, onSuccess }: EditStaffModalProps) 
   const [phone, setPhone] = useState(staff.contactInfo?.phone || '');
   const [email, setEmail] = useState(staff.contactInfo?.email || '');
   const [designation, setDesignation] = useState(staff.contactInfo?.designation || '');
+  const [bloodGroup, setBloodGroup] = useState(staff.contactInfo?.bloodGroup || '');
   const [avatarUrl, setAvatarUrl] = useState(staff.contactInfo?.avatarUrl || '');
   const [staffCode, setStaffCode] = useState(staff.staffCode || '');
   const [attendancePin, setAttendancePin] = useState(staff.attendancePin || '1234');
@@ -49,6 +51,7 @@ export function EditStaffModal({ slug, staff, onSuccess }: EditStaffModalProps) 
     setPhone(staff.contactInfo?.phone || '');
     setEmail(staff.contactInfo?.email || '');
     setDesignation(staff.contactInfo?.designation || '');
+    setBloodGroup(staff.contactInfo?.bloodGroup || '');
     setAvatarUrl(staff.contactInfo?.avatarUrl || '');
     setStaffCode(staff.staffCode || '');
     setAttendancePin(staff.attendancePin || '1234');
@@ -81,6 +84,7 @@ export function EditStaffModal({ slug, staff, onSuccess }: EditStaffModalProps) 
             email: email.trim() || undefined,
             designation: designation.trim() || undefined,
             avatarUrl: avatarUrl || undefined,
+            bloodGroup: bloodGroup || undefined,
           },
           staffCode: staffCode.trim() || undefined,
           attendancePin: attendancePin.trim() || undefined,
@@ -212,17 +216,40 @@ export function EditStaffModal({ slug, staff, onSuccess }: EditStaffModalProps) 
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                  Official Designation / Title
-                </label>
-                <input
-                  type="text"
-                  value={designation}
-                  onChange={(e) => setDesignation(e.target.value)}
-                  placeholder="e.g. Senior Mathematics Master"
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all shadow-2xs"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                    Official Designation / Title
+                  </label>
+                  <input
+                    type="text"
+                    value={designation}
+                    onChange={(e) => setDesignation(e.target.value)}
+                    placeholder="e.g. Senior Mathematics Master"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all shadow-2xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                    Blood Group
+                  </label>
+                  <select
+                    value={bloodGroup}
+                    onChange={(e) => setBloodGroup(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all shadow-2xs font-bold"
+                  >
+                    <option value="">Not specified</option>
+                    <option value="O+">O+</option>
+                    <option value="O-">O-</option>
+                    <option value="A+">A+</option>
+                    <option value="A-">A-</option>
+                    <option value="B+">B+</option>
+                    <option value="B-">B-</option>
+                    <option value="AB+">AB+</option>
+                    <option value="AB-">AB-</option>
+                  </select>
+                </div>
               </div>
 
               <ImageUploadInput label="Passport photo" value={avatarUrl} onChange={setAvatarUrl} endpoint="/api/tenant/upload" folder="staff" helperText="Used on staff ID cards. PNG, JPEG or WebP up to 5MB." previewShape="square" />

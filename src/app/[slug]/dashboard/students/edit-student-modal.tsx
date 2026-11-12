@@ -22,6 +22,7 @@ interface StudentToEdit {
   club?: string | null;
   favColor?: string | null;
   avatarUrl?: string | null;
+  bloodGroup?: string | null;
   guardianContactInfo?: string | null;
   currentClassLevelId?: string;
   departmentTrack?: string | null;
@@ -70,6 +71,7 @@ export function EditStudentModal({
   const [club, setClub] = useState(student.club || '');
   const [favColor, setFavColor] = useState(student.favColor || '');
   const [avatarUrl, setAvatarUrl] = useState(student.avatarUrl || '');
+  const [bloodGroup, setBloodGroup] = useState(student.bloodGroup || '');
   const [departmentTrack, setDepartmentTrack] = useState(student.departmentTrack || 'general');
 
   const selectedClass = usableLevels.find((lvl) => lvl.id === classLevelId);
@@ -91,6 +93,7 @@ export function EditStudentModal({
     setClub(student.club || '');
     setFavColor(student.favColor || '');
     setAvatarUrl(student.avatarUrl || '');
+    setBloodGroup(student.bloodGroup || '');
     setError(null);
     setSuccess(false);
     setIsOpen(true);
@@ -126,7 +129,7 @@ export function EditStudentModal({
           guardianName: guardianName.trim() || null,
           guardianPhone: guardianPhone.trim() || null,
           guardianEmail: guardianEmail.trim() || null,
-          guardianContactInfo: { height, weight, club, favColor, avatarUrl, departmentTrack },
+          guardianContactInfo: { height, weight, club, favColor, avatarUrl, departmentTrack, bloodGroup: bloodGroup || null },
           classLevelId,
           sessionId,
         }),
@@ -307,6 +310,24 @@ export function EditStudentModal({
                   <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500">Report card profile</h4>
                   <div className="grid grid-cols-2 gap-3">
                     <div><label className="block text-xs font-semibold text-slate-700 mb-1">Date of birth</label><input type="date" value={dob ? new Date(dob).toISOString().slice(0, 10) : ''} onChange={(e) => setDob(e.target.value)} className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm" /></div>
+                    <div>
+                      <label className="block text-xs font-semibold text-slate-700 mb-1">Blood Group</label>
+                      <select
+                        value={bloodGroup}
+                        onChange={(e) => setBloodGroup(e.target.value)}
+                        className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm font-bold bg-white"
+                      >
+                        <option value="">Not specified</option>
+                        <option value="O+">O+</option>
+                        <option value="O-">O-</option>
+                        <option value="A+">A+</option>
+                        <option value="A-">A-</option>
+                        <option value="B+">B+</option>
+                        <option value="B-">B-</option>
+                        <option value="AB+">AB+</option>
+                        <option value="AB-">AB-</option>
+                      </select>
+                    </div>
                     <div><label className="block text-xs font-semibold text-slate-700 mb-1">Height</label><input value={height} onChange={(e) => setHeight(e.target.value)} maxLength={30} placeholder="e.g. 142 cm" className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm" /></div>
                     <div><label className="block text-xs font-semibold text-slate-700 mb-1">Weight</label><input value={weight} onChange={(e) => setWeight(e.target.value)} maxLength={30} placeholder="e.g. 38 kg" className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm" /></div>
                     <div><label className="block text-xs font-semibold text-slate-700 mb-1">Club / society</label><input value={club} onChange={(e) => setClub(e.target.value)} maxLength={100} className="w-full rounded-xl border border-slate-300 px-3 py-2.5 text-sm" /></div>
