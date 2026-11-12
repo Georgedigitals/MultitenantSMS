@@ -6,17 +6,41 @@ import { verifyPassword, hashPassword } from '@/lib/auth/passwords';
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
-    const { slug, currentPassword, newPassword } = body;
+    const body = await req.json().catch(() => ({}));
+    const { currentPassword, newPassword } = body;
+    let slug = typeof body.slug === 'string' ? body.slug.trim().toLowerCase() : '';
+    let domain = '';
 
-    if (!slug || !currentPassword || !newPassword) {
-      return NextResponse.json({ error: 'slug, currentPassword, and newPassword are required' }, { status: 400 });
+    // Fallback: extract slug from query parameters
+    if (!slug) {
+      slug = (req.nextUrl.searchParams.get('slug') || '').trim().toLowerCase();
     }
-    if (newPassword.length < 8) {
+
+    // Fallback: detect tenant slug or custom domain from host headers
+    if (!slug) {
+      const host = (req.headers.get('x-forwarded-host') || req.headers.get('host') || '').split(':')[0].toLowerCase();
+      const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'eduorg.ng').split(':')[0].toLowerCase();
+
+      if (host && host !== rootDomain && !host.startsWith('www.')) {
+        if (host.endsWith(`.${rootDomain}`)) {
+          slug = host.replace(`.${rootDomain}`, '');
+        } else if (!host.includes('localhost') && host.includes('.')) {
+          domain = host;
+        }
+      }
+    }
+
+    if ((!slug && !domain) || !currentPassword || !newPassword) {
+      return NextResponse.json(
+        { error: 'slug, currentPassword, and newPassword are required' },
+        { status: 400 }
+      );
+    }
+    if (typeof newPassword !== 'string' || newPassword.length < 8) {
       return NextResponse.json({ error: 'New password must be at least 8 characters' }, { status: 400 });
     }
 
-    const tenant = await getTenantContext({ slug });
+    const tenant = slug ? await getTenantContext({ slug }) : await getTenantContext({ domain });
     if (!tenant) return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
 
     const auth = await getTenantUserFromCookies(tenant.id);

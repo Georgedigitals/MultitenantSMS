@@ -180,8 +180,8 @@ export default function TenantSidebar({
       return;
     }
 
-    if (newPassword.length < 6) {
-      setPasswordError('New password must be at least 6 characters long.');
+    if (newPassword.length < 8) {
+      setPasswordError('New password must be at least 8 characters long.');
       return;
     }
 
@@ -196,6 +196,7 @@ export default function TenantSidebar({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          slug,
           currentPassword,
           newPassword,
           confirmPassword,
