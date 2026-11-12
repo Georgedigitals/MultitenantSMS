@@ -56,16 +56,24 @@ export function ImpersonationBanner({ currentTenantSlug }: ImpersonationBannerPr
   const handleExit = async () => {
     setEnding(true);
     try {
+      // Clear cookies on client side immediately
+      document.cookie = 'bms_impersonate_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      document.cookie = 'bms_tenant_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+
       const res = await fetch('/api/admin/impersonate/end', { method: 'POST' });
       const data = await res.json();
       if (data.redirectUrl) {
         window.location.href = data.redirectUrl;
       } else {
-        window.location.href = '/admin/tenants';
+        const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost:3000';
+        const protocol = window.location.protocol;
+        window.location.href = `${protocol}//${rootDomain}/admin/tenants`;
       }
     } catch (err) {
       console.error('Failed to end impersonation', err);
-      setEnding(false);
+      const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost:3000';
+      const protocol = window.location.protocol;
+      window.location.href = `${protocol}//${rootDomain}/admin/tenants`;
     }
   };
 

@@ -23,9 +23,16 @@ export async function POST(req: NextRequest) {
     cookieStore.delete(IMPERSONATE_COOKIE_NAME);
     cookieStore.delete(TENANT_COOKIE_NAME);
 
+    // Build the absolute root domain URL so the browser jumps off the tenant subdomain
+    const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost:3000').toLowerCase();
+    const forwardedProto = req.headers.get('x-forwarded-proto');
+    const isLocal = rootDomain.includes('localhost') || rootDomain.includes('127.0.0.1');
+    const protocol = forwardedProto || (process.env.NODE_ENV === 'production' && !isLocal ? 'https' : 'http');
+    const rootAdminUrl = `${protocol}://${rootDomain}/admin/tenants`;
+
     return NextResponse.json({
       success: true,
-      redirectUrl: '/admin/tenants',
+      redirectUrl: rootAdminUrl,
     });
   } catch (error: any) {
     return NextResponse.json(
