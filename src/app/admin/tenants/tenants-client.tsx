@@ -1054,9 +1054,18 @@ export function TenantsClient({ initialTenants, availablePlans }: TenantsClientP
  <button
  type="submit"
  disabled={impersonating || !impersonateReason.trim()}
- className="px-5 py-2 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl shadow-lg shadow-red-600/30 transition cursor-pointer disabled:opacity-50"
+ className="px-5 py-2.5 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl shadow-lg shadow-red-600/30 transition cursor-pointer disabled:opacity-50 inline-flex items-center justify-center gap-2"
  >
- {impersonating ? 'Launching Session...' : 'Confirm & Launch Impersonation <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 inline-block mr-1"><path fillRule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v2H2v-4l4.257-4.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z" clipRule="evenodd" /></svg>'}
+ {impersonating ? (
+   'Launching Session...'
+ ) : (
+   <>
+     <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 shrink-0" aria-hidden="true">
+       <path fillRule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v2H2v-4l4.257-4.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z" clipRule="evenodd" />
+     </svg>
+     <span>Confirm & Launch Impersonation</span>
+   </>
+ )}
  </button>
  </div>
  </form>

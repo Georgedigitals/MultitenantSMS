@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { CsvImportModal } from '@/components/csv-import-modal';
 import { AddParentModal, EditParentModal, ManageWardsModal, StudentOption } from '@/components/parent-modals';
+import { ResetStudentPinModal } from '@/app/[slug]/dashboard/students/reset-student-pin-modal';
 
 interface WardItem {
   id: string;
@@ -352,10 +353,16 @@ export default function ParentsClient({
                               parent.wards.map((ward) => (
                                 <span
                                   key={ward.id}
-                                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-blue-50 border border-blue-200/80 text-[11px] font-semibold text-blue-800"
+                                  className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md bg-blue-50 border border-blue-200/80 text-[11px] font-semibold text-blue-800"
                                 >
                                   <span>{ward.name}</span>
                                   <span className="text-[10px] font-medium text-blue-500">({ward.classLevel})</span>
+                                  <ResetStudentPinModal
+                                    slug={slug}
+                                    studentId={ward.id}
+                                    studentName={ward.name}
+                                    buttonClassName="p-0.5 text-blue-600 hover:text-amber-600 hover:bg-amber-100/80 rounded transition-colors"
+                                  />
                                 </span>
                               ))
                             )}

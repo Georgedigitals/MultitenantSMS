@@ -17,12 +17,12 @@ import { isSeniorSecondaryClass, getTenantCurriculum } from '@/lib/curriculum';
 
 interface StudentsPageProps {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ classLevelId?: string }>;
+  searchParams: Promise<{ classLevelId?: string; sessionId?: string }>;
 }
 
 export default async function StudentsPage({ params, searchParams }: StudentsPageProps) {
   const { slug } = await params;
-  const { classLevelId } = await searchParams;
+  const { classLevelId, sessionId: requestedSessionId } = await searchParams;
 
   const tenant = await getTenantContext({ slug });
   if (!tenant) notFound();
@@ -43,6 +43,14 @@ export default async function StudentsPage({ params, searchParams }: StudentsPag
     label: s.label,
     isCurrent: s.isCurrent,
   }));
+
+  // Determine active session filter:
+  // - If user explicitly selected 'all', no session filter is applied.
+  // - If user passed a specific session ID, filter by that session.
+  // - Otherwise, default to current active session ID.
+  const activeSessionId = requestedSessionId !== undefined
+    ? (requestedSessionId === 'all' ? '' : requestedSessionId)
+    : (currentSession?.id || '');
 
   const isTeacher = auth.user.role === 'teacher';
 
@@ -83,26 +91,83 @@ export default async function StudentsPage({ params, searchParams }: StudentsPag
   const allSubjects = await db.subject.findMany({ select: { id: true, name: true } }).catch(() => []);
   const subjectsMap = new Map<string, string>(allSubjects.map((s: any) => [s.id, s.name]));
 
-  // Query enrollments for active session safely, scoped to teacher classes
-  const whereEnrollment: any = {};
-  if (currentSession) whereEnrollment.sessionId = currentSession.id;
+  // Build enrollment filter with tenant isolation
+  const enrollmentFilter: any = {
+    student: { tenantId: tenant.id },
+  };
+
+  if (activeSessionId) {
+    enrollmentFilter.sessionId = activeSessionId;
+  }
 
   if (isTeacher) {
     if (classLevelId && teacherClassLevelIds.includes(classLevelId)) {
-      whereEnrollment.classLevelId = classLevelId;
+      enrollmentFilter.classLevelId = classLevelId;
     } else {
-      whereEnrollment.classLevelId = { in: teacherClassLevelIds };
+      enrollmentFilter.classLevelId = { in: teacherClassLevelIds };
     }
   } else if (classLevelId) {
-    whereEnrollment.classLevelId = classLevelId;
+    enrollmentFilter.classLevelId = classLevelId;
   }
 
-  const rawEnrollments = await db.enrollment.findMany({
-    where: whereEnrollment,
+  let rawEnrollments: any[] = await prisma.enrollment.findMany({
+    where: enrollmentFilter,
+    include: {
+      session: { select: { id: true, label: true } },
+    },
+    orderBy: { createdAt: 'desc' },
   }).catch(() => []);
 
-  const studentIds = rawEnrollments.map((e: any) => e.studentId);
-  const classLevelIds = rawEnrollments.map((e: any) => e.classLevelId);
+  // CRITICAL RESILIENCE FOR ZERO-STUDENT SESSION DISCONNECT:
+  // If the default active session filter returned 0 enrollments, and user did NOT explicitly filter by a specific session,
+  // automatically fall back to fetching all enrolled students across sessions so no student is ever hidden.
+  let isCrossSessionFallback = false;
+  if (rawEnrollments.length === 0 && requestedSessionId === undefined && !classLevelId && !isTeacher) {
+    const fallbackEnrollments = await prisma.enrollment.findMany({
+      where: {
+        student: { tenantId: tenant.id },
+      },
+      include: {
+        session: { select: { id: true, label: true } },
+      },
+      orderBy: { createdAt: 'desc' },
+    }).catch(() => []);
+
+    if (fallbackEnrollments.length > 0) {
+      rawEnrollments = fallbackEnrollments;
+      isCrossSessionFallback = true;
+    }
+  }
+
+  const studentIds = Array.from(new Set(rawEnrollments.map((e: any) => e.studentId)));
+
+  // If viewing all sessions or cross-session fallback without class filter,
+  // also check if any student exists in the school who has no enrollment (e.g. power cut during onboarding)
+  if (!isTeacher && (!classLevelId || classLevelId === '') && (requestedSessionId === 'all' || isCrossSessionFallback || !currentSession)) {
+    const enrolledSet = new Set(studentIds);
+    const unenrolledStudents = await prisma.student.findMany({
+      where: {
+        tenantId: tenant.id,
+        id: { notIn: Array.from(enrolledSet) },
+      },
+      orderBy: { name: 'asc' },
+    }).catch(() => []);
+
+    for (const uns of unenrolledStudents) {
+      rawEnrollments.push({
+        id: `unassigned-${uns.id}`,
+        studentId: uns.id,
+        classLevelId: '',
+        sessionId: '',
+        status: 'active' as const,
+        createdAt: uns.createdAt,
+        session: { id: '', label: 'Unassigned' },
+      });
+      studentIds.push(uns.id);
+    }
+  }
+
+  const classLevelIds = Array.from(new Set(rawEnrollments.map((e: any) => e.classLevelId))).filter(Boolean);
 
   const studentsMap = new Map<string, any>();
   if (studentIds.length > 0) {
@@ -155,10 +220,25 @@ export default async function StudentsPage({ params, searchParams }: StudentsPag
     for (const l of levels) classLevelsMap.set(l.id, l);
   }
 
-  const enrollments = rawEnrollments.map((e: any) => ({
+  // Deduplicate when viewing cross-session or all sessions so each student appears once with their latest class
+  const seenStudentIds = new Set<string>();
+  const dedupedEnrollments: any[] = [];
+  for (const e of rawEnrollments) {
+    if (activeSessionId && !isCrossSessionFallback) {
+      dedupedEnrollments.push(e);
+    } else {
+      if (!seenStudentIds.has(e.studentId)) {
+        seenStudentIds.add(e.studentId);
+        dedupedEnrollments.push(e);
+      }
+    }
+  }
+
+  const enrollments = dedupedEnrollments.map((e: any) => ({
     ...e,
     student: studentsMap.get(e.studentId) || { name: 'Unknown Student', guardianContactInfo: null },
     classLevel: classLevelsMap.get(e.classLevelId) || { name: 'Unassigned', orderIndex: 0 },
+    session: e.session || { label: 'Unassigned' },
   }));
 
   enrollments.sort((a: any, b: any) => {
@@ -176,13 +256,34 @@ export default async function StudentsPage({ params, searchParams }: StudentsPag
         <div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Student Roster</h1>
           <p className="text-sm text-slate-500">
-            Active Session: {currentSession ? currentSession.label : 'No Active Session'} • {enrollments.length} Enrolled
+            {isCrossSessionFallback
+              ? `Showing all school students (${enrollments.length} Enrolled) • Active Session is ${currentSession ? currentSession.label : 'None'}`
+              : activeSessionId
+              ? `Session: ${sessions.find((s: any) => s.id === activeSessionId)?.label || currentSession?.label || 'Custom'} • ${enrollments.length} Enrolled`
+              : `All Academic Sessions • ${enrollments.length} Enrolled`}
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
-          {/* Filter by class level (within tenant range §4.1) */}
-          <form method="GET" className="flex items-center gap-2">
+          {/* Filter by academic session and class level */}
+          <form method="GET" className="flex flex-wrap items-center gap-2">
+            <label htmlFor="sessionId" className="text-xs font-semibold text-slate-600">
+              Session:
+            </label>
+            <select
+              id="sessionId"
+              name="sessionId"
+              defaultValue={requestedSessionId !== undefined ? requestedSessionId : (currentSession?.id || 'all')}
+              className="text-xs rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-slate-700 shadow-2xs focus:ring-2 focus:ring-blue-500 font-medium"
+            >
+              <option value="all">All Academic Sessions</option>
+              {sessions.map((s: any) => (
+                <option key={s.id} value={s.id}>
+                  {s.label} {s.isCurrent ? '★ (Active)' : ''}
+                </option>
+              ))}
+            </select>
+
             <label htmlFor="classLevelId" className="text-xs font-semibold text-slate-600">
               Class:
             </label>
@@ -217,6 +318,7 @@ export default async function StudentsPage({ params, searchParams }: StudentsPag
                   'Admission Number',
                   'Student Name',
                   'Current Class',
+                  'Session',
                   'Academic Track',
                   'Enrollment Status',
                   'Guardian Name',
@@ -230,6 +332,7 @@ export default async function StudentsPage({ params, searchParams }: StudentsPag
                   e.student.admissionNumber || (e.student.guardianContactInfo as any)?.admissionNo || '',
                   e.student.name,
                   e.classLevel.name,
+                  e.session?.label || '',
                   (e.student.guardianContactInfo as any)?.departmentTrack || (isSeniorSecondaryClass(e.classLevel) ? 'general' : 'core'),
                   e.status,
                   e.student.guardianContactInfo?.guardianName || e.student.guardianContactInfo?.name || '',
@@ -294,6 +397,7 @@ export default async function StudentsPage({ params, searchParams }: StudentsPag
             <tr>
               <th className="px-6 py-3.5">Student Name</th>
               <th className="px-6 py-3.5">Class Level</th>
+              <th className="px-6 py-3.5">Academic Session</th>
               <th className="px-6 py-3.5">Academic Track</th>
               <th className="px-6 py-3.5">Status</th>
               <th className="px-6 py-3.5">Guardian Contact</th>
@@ -304,7 +408,7 @@ export default async function StudentsPage({ params, searchParams }: StudentsPag
           <tbody className="divide-y divide-slate-100">
             {enrollments.length === 0 ? (
               <tr>
-                <td colSpan={auth.user.role === 'school_admin' ? 7 : 6} className="px-6 py-12 text-center text-slate-400 text-sm">
+                <td colSpan={auth.user.role === 'school_admin' ? 8 : 7} className="px-6 py-12 text-center text-slate-400 text-sm">
                   No enrolled students found for this selection.
                 </td>
               </tr>
@@ -325,6 +429,11 @@ export default async function StudentsPage({ params, searchParams }: StudentsPag
                     <td className="px-6 py-4">
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
                         {e.classLevel.name}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-semibold text-slate-700 bg-slate-100 border border-slate-200 font-mono">
+                        {e.session?.label || 'Unassigned'}
                       </span>
                     </td>
                     <td className="px-6 py-4">
@@ -411,7 +520,7 @@ export default async function StudentsPage({ params, searchParams }: StudentsPag
                             }}
                             usableLevels={usableLevels}
                             sessions={sessions}
-                            currentSessionId={currentSession?.id}
+                            currentSessionId={e.session?.id || currentSession?.id}
                           />
                           <ResetStudentPinModal
                             slug={slug}

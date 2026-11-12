@@ -8,6 +8,7 @@ interface ResetStudentPinModalProps {
   studentId: string;
   studentName: string;
   admissionNumber?: string | null;
+  buttonClassName?: string;
 }
 
 export function ResetStudentPinModal({
@@ -15,6 +16,7 @@ export function ResetStudentPinModal({
   studentId,
   studentName,
   admissionNumber,
+  buttonClassName,
 }: ResetStudentPinModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -81,9 +83,9 @@ export function ResetStudentPinModal({
         onClick={handleOpen}
         type="button"
         title={`Reset login PIN for ${studentName}`}
-        className="p-1.5 text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors border border-transparent hover:border-amber-200"
+        className={buttonClassName || "p-1.5 text-slate-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors border border-transparent hover:border-amber-200"}
       >
-        <KeyRound className="w-4 h-4" />
+        <KeyRound className="w-3.5 h-3.5" />
       </button>
 
       {isOpen && (
