@@ -32,12 +32,22 @@ export default async function EmailSettingsPage({ params }: EmailSettingsPagePro
     where: { tenantId: tenant.id },
   });
 
+  const adminStaff = await prisma.staff.findFirst({
+    where: { tenantId: tenant.id, roleBase: 'admin' },
+    select: { contactInfo: true },
+  });
+  const staffEmail = (adminStaff?.contactInfo as any)?.email;
+  const initialTenantEmail =
+    emailConfig?.replyTo ||
+    (typeof staffEmail === 'string' && staffEmail.includes('@') ? staffEmail.trim() : '') ||
+    ((auth.user as any).email || auth.user.username);
+
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <EmailSettingsClient
         slug={slug}
         tenantName={tenant.name}
-        tenantEmail={(auth.user as any).email || auth.user.username}
+        tenantEmail={initialTenantEmail}
         initialConfig={
           emailConfig
             ? {
@@ -47,7 +57,7 @@ export default async function EmailSettingsPage({ params }: EmailSettingsPagePro
                 user: emailConfig.user,
                 fromName: emailConfig.fromName || tenant.name,
                 fromEmail: emailConfig.fromEmail || emailConfig.user,
-                replyTo: emailConfig.replyTo || emailConfig.fromEmail || emailConfig.user,
+                replyTo: emailConfig.replyTo || emailConfig.fromEmail || initialTenantEmail,
                 verified: emailConfig.verified,
                 updatedAt: emailConfig.updatedAt.toISOString(),
               }

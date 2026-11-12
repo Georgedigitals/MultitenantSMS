@@ -43,7 +43,8 @@ function getPlatformSmtpConfig(): SmtpConfig | null {
 }
 
 function getOrCreateTransporter(cacheKey: string, config: SmtpConfig): Transporter {
-  const fullCacheKey = `${cacheKey}_${config.host}_${config.port}_${config.user}_${config.pass}`;
+  const cleanPass = config.pass.replace(/\s+/g, '');
+  const fullCacheKey = `${cacheKey}_${config.host}_${config.port}_${config.user}_${cleanPass}`;
   const existing = transporterCache.get(fullCacheKey);
   if (existing) {
     return existing;
@@ -55,11 +56,11 @@ function getOrCreateTransporter(cacheKey: string, config: SmtpConfig): Transport
     secure: config.secure,
     auth: {
       user: config.user,
-      pass: config.pass,
+      pass: cleanPass,
     },
-    connectionTimeout: 6000,
-    greetingTimeout: 6000,
-    socketTimeout: 6000,
+    connectionTimeout: 8000,
+    greetingTimeout: 8000,
+    socketTimeout: 8000,
   });
 
   transporterCache.set(fullCacheKey, transporter);
@@ -72,17 +73,18 @@ function getOrCreateTransporter(cacheKey: string, config: SmtpConfig): Transport
  */
 export async function verifySmtpConnection(config: SmtpConfig): Promise<{ success: boolean; error?: string }> {
   try {
+    const cleanPass = (config.pass || '').replace(/\s+/g, '');
     const tempTransporter = nodemailer.createTransport({
       host: config.host,
       port: config.port,
       secure: config.secure,
       auth: {
         user: config.user,
-        pass: config.pass,
+        pass: cleanPass,
       },
-      connectionTimeout: 3000,
-      greetingTimeout: 3000,
-      socketTimeout: 3000,
+      connectionTimeout: 8000,
+      greetingTimeout: 8000,
+      socketTimeout: 8000,
     });
 
     await tempTransporter.verify();
@@ -122,7 +124,7 @@ export async function dispatchEmail(options: SendEmailOptions): Promise<{ succes
       port: customSmtp.port,
       secure: customSmtp.secure,
       user: customSmtp.user,
-      pass: customSmtp.pass,
+      pass: customSmtp.pass.replace(/\s+/g, ''),
     };
 
     const senderDisplay = fromName || customSmtp.fromName || 'School Portal';
@@ -154,10 +156,40 @@ export async function dispatchEmail(options: SendEmailOptions): Promise<{ succes
     ? defaultPlatformFrom.match(/<([^>]+)>/)?.[1] || defaultPlatformFrom
     : defaultPlatformFrom;
 
-  // Mask display name with Tenant Name or Platform Name
-  const senderDisplay = fromName || 'EduSaaS OS';
+  // Resolve tenant-specific display name & direct reply-to address
+  let resolvedSenderDisplay = fromName || customSmtp?.fromName;
+  let resolvedReplyTo = replyTo || customSmtp?.replyTo || fromEmail;
+
+  if (tenantId && (!resolvedSenderDisplay || !resolvedReplyTo)) {
+    try {
+      const tenant = await prisma.tenant.findUnique({
+        where: { id: tenantId },
+        select: {
+          name: true,
+          staff: {
+            where: { roleBase: 'admin' },
+            select: { contactInfo: true },
+            take: 1,
+          },
+        },
+      });
+      if (!resolvedSenderDisplay && tenant?.name) {
+        resolvedSenderDisplay = tenant.name;
+      }
+      if (!resolvedReplyTo && tenant?.staff?.[0]?.contactInfo) {
+        const cEmail = (tenant.staff[0].contactInfo as any)?.email;
+        if (cEmail && typeof cEmail === 'string' && cEmail.includes('@')) {
+          resolvedReplyTo = cEmail.trim();
+        }
+      }
+    } catch {
+      // Fallback silently
+    }
+  }
+
+  const senderDisplay = resolvedSenderDisplay || 'EduSaaS OS';
   const formattedFrom = `"${senderDisplay}" <${platformSenderAddress}>`;
-  const finalReplyTo = replyTo || fromEmail || platformSenderAddress;
+  const finalReplyTo = resolvedReplyTo || platformSenderAddress;
 
   if (platformConfig) {
     try {
