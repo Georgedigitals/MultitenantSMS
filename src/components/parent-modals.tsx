@@ -751,3 +751,180 @@ export function EditParentModal({ slug, guardian, onSuccess }: EditParentModalPr
     </>
   );
 }
+
+interface DeleteParentModalProps {
+  slug: string;
+  guardianId?: string;
+  parentName: string;
+  relationship?: string;
+  linkedWards: { id: string; name: string; classLevel?: string }[];
+  hasPortalAccount?: boolean;
+  onSuccess?: () => void;
+}
+
+export function DeleteParentModal({
+  slug,
+  guardianId,
+  parentName,
+  relationship,
+  linkedWards = [],
+  hasPortalAccount,
+  onSuccess,
+}: DeleteParentModalProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const handleDelete = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      let endpoint = `/api/tenant/parents?slug=${encodeURIComponent(slug)}`;
+      if (guardianId) {
+        endpoint += `&id=${encodeURIComponent(guardianId)}`;
+      } else if (linkedWards.length > 0) {
+        endpoint += `&studentIds=${encodeURIComponent(linkedWards.map((w) => w.id).join(','))}`;
+      } else {
+        throw new Error('No valid parent identifier found');
+      }
+
+      const res = await fetch(endpoint, {
+        method: 'DELETE',
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Failed to delete parent record');
+      }
+
+      setIsOpen(false);
+      if (onSuccess) onSuccess();
+      else window.location.reload();
+    } catch (err: any) {
+      setError(err.message || 'Failed to delete parent');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={() => {
+          setError(null);
+          setIsOpen(true);
+        }}
+        className="p-1.5 rounded-lg bg-white border border-slate-200 text-slate-400 hover:text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-colors shadow-2xs"
+        title="Delete Parent Record"
+      >
+        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+        </svg>
+      </button>
+
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200 text-left">
+          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-rose-50/50">
+              <div className="flex items-center gap-2">
+                <div className="w-8 h-8 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center">
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-900">Delete Parent / Guardian</h3>
+                  <p className="text-[11px] text-slate-500">Remove parent account & credentials</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                disabled={loading}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-200/60"
+              >
+                ×
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {error && (
+                <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs font-medium">
+                  {error}
+                </div>
+              )}
+
+              <p className="text-xs text-slate-600 leading-relaxed">
+                Are you sure you want to delete <strong className="text-slate-900">{parentName}</strong>
+                {relationship ? ` (${relationship})` : ''}?
+              </p>
+
+              {linkedWards.length > 0 ? (
+                <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200/80 text-amber-900 text-xs space-y-2">
+                  <div className="font-bold flex items-center gap-1.5 text-amber-800">
+                    <span>⚠️ Linked to {linkedWards.length} student{linkedWards.length > 1 ? 's' : ''}:</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {linkedWards.map((w) => (
+                      <span
+                        key={w.id}
+                        className="inline-flex items-center px-2 py-0.5 rounded bg-amber-100 text-amber-800 text-[11px] font-semibold"
+                      >
+                        {w.name} {w.classLevel ? `(${w.classLevel})` : ''}
+                      </span>
+                    ))}
+                  </div>
+                  <p className="text-[11px] text-amber-700 pt-1 leading-normal">
+                    <strong>Note:</strong> Deleting this parent will remove their portal login, but will <strong>NOT</strong> delete the student records or affect their grades, attendance, or fees.
+                  </p>
+                </div>
+              ) : (
+                <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-600 text-xs">
+                  This parent currently has no linked students. Their profile record will be permanently deleted.
+                </div>
+              )}
+
+              {hasPortalAccount && (
+                <div className="flex items-center gap-2 p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-[11px] text-emerald-800 font-medium">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                  <span>Portal user credentials will be deactivated and removed.</span>
+                </div>
+              )}
+
+              <div className="pt-3 border-t border-slate-200 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsOpen(false)}
+                  disabled={loading}
+                  className="px-4 py-2 text-xs font-bold text-slate-600 hover:text-slate-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleDelete}
+                  disabled={loading}
+                  className="px-5 py-2 text-xs font-extrabold text-white bg-rose-600 hover:bg-rose-700 rounded-xl disabled:opacity-50 transition shadow-2xs flex items-center gap-1.5"
+                >
+                  {loading ? (
+                    <>
+                      <svg className="w-3.5 h-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                      </svg>
+                      <span>Deleting...</span>
+                    </>
+                  ) : (
+                    'Permanently Delete'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

@@ -348,3 +348,144 @@ export async function PUT(req: NextRequest) {
     return NextResponse.json({ error: error.message || 'Failed to update parent' }, { status: 500 });
   }
 }
+
+export const PATCH = PUT;
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const slug = searchParams.get('slug');
+    const id = searchParams.get('id') || searchParams.get('guardianId');
+    const studentIdsParam = searchParams.get('studentIds');
+
+    if (!slug) {
+      return NextResponse.json({ error: 'Tenant slug is required' }, { status: 400 });
+    }
+
+    if (!id && !studentIdsParam) {
+      return NextResponse.json({ error: 'Parent ID or student IDs required for deletion' }, { status: 400 });
+    }
+
+    const tenant = await getTenantContext({ slug });
+    if (!tenant) {
+      return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
+    }
+
+    const auth = await getTenantUserFromCookies(tenant.id);
+    if (!auth || auth.user.role !== 'school_admin') {
+      return NextResponse.json({ error: 'Forbidden: Only school administrators can delete parent records' }, { status: 403 });
+    }
+
+    // 1. If explicit guardian record ID is provided
+    if (id) {
+      const existingGuardian = await prisma.guardian.findFirst({
+        where: { id, tenantId: tenant.id },
+        include: {
+          students: true,
+          userAccount: { select: { id: true, username: true } },
+        },
+      });
+
+      if (!existingGuardian) {
+        return NextResponse.json({ error: 'Parent record not found for this school' }, { status: 404 });
+      }
+
+      await prisma.$transaction(async (tx: any) => {
+        // A. Delete portal login account if one exists
+        await tx.tenantUser.deleteMany({
+          where: { tenantId: tenant.id, guardianId: id },
+        });
+
+        // B. Clear guardian contact info from linked students while preserving physical & academic profile data
+        for (const link of existingGuardian.students) {
+          const currentStudent = await tx.student.findUnique({
+            where: { id: link.studentId },
+            select: { guardianContactInfo: true },
+          });
+          if (currentStudent && currentStudent.guardianContactInfo) {
+            const currentInfo = (currentStudent.guardianContactInfo as Record<string, any>) || {};
+            const updatedInfo = { ...currentInfo };
+            delete updatedInfo.guardianName;
+            delete updatedInfo.guardianPhone;
+            delete updatedInfo.guardianEmail;
+            delete updatedInfo.relationship;
+            delete updatedInfo.address;
+            await tx.student.update({
+              where: { id: link.studentId },
+              data: { guardianContactInfo: updatedInfo },
+            });
+          }
+        }
+
+        // C. Delete student-guardian links
+        await tx.studentGuardian.deleteMany({
+          where: { guardianId: id },
+        });
+
+        // D. Delete the guardian record itself
+        await tx.guardian.delete({
+          where: { id },
+        });
+      });
+
+      // Record audit log
+      recordAuditLog({
+        tenantId: tenant.id,
+        actorId: auth.user.id,
+        actorName: auth.user.username || 'School Admin',
+        actorRole: auth.user.role,
+        action: 'PARENT_DELETED',
+        entityType: 'guardian',
+        entityId: id,
+        details: {
+          guardianId: id,
+          guardianName: existingGuardian.name,
+          linkedStudentsCount: existingGuardian.students.length,
+          hadPortalAccount: Boolean(existingGuardian.userAccount),
+        },
+        ipAddress: getClientIp(req),
+      }).catch((e) => console.warn('[Parent delete audit error]', e));
+
+      return NextResponse.json({
+        success: true,
+        message: `Parent record "${existingGuardian.name}" permanently deleted.`,
+      });
+    }
+
+    // 2. Fallback: If legacy student JSON only, clear guardian contact details from specified students
+    if (studentIdsParam) {
+      const studentIds = studentIdsParam.split(',').map((s) => s.trim()).filter(Boolean);
+      await prisma.$transaction(async (tx: any) => {
+        for (const studentId of studentIds) {
+          const currentStudent = await tx.student.findFirst({
+            where: { id: studentId, tenantId: tenant.id },
+            select: { guardianContactInfo: true },
+          });
+          if (currentStudent && currentStudent.guardianContactInfo) {
+            const currentInfo = (currentStudent.guardianContactInfo as Record<string, any>) || {};
+            const updatedInfo = { ...currentInfo };
+            delete updatedInfo.guardianName;
+            delete updatedInfo.guardianPhone;
+            delete updatedInfo.guardianEmail;
+            delete updatedInfo.relationship;
+            delete updatedInfo.address;
+            await tx.student.update({
+              where: { id: studentId },
+              data: { guardianContactInfo: updatedInfo },
+            });
+          }
+        }
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: 'Guardian contact information cleared from student records.',
+      });
+    }
+
+    return NextResponse.json({ error: 'Invalid delete parameters' }, { status: 400 });
+  } catch (error: any) {
+    console.error('[Delete Parent Error]', error);
+    return NextResponse.json({ error: error.message || 'Failed to delete parent' }, { status: 500 });
+  }
+}

@@ -3,7 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { CsvImportModal } from '@/components/csv-import-modal';
-import { AddParentModal, EditParentModal, ManageWardsModal, StudentOption } from '@/components/parent-modals';
+import { AddParentModal, EditParentModal, ManageWardsModal, DeleteParentModal, StudentOption } from '@/components/parent-modals';
 import { ResetStudentPinModal } from '@/app/[slug]/dashboard/students/reset-student-pin-modal';
 
 interface WardItem {
@@ -412,6 +412,15 @@ export default function ParentsClient({
                               }}
                             />
                           )}
+
+                          <DeleteParentModal
+                            slug={slug}
+                            guardianId={parent.id}
+                            parentName={parent.name}
+                            relationship={parent.relationship}
+                            linkedWards={parent.wards}
+                            hasPortalAccount={parent.hasPortalAccount}
+                          />
 
                           {/* WhatsApp */}
                           {cleanedWhatsApp ? (
