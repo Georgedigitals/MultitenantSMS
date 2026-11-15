@@ -144,6 +144,28 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    const initialAdminEmail = (body.adminEmail || `admin@${cleanSlug}.edu`).trim();
+    await prisma.emailConfiguration.upsert({
+      where: { tenantId: tenant.id },
+      create: {
+        tenantId: tenant.id,
+        host: '',
+        port: 465,
+        secure: true,
+        user: '',
+        pass: '',
+        fromName: name,
+        fromEmail: initialAdminEmail,
+        replyTo: initialAdminEmail,
+        verified: false,
+      },
+      update: {
+        fromName: name,
+        fromEmail: initialAdminEmail,
+        replyTo: initialAdminEmail,
+      },
+    });
+
     // Auto-provision Default Site Content for homepage
     await prisma.siteContent.create({
       data: {

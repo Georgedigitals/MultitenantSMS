@@ -253,6 +253,27 @@ export async function POST(req: NextRequest) {
       },
     });
 
+    await tx.emailConfiguration.upsert({
+      where: { tenantId: tenant.id },
+      create: {
+        tenantId: tenant.id,
+        host: '',
+        port: 465,
+        secure: true,
+        user: '',
+        pass: '',
+        fromName: cleanSchoolName,
+        fromEmail: cleanEmail,
+        replyTo: cleanEmail,
+        verified: false,
+      },
+      update: {
+        fromName: cleanSchoolName,
+        fromEmail: cleanEmail,
+        replyTo: cleanEmail,
+      },
+    });
+
     // 7. Create Site Content & Motto for public homepage
     const primaryHeroImage = heroImageUrl || (Array.isArray(galleryImages) && galleryImages[0]?.url) || null;
     const defaultSlides = [

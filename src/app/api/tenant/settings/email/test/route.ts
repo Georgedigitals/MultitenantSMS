@@ -15,7 +15,9 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json().catch(() => ({}));
-    const recipient = body.recipientEmail;
+    const recipient = typeof body.recipientEmail === 'string' ? body.recipientEmail.trim() : '';
+    const customReplyTo = typeof body.replyTo === 'string' && body.replyTo.includes('@') ? body.replyTo.trim() : undefined;
+    const customFromName = typeof body.fromName === 'string' && body.fromName.trim() ? body.fromName.trim() : undefined;
 
     if (!recipient) {
       return NextResponse.json({ error: 'Recipient email is required' }, { status: 400 });
@@ -25,7 +27,7 @@ export async function POST(req: NextRequest) {
       where: { id: auth.tenant.id },
       select: { name: true },
     });
-    const schoolName = tenant?.name || 'School';
+    const schoolName = customFromName || tenant?.name || 'School';
 
     const testResult = await dispatchEmail({
       to: recipient,
@@ -34,12 +36,13 @@ export async function POST(req: NextRequest) {
         <div style="font-family: sans-serif; padding: 24px; background: #f8fafc; color: #0f172a; border-radius: 16px;">
           <h2 style="color: #2563eb; margin-top: 0;">SMTP Test Successful!</h2>
           <p>This is a test notification confirming that email dispatch is working properly for <strong>${schoolName}</strong>.</p>
+          ${customReplyTo ? `<p style="font-size: 13px; color: #334155;"><strong>Direct Reply-To Address:</strong> ${customReplyTo}</p>` : ''}
           <p style="font-size: 13px; color: #64748b;">Timestamp: ${new Date().toISOString()}</p>
         </div>
       `,
-      fromName: schoolName,
+      fromName: customFromName,
       tenantId: auth.tenant.id,
-      replyTo: recipient,
+      replyTo: customReplyTo,
     });
 
     return NextResponse.json({

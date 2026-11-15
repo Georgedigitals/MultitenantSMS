@@ -127,7 +127,7 @@ export async function dispatchEmail(options: SendEmailOptions): Promise<{ succes
       pass: customSmtp.pass.replace(/\s+/g, ''),
     };
 
-    const senderDisplay = fromName || customSmtp.fromName || 'School Portal';
+    const senderDisplay = customSmtp.fromName || fromName || 'School Portal';
     const senderEmail = customSmtp.fromEmail || customSmtp.user;
     const formattedFrom = `"${senderDisplay}" <${senderEmail}>`;
     const finalReplyTo = replyTo || customSmtp.replyTo || senderEmail;
@@ -142,7 +142,7 @@ export async function dispatchEmail(options: SendEmailOptions): Promise<{ succes
         html,
       });
 
-      console.log(`[TENANT CUSTOM SMTP SENT] Tenant: ${tenantId} | MsgID: ${info.messageId}`);
+      console.log(`[TENANT CUSTOM SMTP SENT] Tenant: ${tenantId} | ReplyTo: ${finalReplyTo} | MsgID: ${info.messageId}`);
       return { success: true, id: info.messageId, simulated: false };
     } catch (err: any) {
       console.error(`[TENANT CUSTOM SMTP FAILED] Falling back to platform default:`, err?.message || err);
@@ -157,7 +157,8 @@ export async function dispatchEmail(options: SendEmailOptions): Promise<{ succes
     : defaultPlatformFrom;
 
   // Resolve tenant-specific display name & direct reply-to address
-  let resolvedSenderDisplay = fromName || customSmtp?.fromName;
+  // Prioritize the tenant's configured EmailConfiguration (fromName / replyTo) over generic caller defaults
+  let resolvedSenderDisplay = customSmtp?.fromName || fromName;
   let resolvedReplyTo = replyTo || customSmtp?.replyTo || fromEmail;
 
   if (tenantId && (!resolvedSenderDisplay || !resolvedReplyTo)) {
@@ -169,17 +170,37 @@ export async function dispatchEmail(options: SendEmailOptions): Promise<{ succes
           staff: {
             where: { roleBase: 'admin' },
             select: { contactInfo: true },
-            take: 1,
+            orderBy: { createdAt: 'asc' },
+            take: 5,
+          },
+          users: {
+            where: { role: 'school_admin', isActive: true },
+            select: { username: true },
+            orderBy: { createdAt: 'asc' },
+            take: 5,
           },
         },
       });
       if (!resolvedSenderDisplay && tenant?.name) {
         resolvedSenderDisplay = tenant.name;
       }
-      if (!resolvedReplyTo && tenant?.staff?.[0]?.contactInfo) {
-        const cEmail = (tenant.staff[0].contactInfo as any)?.email;
-        if (cEmail && typeof cEmail === 'string' && cEmail.includes('@')) {
-          resolvedReplyTo = cEmail.trim();
+      if (!resolvedReplyTo && tenant) {
+        // 1. Check admin staff contactInfo.email
+        for (const s of tenant.staff || []) {
+          const cEmail = (s.contactInfo as any)?.email;
+          if (typeof cEmail === 'string' && cEmail.includes('@') && !cEmail.endsWith('.internal')) {
+            resolvedReplyTo = cEmail.trim();
+            break;
+          }
+        }
+        // 2. Fall back to school_admin TenantUser login email
+        if (!resolvedReplyTo) {
+          for (const u of tenant.users || []) {
+            if (typeof u.username === 'string' && u.username.includes('@') && !u.username.endsWith('.internal')) {
+              resolvedReplyTo = u.username.trim();
+              break;
+            }
+          }
         }
       }
     } catch {

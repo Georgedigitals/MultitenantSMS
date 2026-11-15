@@ -216,7 +216,11 @@ export default function EmailSettingsClient({
       const res = await fetch('/api/tenant/settings/email/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipientEmail: testRecipient }),
+        body: JSON.stringify({
+          recipientEmail: testRecipient.trim(),
+          replyTo: replyTo.trim() || config?.replyTo || tenantEmail,
+          fromName: fromName.trim() || config?.fromName || tenantName,
+        }),
       });
 
       const data = await res.json();

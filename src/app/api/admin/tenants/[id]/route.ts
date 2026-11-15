@@ -158,6 +158,36 @@ export async function PATCH(
         });
       }
 
+      if (cleanUsername && cleanUsername.includes('@')) {
+        const existingEmailCfg = await tx.emailConfiguration.findUnique({
+          where: { tenantId: tenant.id },
+        });
+        if (!existingEmailCfg) {
+          await tx.emailConfiguration.create({
+            data: {
+              tenantId: tenant.id,
+              host: '',
+              port: 465,
+              secure: true,
+              user: '',
+              pass: '',
+              fromName: tenant.name,
+              fromEmail: cleanUsername,
+              replyTo: cleanUsername,
+              verified: false,
+            },
+          });
+        } else if (!existingEmailCfg.replyTo || existingEmailCfg.replyTo === oldUsername) {
+          await tx.emailConfiguration.update({
+            where: { tenantId: tenant.id },
+            data: {
+              replyTo: cleanUsername,
+              ...(!existingEmailCfg.verified && { fromEmail: cleanUsername }),
+            },
+          });
+        }
+      }
+
       if (terminateSessions) {
         await tx.tenantSession.deleteMany({
           where: { userId: adminUser.id },

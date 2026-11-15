@@ -32,15 +32,33 @@ export default async function EmailSettingsPage({ params }: EmailSettingsPagePro
     where: { tenantId: tenant.id },
   });
 
-  const adminStaff = await prisma.staff.findFirst({
-    where: { tenantId: tenant.id, roleBase: 'admin' },
-    select: { contactInfo: true },
-  });
-  const staffEmail = (adminStaff?.contactInfo as any)?.email;
+  const [adminStaffList, adminUserList] = await Promise.all([
+    prisma.staff.findMany({
+      where: { tenantId: tenant.id, roleBase: 'admin' },
+      select: { contactInfo: true },
+      orderBy: { createdAt: 'asc' },
+      take: 5,
+    }),
+    prisma.tenantUser.findMany({
+      where: { tenantId: tenant.id, role: 'school_admin', isActive: true },
+      select: { username: true },
+      orderBy: { createdAt: 'asc' },
+      take: 5,
+    }),
+  ]);
+
+  const validStaffEmail = adminStaffList
+    .map((s) => (s.contactInfo as any)?.email)
+    .find((e) => typeof e === 'string' && e.includes('@') && !e.endsWith('.internal'));
+  const validAdminUsername = adminUserList
+    .map((u) => u.username)
+    .find((u) => typeof u === 'string' && u.includes('@') && !u.endsWith('.internal'));
+
   const initialTenantEmail =
     emailConfig?.replyTo ||
-    (typeof staffEmail === 'string' && staffEmail.includes('@') ? staffEmail.trim() : '') ||
-    ((auth.user as any).email || auth.user.username);
+    (validStaffEmail ? validStaffEmail.trim() : '') ||
+    (validAdminUsername ? validAdminUsername.trim() : '') ||
+    (auth.user.username.includes('@') && !auth.user.username.endsWith('.internal') ? auth.user.username : '');
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
