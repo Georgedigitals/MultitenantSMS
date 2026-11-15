@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
 
   return NextResponse.json({
     scales,
-    canCustomize: tenantContext.hasFeature('grading_customization'),
+    canCustomize: true,
   });
 }
 
@@ -74,14 +74,6 @@ export async function POST(req: NextRequest) {
   const auth = await getTenantUserFromCookies(tenantContext.id);
   if (!auth || auth.user.role !== 'school_admin') {
     return NextResponse.json({ error: 'Only school admin can modify grading scales' }, { status: 403 });
-  }
-
-  // §5A.4 — Feature gate
-  if (!tenantContext.hasFeature('grading_customization')) {
-    return NextResponse.json(
-      { error: 'Grading customization is not enabled for your school plan' },
-      { status: 403 }
-    );
   }
 
   if (!Array.isArray(scales) || scales.length === 0) {

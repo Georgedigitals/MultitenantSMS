@@ -457,13 +457,27 @@ export async function POST(request: Request) {
           orderBy: { orderIndex: 'asc' },
         });
       }
-      const examComponent = components.find((component) => /exam/i.test(component.name));
-      if (!examComponent || examComponent.maxScore !== 60) {
-        return NextResponse.json({ error: 'This school needs an Exam result component with a 60-mark maximum before CBT scores can be imported.' }, { status: 422 });
+
+      if (components.length === 0) {
+        return NextResponse.json({ error: 'Please configure assessment components in your school grading settings first.' }, { status: 422 });
       }
-      if (targetExam.totalMarks > examComponent.maxScore || targetExam.totalMarks < 1) {
-        return NextResponse.json({ error: 'The CBT score maximum does not match the school Exam component.' }, { status: 422 });
+
+      // Allow targeting a specific component (e.g. CA or Exam), or auto-resolve
+      const targetComponentId = body.targetComponentId;
+      let targetComponent = targetComponentId
+        ? components.find((c) => c.id === targetComponentId)
+        : null;
+
+      if (!targetComponent) {
+        // Fallback: look for component matching /exam/i, else pick the component with the largest maxScore
+        targetComponent = components.find((c) => /exam/i.test(c.name))
+          || [...components].sort((a, b) => b.maxScore - a.maxScore)[0];
       }
+
+      if (!targetComponent) {
+        return NextResponse.json({ error: 'No matching assessment component found to receive CBT marks.' }, { status: 422 });
+      }
+
       if (targetExam.attempts.length === 0) {
         return NextResponse.json({ error: 'There are no submitted CBT attempts to import.' }, { status: 422 });
       }
@@ -492,12 +506,18 @@ export async function POST(request: Request) {
 
           const scoreData = { ...((existing?.scoreData as Record<string, any>) || {}) };
           const previousImport = scoreData.cbtExamId === targetExam.id;
-          const currentExamMark = scoreData[examComponent.id] ?? scoreData[examComponent.name] ?? scoreData[examComponent.name.toLowerCase()];
-          if (currentExamMark !== undefined && currentExamMark !== null && currentExamMark !== '' && !previousImport) {
-            throw new Error(`A manual Exam mark already exists for a student in ${targetExam.classLevelId}. Clear or review that mark before importing CBT scores.`);
+          const currentMark = scoreData[targetComponent.id] ?? scoreData[targetComponent.name] ?? scoreData[targetComponent.name.toLowerCase()];
+          if (currentMark !== undefined && currentMark !== null && currentMark !== '' && !previousImport) {
+            throw new Error(`A manual score already exists for a student in component "${targetComponent.name}". Clear or review that mark before importing CBT scores.`);
           }
 
-          scoreData[examComponent.id] = Math.min(attempt.score, examComponent.maxScore);
+          // Calculate mark, scaling proportionally if totalMarks differs from component maxScore
+          let calculatedMark = attempt.score;
+          if (targetExam.totalMarks > 0 && targetExam.totalMarks !== targetComponent.maxScore) {
+            calculatedMark = Math.round((attempt.score / targetExam.totalMarks) * targetComponent.maxScore);
+          }
+
+          scoreData[targetComponent.id] = Math.min(calculatedMark, targetComponent.maxScore);
           scoreData.cbtExamId = targetExam.id;
           scoreData.total = computeTotal(scoreData, components);
           await tx.resultEntry.upsert({
@@ -520,7 +540,11 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'No submitted attempts belong to an active enrollment in this class and session.' }, { status: 422 });
       }
 
-      return NextResponse.json({ success: true, importedCount, message: `Imported ${importedCount} CBT mark${importedCount === 1 ? '' : 's'} into the Exam component. The teacher can review and submit them with the CA marks.` });
+      return NextResponse.json({
+        success: true,
+        importedCount,
+        message: `Imported ${importedCount} CBT mark${importedCount === 1 ? '' : 's'} into "${targetComponent.name}" (${targetComponent.maxScore} marks maximum). Scores were saved to the result entry.`
+      });
     }
 
     if (action === 'delete_exam') {

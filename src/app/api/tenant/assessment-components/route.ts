@@ -59,7 +59,7 @@ export async function GET(req: NextRequest) {
     });
   }
 
-  const canCustomize = tenantContext.hasFeature('grading_customization');
+  const canCustomize = true;
 
   return NextResponse.json({
     components,
@@ -86,20 +86,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Only school admin can modify assessment components' }, { status: 403 });
   }
 
-  // §5A.4 — Feature gate
-  if (!tenantContext.hasFeature('grading_customization')) {
-    return NextResponse.json(
-      { error: 'Grading customization is not enabled for your school plan' },
-      { status: 403 }
-    );
-  }
-
   if (!Array.isArray(components) || components.length === 0) {
     return NextResponse.json({ error: 'At least one assessment component is required' }, { status: 400 });
   }
 
-  if (components.length !== 3) {
-    return NextResponse.json({ error: 'Use exactly three result components: CA 1, CA 2 and Exam.' }, { status: 400 });
+  if (components.length < 1 || components.length > 6) {
+    return NextResponse.json({ error: 'You can configure between 1 and 6 assessment components.' }, { status: 400 });
   }
 
   const orderedComponents = [...components].sort((a, b) => Number(a.orderIndex || 0) - Number(b.orderIndex || 0));
@@ -113,14 +105,8 @@ export async function POST(req: NextRequest) {
     }
     const max = Number(c.maxScore);
     const weight = Number(c.weightPercent);
-    if (!Number.isInteger(max) || max <= 0) {
-      return NextResponse.json({ error: `Invalid maxScore for component "${c.name}"` }, { status: 400 });
-    }
-    if (index < 2 && max > 20) {
-      return NextResponse.json({ error: `CA ${index + 1} cannot be more than 20 marks.` }, { status: 400 });
-    }
-    if (index === 2 && (max !== 60 || !/exam/i.test(c.name))) {
-      return NextResponse.json({ error: 'The third result component must be named Exam and have a maximum of 60 marks.' }, { status: 400 });
+    if (!Number.isInteger(max) || max <= 0 || max > 100) {
+      return NextResponse.json({ error: `Invalid maxScore for component "${c.name}". Must be between 1 and 100.` }, { status: 400 });
     }
     if (isNaN(weight) || weight <= 0) {
       return NextResponse.json({ error: `Invalid weightPercent for component "${c.name}"` }, { status: 400 });

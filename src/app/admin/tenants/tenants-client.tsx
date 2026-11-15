@@ -146,6 +146,65 @@ export function TenantsClient({ initialTenants, availablePlans }: TenantsClientP
  const [purging, setPurging] = useState(false);
  const [purgeError, setPurgeError] = useState('');
 
+ // Edit Admin Modal State
+ const [editAdminTenant, setEditAdminTenant] = useState<TenantItem | null>(null);
+ const [editAdminUsername, setEditAdminUsername] = useState('');
+ const [editAdminPassword, setEditAdminPassword] = useState('');
+ const [editAdminStaffName, setEditAdminStaffName] = useState('');
+ const [editAdminTerminate, setEditAdminTerminate] = useState(true);
+ const [editAdminSendNotice, setEditAdminSendNotice] = useState(false);
+ const [savingAdmin, setSavingAdmin] = useState(false);
+ const [editAdminError, setEditAdminError] = useState<string | null>(null);
+ const [editAdminSuccess, setEditAdminSuccess] = useState<string | null>(null);
+
+ const handleOpenEditAdmin = (tenant: TenantItem) => {
+   setEditAdminTenant(tenant);
+   setEditAdminUsername(tenant.adminEmail || `admin@${tenant.slug}.edu`);
+   setEditAdminPassword('');
+   setEditAdminStaffName('');
+   setEditAdminTerminate(true);
+   setEditAdminSendNotice(false);
+   setEditAdminError(null);
+   setEditAdminSuccess(null);
+ };
+
+ const handleSaveAdmin = async (e: React.FormEvent) => {
+   e.preventDefault();
+   if (!editAdminTenant) return;
+   setSavingAdmin(true);
+   setEditAdminError(null);
+   setEditAdminSuccess(null);
+   try {
+     const res = await fetch(`/api/admin/tenants/${editAdminTenant.id}`, {
+       method: 'PATCH',
+       headers: { 'Content-Type': 'application/json' },
+       body: JSON.stringify({
+         username: editAdminUsername.trim(),
+         password: editAdminPassword.trim() || undefined,
+         staffName: editAdminStaffName.trim() || undefined,
+         terminateSessions: editAdminTerminate,
+         sendNotice: editAdminSendNotice,
+       }),
+     });
+     const data = await res.json();
+     if (!res.ok) throw new Error(data.error || 'Failed to update administrator credentials');
+
+     setEditAdminSuccess(data.message || 'Credentials updated successfully');
+     setTenants((prev) =>
+       prev.map((t) =>
+         t.id === editAdminTenant.id ? { ...t, adminEmail: data.updatedUsername || editAdminUsername.trim() } : t
+       )
+     );
+     setTimeout(() => {
+       setEditAdminTenant(null);
+     }, 1200);
+   } catch (err: any) {
+     setEditAdminError(err.message || 'Error updating credentials');
+   } finally {
+     setSavingAdmin(false);
+   }
+ };
+
  // Counts
  const activeTenantsCount = tenants.filter((t) => t.status !== 'archived').length;
  const archivedTenantsCount = tenants.filter((t) => t.status === 'archived').length;
@@ -622,7 +681,19 @@ export function TenantsClient({ initialTenants, availablePlans }: TenantsClientP
 
  {/* Admin Email */}
  <td className="py-4 px-4 font-mono adm-text-secondary text-[11px]">
- {tenant.adminEmail || `admin@${tenant.slug}.edu`}
+ <div className="flex items-center gap-1.5">
+ <span>{tenant.adminEmail || `admin@${tenant.slug}.edu`}</span>
+ <button
+ type="button"
+ onClick={() => handleOpenEditAdmin(tenant)}
+ className="p-1 rounded hover:bg-slate-800 text-slate-400 hover:text-amber-300 transition cursor-pointer"
+ title="Edit Administrator Credentials"
+ >
+ <svg viewBox="0 0 20 20" fill="currentColor" className="w-3 h-3">
+ <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+ </svg>
+ </button>
+ </div>
  </td>
 
  {/* Plan Tier */}
@@ -714,6 +785,15 @@ export function TenantsClient({ initialTenants, availablePlans }: TenantsClientP
  className="px-3 py-1.5 bg-indigo-950 hover:bg-indigo-900 text-indigo-300 border border-indigo-800 rounded-xl text-xs font-bold transition cursor-pointer"
  >
  <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 inline-block mr-1"><path fillRule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v2H2v-4l4.257-4.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z" clipRule="evenodd" /></svg> Impersonate
+ </button>
+ <button
+ onClick={() => handleOpenEditAdmin(tenant)}
+ className="px-2.5 py-1.5 adm-surface hover:adm-surface text-amber-300 border adm-divider rounded-xl text-xs font-semibold transition cursor-pointer"
+ title="Edit School Administrator Username & Password"
+ >
+ <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 inline-block mr-1">
+ <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+ </svg> Admin
  </button>
  <Link
  href={`/admin/tenants/${tenant.id}`}
@@ -1132,6 +1212,123 @@ export function TenantsClient({ initialTenants, availablePlans }: TenantsClientP
  )}
  </button>
  </div>
+ </div>
+ </div>
+ )}
+
+ {/* Edit School Administrator Credentials Modal */}
+ {editAdminTenant && (
+ <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-fadeIn">
+ <div className="max-w-md w-full adm-card border border-amber-900/80 rounded-3xl p-6 sm:p-8 shadow-2xl adm-text-primary space-y-5">
+ <div className="flex justify-between items-center border-b adm-divider pb-3">
+ <div>
+ <h2 className="text-lg font-bold text-amber-400">
+ <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4 inline-block mr-1.5 mb-0.5">
+ <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+ </svg>
+ School Administrator Access
+ </h2>
+ <p className="text-xs adm-text-muted">{editAdminTenant.name} ({editAdminTenant.slug})</p>
+ </div>
+ <button
+ onClick={() => setEditAdminTenant(null)}
+ disabled={savingAdmin}
+ className="adm-text-muted hover:text-[var(--adm-text-primary)] font-bold cursor-pointer text-lg"
+ >
+ ×
+ </button>
+ </div>
+
+ {editAdminError && (
+ <div className="p-3 rounded-xl bg-rose-950/80 border border-rose-800 text-rose-300 text-xs font-semibold">
+ {editAdminError}
+ </div>
+ )}
+
+ {editAdminSuccess && (
+ <div className="p-3 rounded-xl bg-emerald-950/80 border border-emerald-800 text-emerald-300 text-xs font-semibold">
+ ✓ {editAdminSuccess}
+ </div>
+ )}
+
+ <form onSubmit={handleSaveAdmin} className="space-y-4 text-xs">
+ <div>
+ <label className="block adm-text-muted font-semibold mb-1">Administrator Full Name (Optional)</label>
+ <input
+ type="text"
+ placeholder="e.g. Dr. Babatunde Okafor"
+ value={editAdminStaffName}
+ onChange={(e) => setEditAdminStaffName(e.target.value)}
+ className="w-full px-3.5 py-2.5 adm-surface border adm-divider rounded-xl adm-text-primary focus:outline-none focus:border-amber-500"
+ />
+ </div>
+
+ <div>
+ <label className="block adm-text-muted font-semibold mb-1">
+ Login Username / Email <span className="text-amber-400">*</span>
+ </label>
+ <input
+ type="text"
+ required
+ placeholder="e.g. admin@school.edu.ng"
+ value={editAdminUsername}
+ onChange={(e) => setEditAdminUsername(e.target.value)}
+ className="w-full px-3.5 py-2.5 adm-surface border adm-divider rounded-xl adm-text-primary font-mono focus:outline-none focus:border-amber-500"
+ />
+ <p className="text-[10px] text-slate-400 mt-1">Used to log in to the school portal.</p>
+ </div>
+
+ <div>
+ <label className="block adm-text-muted font-semibold mb-1">New Password (Leave blank to keep current)</label>
+ <input
+ type="text"
+ placeholder="Enter new password (min. 6 chars)"
+ value={editAdminPassword}
+ onChange={(e) => setEditAdminPassword(e.target.value)}
+ className="w-full px-3.5 py-2.5 adm-surface border adm-divider rounded-xl adm-text-primary font-mono focus:outline-none focus:border-amber-500"
+ />
+ </div>
+
+ <div className="space-y-2 pt-1 border-t adm-divider">
+ <label className="flex items-center gap-2 cursor-pointer text-slate-300">
+ <input
+ type="checkbox"
+ checked={editAdminTerminate}
+ onChange={(e) => setEditAdminTerminate(e.target.checked)}
+ className="rounded border-slate-700 text-amber-500 focus:ring-amber-500"
+ />
+ <span className="text-[11px]">Terminate active sessions (force immediate re-login)</span>
+ </label>
+
+ <label className="flex items-center gap-2 cursor-pointer text-slate-300">
+ <input
+ type="checkbox"
+ checked={editAdminSendNotice}
+ onChange={(e) => setEditAdminSendNotice(e.target.checked)}
+ className="rounded border-slate-700 text-amber-500 focus:ring-amber-500"
+ />
+ <span className="text-[11px]">Send credentials notification email to administrator</span>
+ </label>
+ </div>
+
+ <div className="pt-3 flex justify-end space-x-2">
+ <button
+ type="button"
+ onClick={() => setEditAdminTenant(null)}
+ disabled={savingAdmin}
+ className="px-4 py-2 adm-surface hover:bg-[var(--adm-surface-hover)] adm-text-secondary font-bold rounded-xl cursor-pointer"
+ >
+ Cancel
+ </button>
+ <button
+ type="submit"
+ disabled={savingAdmin || !editAdminUsername.trim()}
+ className="px-5 py-2.5 bg-amber-600 hover:bg-amber-500 text-slate-950 font-extrabold rounded-xl shadow-lg shadow-amber-600/30 transition cursor-pointer disabled:opacity-50"
+ >
+ {savingAdmin ? 'Saving...' : 'Update Administrator'}
+ </button>
+ </div>
+ </form>
  </div>
  </div>
  )}

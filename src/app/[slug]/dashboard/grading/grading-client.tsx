@@ -95,6 +95,54 @@ export default function GradingClient({
     setComponents(components.filter((_, i) => i !== index));
   };
 
+  const applyComponentPreset = (preset: '30_70' | '40_60' | '20_20_60') => {
+    if (isLocked) return;
+    if (preset === '30_70') {
+      setComponents([
+        { name: 'Continuous Assessment', maxScore: 30, weightPercent: 30, orderIndex: 1 },
+        { name: 'Examination', maxScore: 70, weightPercent: 70, orderIndex: 2 },
+      ]);
+    } else if (preset === '40_60') {
+      setComponents([
+        { name: 'Continuous Assessment', maxScore: 40, weightPercent: 40, orderIndex: 1 },
+        { name: 'Examination', maxScore: 60, weightPercent: 60, orderIndex: 2 },
+      ]);
+    } else if (preset === '20_20_60') {
+      setComponents([
+        { name: '1st CA', maxScore: 20, weightPercent: 20, orderIndex: 1 },
+        { name: '2nd CA', maxScore: 20, weightPercent: 20, orderIndex: 2 },
+        { name: 'Examination', maxScore: 60, weightPercent: 60, orderIndex: 3 },
+      ]);
+    }
+  };
+
+  const applyScalePreset = (preset: 'waec' | 'primary_letters') => {
+    const lowestId = classLevels[0]?.id || '';
+    const highestId = classLevels[classLevels.length - 1]?.id || '';
+
+    if (preset === 'waec') {
+      setScales([
+        { lowestClassLevelId: lowestId, highestClassLevelId: highestId, minScore: 75, maxScore: 100, grade: 'A1', remark: 'Excellent' },
+        { lowestClassLevelId: lowestId, highestClassLevelId: highestId, minScore: 70, maxScore: 74, grade: 'B2', remark: 'Very Good' },
+        { lowestClassLevelId: lowestId, highestClassLevelId: highestId, minScore: 65, maxScore: 69, grade: 'B3', remark: 'Good' },
+        { lowestClassLevelId: lowestId, highestClassLevelId: highestId, minScore: 60, maxScore: 64, grade: 'C4', remark: 'Credit' },
+        { lowestClassLevelId: lowestId, highestClassLevelId: highestId, minScore: 55, maxScore: 59, grade: 'C5', remark: 'Credit' },
+        { lowestClassLevelId: lowestId, highestClassLevelId: highestId, minScore: 50, maxScore: 54, grade: 'C6', remark: 'Credit' },
+        { lowestClassLevelId: lowestId, highestClassLevelId: highestId, minScore: 45, maxScore: 49, grade: 'D7', remark: 'Pass' },
+        { lowestClassLevelId: lowestId, highestClassLevelId: highestId, minScore: 40, maxScore: 44, grade: 'E8', remark: 'Pass' },
+        { lowestClassLevelId: lowestId, highestClassLevelId: highestId, minScore: 0, maxScore: 39, grade: 'F9', remark: 'Fail' },
+      ]);
+    } else if (preset === 'primary_letters') {
+      setScales([
+        { lowestClassLevelId: lowestId, highestClassLevelId: highestId, minScore: 70, maxScore: 100, grade: 'A', remark: 'Distinction' },
+        { lowestClassLevelId: lowestId, highestClassLevelId: highestId, minScore: 60, maxScore: 69, grade: 'B', remark: 'Credit' },
+        { lowestClassLevelId: lowestId, highestClassLevelId: highestId, minScore: 50, maxScore: 59, grade: 'C', remark: 'Merit' },
+        { lowestClassLevelId: lowestId, highestClassLevelId: highestId, minScore: 40, maxScore: 49, grade: 'D', remark: 'Pass' },
+        { lowestClassLevelId: lowestId, highestClassLevelId: highestId, minScore: 0, maxScore: 39, grade: 'F', remark: 'Fail' },
+      ]);
+    }
+  };
+
   const saveComponents = async () => {
     setSavingComp(true);
     setCompMessage(null);
@@ -193,61 +241,83 @@ export default function GradingClient({
 
   return (
     <div className="space-y-8">
-      {/* Plan Feature Notice */}
-      {!canCustomize && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start space-x-3">
-          <div className="text-amber-500 mt-0.5">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path
-                fillRule="evenodd"
-                d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                clipRule="evenodd"
-              />
+      {/* School Autonomous Notice */}
+      <div className="bg-slate-50 border border-slate-200/80 rounded-2xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-slate-700">
+        <div>
+          <span className="font-bold flex items-center gap-1.5 text-slate-900">
+            <svg className="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
-          </div>
-          <div>
-            <h4 className="text-sm font-semibold text-amber-900">Standard Assessment & Grading Mode</h4>
-            <p className="text-xs text-amber-700 mt-0.5">
-              Your school is running on the standard curriculum grading schema. Customizing score component weights
-              and grading bands is an Enterprise tier capability. Contact platform support to enable custom grading scales.
-            </p>
-          </div>
+            School-Autonomous Grading Mode
+          </span>
+          <p className="text-slate-500 mt-0.5">
+            Configure your school's continuous assessment structure and grade letter bands freely. Changes apply to all report cards and terminal sheets.
+          </p>
         </div>
-      )}
+      </div>
 
       {/* SECTION 1: Assessment Structure */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
-        <div className="p-6 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <h2 className="text-lg font-bold text-slate-900">Assessment Components & Weighting</h2>
-            <p className="text-xs text-slate-500 mt-1">
-              Configure per-term score breakdown (Continuous Assessment tests and Examinations).
-            </p>
+        <div className="p-6 border-b border-slate-200 flex flex-col gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-bold text-slate-900">Assessment Components & Weighting</h2>
+              <p className="text-xs text-slate-500 mt-1">
+                Configure per-term score breakdown (Continuous Assessment tests and Examinations).
+              </p>
+            </div>
+            <div className="flex items-center space-x-3">
+              {terms.length > 0 && (
+                <div className="flex items-center space-x-2 text-xs">
+                  <span className="text-slate-500 font-medium">Scope:</span>
+                  <select
+                    value={selectedTermId}
+                    onChange={(e) => setSelectedTermId(e.target.value)}
+                    className="rounded-lg border-slate-300 text-xs px-2.5 py-1.5 bg-slate-50 focus:bg-white"
+                  >
+                    <option value="">Default (All Terms)</option>
+                    {terms.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {isLocked && (
+                <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200">
+                  Term Locked
+                </span>
+              )}
+            </div>
           </div>
-          <div className="flex items-center space-x-3">
-            {terms.length > 0 && (
-              <div className="flex items-center space-x-2 text-xs">
-                <span className="text-slate-500 font-medium">Scope:</span>
-                <select
-                  value={selectedTermId}
-                  onChange={(e) => setSelectedTermId(e.target.value)}
-                  className="rounded-lg border-slate-300 text-xs px-2.5 py-1.5 bg-slate-50 focus:bg-white"
-                >
-                  <option value="">Default (All Terms)</option>
-                  {terms.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-            {isLocked && (
-              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-red-50 text-red-700 border border-red-200">
-                Term Locked
-              </span>
-            )}
-          </div>
+
+          {!isLocked && (
+            <div className="flex items-center gap-2 flex-wrap pt-2 border-t border-slate-100 text-xs">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Quick Breakdown Presets:</span>
+              <button
+                type="button"
+                onClick={() => applyComponentPreset('30_70')}
+                className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
+              >
+                30% CA + 70% Exam
+              </button>
+              <button
+                type="button"
+                onClick={() => applyComponentPreset('40_60')}
+                className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
+              >
+                40% CA + 60% Exam
+              </button>
+              <button
+                type="button"
+                onClick={() => applyComponentPreset('20_20_60')}
+                className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
+              >
+                20 / 20 / 60 (2 CAs + Exam)
+              </button>
+            </div>
+          )}
         </div>
 
         <div className="p-6">
@@ -370,12 +440,29 @@ export default function GradingClient({
 
       {/* SECTION 2: Grading Scale */}
       <div className="bg-white rounded-xl border border-slate-200 shadow-2xs overflow-hidden">
-        <div className="p-6 border-b border-slate-200 flex items-center justify-between">
+        <div className="p-6 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h2 className="text-lg font-bold text-slate-900">Grading Scale & Remarks</h2>
             <p className="text-xs text-slate-500 mt-1">
               Score ranges mapping to letter grades and standard report remarks, scoped by class-level band.
             </p>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap text-xs">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Scale Presets:</span>
+            <button
+              type="button"
+              onClick={() => applyScalePreset('waec')}
+              className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
+            >
+              WAEC / NECO (A1 – F9)
+            </button>
+            <button
+              type="button"
+              onClick={() => applyScalePreset('primary_letters')}
+              className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
+            >
+              Primary (A – F)
+            </button>
           </div>
         </div>
 
