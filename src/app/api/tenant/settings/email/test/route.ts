@@ -9,12 +9,21 @@ import prisma from '@/lib/prisma';
  */
 export async function POST(req: NextRequest) {
   try {
-    const auth = await getTenantUserFromCookies();
+    const body = await req.json().catch(() => ({}));
+    let expectedTenantId: string | undefined;
+    if (typeof body.slug === 'string' && body.slug.trim()) {
+      const targetTenant = await prisma.tenant.findUnique({
+        where: { slug: body.slug.trim().toLowerCase() },
+        select: { id: true },
+      });
+      expectedTenantId = targetTenant?.id;
+    }
+
+    const auth = await getTenantUserFromCookies(expectedTenantId);
     if (!auth || auth.user.role !== 'school_admin') {
       return NextResponse.json({ error: 'Unauthorized — Admin role required' }, { status: 403 });
     }
 
-    const body = await req.json().catch(() => ({}));
     const recipient = typeof body.recipientEmail === 'string' ? body.recipientEmail.trim() : '';
     const customReplyTo = typeof body.replyTo === 'string' && body.replyTo.includes('@') ? body.replyTo.trim() : undefined;
     const customFromName = typeof body.fromName === 'string' && body.fromName.trim() ? body.fromName.trim() : undefined;

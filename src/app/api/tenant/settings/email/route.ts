@@ -53,13 +53,22 @@ export async function GET() {
  */
 export async function POST(req: NextRequest) {
   try {
-    const auth = await getTenantUserFromCookies();
+    const body = await req.json().catch(() => ({}));
+    const { slug, host, port, secure, user, pass, fromName, fromEmail, replyTo, isPreferencesOnly } = body;
+
+    let expectedTenantId: string | undefined;
+    if (typeof slug === 'string' && slug.trim()) {
+      const targetTenant = await prisma.tenant.findUnique({
+        where: { slug: slug.trim().toLowerCase() },
+        select: { id: true },
+      });
+      expectedTenantId = targetTenant?.id;
+    }
+
+    const auth = await getTenantUserFromCookies(expectedTenantId);
     if (!auth || auth.user.role !== 'school_admin') {
       return NextResponse.json({ error: 'Unauthorized — Admin role required' }, { status: 403 });
     }
-
-    const body = await req.json().catch(() => ({}));
-    const { host, port, secure, user, pass, fromName, fromEmail, replyTo, isPreferencesOnly } = body;
 
     const existing = await prisma.emailConfiguration.findUnique({
       where: { tenantId: auth.tenant.id },
@@ -197,9 +206,19 @@ export async function POST(req: NextRequest) {
  * Deactivates tenant custom SMTP settings, reverting school back to platform default
  * while retaining sender name and direct reply-to preferences.
  */
-export async function DELETE() {
+export async function DELETE(req: NextRequest) {
   try {
-    const auth = await getTenantUserFromCookies();
+    const slug = req.nextUrl.searchParams.get('slug');
+    let expectedTenantId: string | undefined;
+    if (slug && slug.trim()) {
+      const targetTenant = await prisma.tenant.findUnique({
+        where: { slug: slug.trim().toLowerCase() },
+        select: { id: true },
+      });
+      expectedTenantId = targetTenant?.id;
+    }
+
+    const auth = await getTenantUserFromCookies(expectedTenantId);
     if (!auth || auth.user.role !== 'school_admin') {
       return NextResponse.json({ error: 'Unauthorized — Admin role required' }, { status: 403 });
     }

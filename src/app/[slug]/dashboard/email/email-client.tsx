@@ -29,12 +29,13 @@ export default function EmailSettingsClient({
 }: EmailClientProps) {
   const [config, setConfig] = useState<InitialEmailConfig | null>(initialConfig);
   const [showPassword, setShowPassword] = useState(false);
+  const [smtpUnlocked, setSmtpUnlocked] = useState(false);
 
   // Form Fields
-  const [host, setHost] = useState(initialConfig?.host || '');
+  const [host, setHost] = useState(initialConfig?.verified ? initialConfig?.host || '' : '');
   const [port, setPort] = useState(initialConfig?.port ? String(initialConfig.port) : '465');
   const [secure, setSecure] = useState(initialConfig?.secure ?? true);
-  const [user, setUser] = useState(initialConfig?.user || '');
+  const [user, setUser] = useState(initialConfig?.verified ? initialConfig?.user || '' : '');
   const [pass, setPass] = useState('');
   const [fromName, setFromName] = useState(initialConfig?.fromName || tenantName);
   const [fromEmail, setFromEmail] = useState(initialConfig?.fromEmail || '');
@@ -67,6 +68,7 @@ export default function EmailSettingsClient({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          slug,
           fromName: fromName.trim() || tenantName,
           replyTo: replyTo.trim(),
           fromEmail: fromEmail.trim() || replyTo.trim(),
@@ -117,6 +119,7 @@ export default function EmailSettingsClient({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          slug,
           host: host.trim(),
           port: Number(port),
           secure,
@@ -169,7 +172,7 @@ export default function EmailSettingsClient({
     setFeedback(null);
 
     try {
-      const res = await fetch('/api/tenant/settings/email', {
+      const res = await fetch(`/api/tenant/settings/email?slug=${encodeURIComponent(slug)}`, {
         method: 'DELETE',
       });
 
@@ -181,11 +184,11 @@ export default function EmailSettingsClient({
       setConfig((prev) =>
         prev
           ? {
-              ...prev,
-              host: '',
-              user: '',
-              verified: false,
-            }
+            ...prev,
+            host: '',
+            user: '',
+            verified: false,
+          }
           : null
       );
       setHost('');
@@ -217,6 +220,7 @@ export default function EmailSettingsClient({
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          slug,
           recipientEmail: testRecipient.trim(),
           replyTo: replyTo.trim() || config?.replyTo || tenantEmail,
           fromName: fromName.trim() || config?.fromName || tenantName,
@@ -264,13 +268,12 @@ export default function EmailSettingsClient({
       {/* Feedback Alert */}
       {feedback && (
         <div
-          className={`p-4 rounded-2xl text-sm font-medium flex items-start gap-3 transition-all ${
-            feedback.type === 'success'
+          className={`p-4 rounded-2xl text-sm font-medium flex items-start gap-3 transition-all ${feedback.type === 'success'
               ? 'bg-emerald-50 text-emerald-900 border border-emerald-200'
               : feedback.type === 'error'
-              ? 'bg-rose-50 text-rose-900 border border-rose-200'
-              : 'bg-blue-50 text-blue-900 border border-blue-200'
-          }`}
+                ? 'bg-rose-50 text-rose-900 border border-rose-200'
+                : 'bg-blue-50 text-blue-900 border border-blue-200'
+            }`}
         >
           <span className="text-lg">
             {feedback.type === 'success' ? '✅' : feedback.type === 'error' ? '⚠️' : 'ℹ️'}
@@ -451,6 +454,8 @@ export default function EmailSettingsClient({
                     type="text"
                     name="smtp_custom_account_user"
                     autoComplete="off"
+                    readOnly={!smtpUnlocked}
+                    onFocus={() => setSmtpUnlocked(true)}
                     data-1p-ignore="true"
                     data-lpignore="true"
                     required
@@ -475,9 +480,12 @@ export default function EmailSettingsClient({
                     </button>
                   </div>
                   <input
-                    type={showPassword ? 'text' : 'password'}
+                    type="text"
                     name="smtp_custom_app_secret"
-                    autoComplete="new-password"
+                    autoComplete="off"
+                    readOnly={!smtpUnlocked}
+                    onFocus={() => setSmtpUnlocked(true)}
+                    style={!showPassword ? ({ WebkitTextSecurity: 'disc' } as React.CSSProperties) : undefined}
                     data-1p-ignore="true"
                     data-lpignore="true"
                     required={!isCustomActive}
