@@ -1251,11 +1251,15 @@ export function TenantsClient({ initialTenants, availablePlans }: TenantsClientP
  </div>
  )}
 
- <form onSubmit={handleSaveAdmin} className="space-y-4 text-xs">
+ <form onSubmit={handleSaveAdmin} autoComplete="off" className="space-y-4 text-xs">
+ <input type="text" name="prevent_autofill_user" autoComplete="username" tabIndex={-1} aria-hidden="true" className="hidden" />
+ <input type="password" name="prevent_autofill_pass" autoComplete="current-password" tabIndex={-1} aria-hidden="true" className="hidden" />
  <div>
  <label className="block adm-text-muted font-semibold mb-1">Administrator Full Name (Optional)</label>
  <input
  type="text"
+ name="tenant_admin_full_name"
+ autoComplete="off"
  placeholder="e.g. Dr. Babatunde Okafor"
  value={editAdminStaffName}
  onChange={(e) => setEditAdminStaffName(e.target.value)}
@@ -1269,6 +1273,8 @@ export function TenantsClient({ initialTenants, availablePlans }: TenantsClientP
  </label>
  <input
  type="text"
+ name="tenant_admin_login_id"
+ autoComplete="off"
  required
  placeholder="e.g. admin@school.edu.ng"
  value={editAdminUsername}
@@ -1282,6 +1288,8 @@ export function TenantsClient({ initialTenants, availablePlans }: TenantsClientP
  <label className="block adm-text-muted font-semibold mb-1">New Password (Leave blank to keep current)</label>
  <input
  type="text"
+ name="tenant_admin_new_pass"
+ autoComplete="new-password"
  placeholder="Enter new password (min. 6 chars)"
  value={editAdminPassword}
  onChange={(e) => setEditAdminPassword(e.target.value)}

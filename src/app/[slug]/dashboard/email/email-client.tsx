@@ -364,6 +364,8 @@ export default function EmailSettingsClient({
                 <label className="text-xs font-bold text-slate-700">Direct Reply-To Address *</label>
                 <input
                   type="email"
+                  name="school_direct_reply_to"
+                  autoComplete="off"
                   required
                   placeholder="e.g. info@school.edu, school@gmail.com"
                   value={replyTo}
@@ -386,12 +388,17 @@ export default function EmailSettingsClient({
               </p>
             </div>
 
-            <form onSubmit={handleSaveCustomSmtp} className="space-y-5">
+            <form onSubmit={handleSaveCustomSmtp} autoComplete="off" className="space-y-5">
+              {/* Hidden trap inputs to prevent browser password managers from autofilling portal login credentials */}
+              <input type="text" name="prevent_autofill_user" autoComplete="username" tabIndex={-1} aria-hidden="true" className="hidden" />
+              <input type="password" name="prevent_autofill_pass" autoComplete="current-password" tabIndex={-1} aria-hidden="true" className="hidden" />
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="sm:col-span-2 space-y-1.5">
                   <label className="text-xs font-bold text-slate-700">SMTP Host / Server Address *</label>
                   <input
                     type="text"
+                    name="smtp_server_host"
+                    autoComplete="off"
                     required
                     placeholder="e.g. smtp.gmail.com, mail.school.edu"
                     value={host}
@@ -404,6 +411,8 @@ export default function EmailSettingsClient({
                   <label className="text-xs font-bold text-slate-700">SMTP Port *</label>
                   <input
                     type="number"
+                    name="smtp_server_port"
+                    autoComplete="off"
                     required
                     placeholder="465 or 587"
                     value={port}
@@ -436,6 +445,10 @@ export default function EmailSettingsClient({
                   <label className="text-xs font-bold text-slate-700">SMTP Username / Email *</label>
                   <input
                     type="text"
+                    name="smtp_custom_account_user"
+                    autoComplete="off"
+                    data-1p-ignore="true"
+                    data-lpignore="true"
                     required
                     placeholder="school@gmail.com or notifications@school.edu"
                     value={user}
@@ -459,6 +472,10 @@ export default function EmailSettingsClient({
                   </div>
                   <input
                     type={showPassword ? 'text' : 'password'}
+                    name="smtp_custom_app_secret"
+                    autoComplete="new-password"
+                    data-1p-ignore="true"
+                    data-lpignore="true"
                     required={!isCustomActive}
                     placeholder={isCustomActive ? '•••••••• (leave blank to keep unchanged)' : 'Google App Password or Mail Password'}
                     value={pass}

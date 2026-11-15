@@ -282,6 +282,8 @@ export function SettingsClient({ superAdmin }: SettingsClientProps) {
                     <label className="block text-[10px] adm-text-muted uppercase tracking-widest mb-1">Public Key</label>
                     <input
                       type="text"
+                      name="paystack_public_key"
+                      autoComplete="off"
                       placeholder="pk_test_... or pk_live_..."
                       value={paystackPublicKey}
                       onChange={(e) => setPaystackPublicKey(e.target.value)}
@@ -292,6 +294,8 @@ export function SettingsClient({ superAdmin }: SettingsClientProps) {
                     <label className="block text-[10px] adm-text-muted uppercase tracking-widest mb-1">Secret Key</label>
                     <input
                       type="password"
+                      name="paystack_secret_key"
+                      autoComplete="new-password"
                       placeholder="sk_test_... or sk_live_..."
                       value={paystackSecretKey}
                       onChange={(e) => setPaystackSecretKey(e.target.value)}
@@ -323,6 +327,8 @@ export function SettingsClient({ superAdmin }: SettingsClientProps) {
               <SettingField label="Termii SMS API Master Credentials" hint="Master key for dispatching SMS broadcasts to parents across all school tenants." colSpan>
                 <input
                   type="password"
+                  name="termii_master_api_key"
+                  autoComplete="new-password"
                   placeholder="Enter Termii API Key (e.g. TL_...)"
                   value={termiiApiKey}
                   onChange={(e) => setTermiiApiKey(e.target.value)}
@@ -338,20 +344,20 @@ export function SettingsClient({ superAdmin }: SettingsClientProps) {
           <SettingSection title="Super Admin Account & Security Boundaries" accentColor="bg-rose-500">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <SettingField label="Super Admin Display Name">
-                <input type="text" value={adminName} onChange={(e) => setAdminName(e.target.value)} required className={inputClass} />
+                <input type="text" name="sa_display_name" autoComplete="off" value={adminName} onChange={(e) => setAdminName(e.target.value)} required className={inputClass} />
               </SettingField>
               <SettingField label="Super Admin Primary Email">
-                <input type="email" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} required className={inputClass} />
+                <input type="email" name="sa_primary_email" autoComplete="off" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} required className={inputClass} />
               </SettingField>
               <SettingField label="Change Master Password" colSpan>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[10px] adm-text-muted uppercase tracking-widest mb-1">New Password</label>
-                    <input type="password" placeholder="Leave blank to keep current" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className={inputClass} />
+                    <input type="password" name="sa_new_password" autoComplete="new-password" placeholder="Leave blank to keep current" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className={inputClass} />
                   </div>
                   <div>
                     <label className="block text-[10px] adm-text-muted uppercase tracking-widest mb-1">Confirm New Password</label>
-                    <input type="password" placeholder="Leave blank to keep current" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className={inputClass} />
+                    <input type="password" name="sa_confirm_password" autoComplete="new-password" placeholder="Leave blank to keep current" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className={inputClass} />
                   </div>
                 </div>
               </SettingField>
