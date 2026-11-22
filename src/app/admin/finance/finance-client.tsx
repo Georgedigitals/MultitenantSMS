@@ -4,14 +4,12 @@ import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { ArrowDownToLine, ArrowRight, CreditCard, Search, TrendingUp, Wallet } from 'lucide-react';
 import { PlatformFinancialOverview } from '@/lib/super-admin';
+import { useLanguage } from '@/components/language-provider';
 import PinSettlementPanel from '../pin-settlement-panel';
 
 interface FinanceClientProps {
   financials: PlatformFinancialOverview;
 }
-
-const naira = (amount: number) => `₦${amount.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-const shortNaira = (amount: number) => `₦${amount.toLocaleString('en-NG', { maximumFractionDigits: 2 })}`;
 
 function csvCell(value: string | number) {
   const text = String(value ?? '');
@@ -37,6 +35,9 @@ function StatusLabel({ status }: { status: string }) {
 }
 
 export function FinanceClient({ financials }: FinanceClientProps) {
+  const { formatMoney, localization } = useLanguage();
+  const fmtMoney = (amount: number) => formatMoney(amount, 2);
+  const fmtShort = (amount: number) => formatMoney(amount, 0);
   const { platformRevenue, tenantFinancials } = financials;
   const [ledgerSearch, setLedgerSearch] = useState('');
   const normalizedSearch = ledgerSearch.trim().toLowerCase();
@@ -55,8 +56,9 @@ export function FinanceClient({ financials }: FinanceClientProps) {
   );
 
   const handleExport = () => {
+    const code = localization.currencyCode;
     const rows = [
-      ['School', 'Slug', 'Plan', 'Annual Contract Price (NGN)', 'Catalog Price (NGN)', 'Status', 'Renewal Date', 'PIN sales', 'BMS PIN fee (NGN)'],
+      ['School', 'Slug', 'Plan', `Annual Contract Price (${code})`, `Catalog Price (${code})`, 'Status', 'Renewal Date', 'PIN sales', `Platform PIN fee (${code})`],
       ...tenantFinancials.map((tenant) => [
         tenant.tenantName,
         tenant.tenantSlug,
@@ -64,7 +66,7 @@ export function FinanceClient({ financials }: FinanceClientProps) {
         (tenant.annualContractPrice ?? tenant.planPrice).toFixed(2),
         tenant.planPrice.toFixed(2),
         tenant.status,
-        tenant.subscriptionExpiresAt ? new Date(tenant.subscriptionExpiresAt).toLocaleDateString('en-NG') : 'N/A',
+        tenant.subscriptionExpiresAt ? new Date(tenant.subscriptionExpiresAt).toLocaleDateString(localization.locale) : 'N/A',
         tenant.pinSalesCount,
         tenant.pinRevenueAmount.toFixed(2),
       ]),
@@ -73,7 +75,7 @@ export function FinanceClient({ financials }: FinanceClientProps) {
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
     const anchor = document.createElement('a');
     anchor.href = url;
-    anchor.download = `bms-finance-ledger-${new Date().toISOString().slice(0, 10)}.csv`;
+    anchor.download = `platform-finance-ledger-${new Date().toISOString().slice(0, 10)}.csv`;
     document.body.appendChild(anchor);
     anchor.click();
     anchor.remove();
@@ -88,7 +90,7 @@ export function FinanceClient({ financials }: FinanceClientProps) {
       icon: <CreditCard size={18} className="adm-text-accent" aria-hidden="true" />,
     },
     {
-      label: 'BMS share of PIN sales',
+      label: 'Platform share of PIN sales',
       value: platformRevenue.pinRevenue,
       detail: 'Platform fee retained from student & school PIN orders',
       icon: <Wallet size={18} className="adm-text-accent" aria-hidden="true" />,
@@ -106,7 +108,7 @@ export function FinanceClient({ financials }: FinanceClientProps) {
     <div data-ui="accent-ladder" className="space-y-7">
       <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.15em] adm-text-accent">BMS platform finance</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.15em] adm-text-accent">Platform finance</p>
           <h1 className="mt-2 text-[27px] font-semibold leading-tight tracking-[-0.035em] adm-text-primary sm:text-[30px]">
             Finance & Revenue
           </h1>
@@ -142,7 +144,7 @@ export function FinanceClient({ financials }: FinanceClientProps) {
                 {metric.icon}
               </div>
               <p className={`mt-3 break-words text-[25px] font-semibold leading-none tracking-[-0.035em] tabular-nums sm:text-[28px] ${metric.total ? 'adm-text-accent' : 'adm-text-primary'}`}>
-                {naira(metric.value)}
+                {fmtMoney(metric.value)}
               </p>
               <p className="mt-2 text-[12px] leading-5 adm-text-muted">{metric.detail}</p>
             </article>
@@ -159,7 +161,7 @@ export function FinanceClient({ financials }: FinanceClientProps) {
           <div>
             <h2 className="text-[15px] font-semibold adm-text-primary">School platform subscription ledger</h2>
             <p className="mt-1 text-[12px] leading-5 adm-text-secondary">
-              Locked annual contract prices, renewal dates, and BMS share of result PIN sales.
+              Locked annual contract prices, renewal dates, and platform share of result PIN sales.
             </p>
           </div>
           <div className="flex flex-col gap-2 sm:flex-row">
@@ -184,7 +186,7 @@ export function FinanceClient({ financials }: FinanceClientProps) {
                 <th scope="col" className="px-5 py-3 font-medium sm:px-6">School</th>
                 <th scope="col" className="px-4 py-3 font-medium">Plan & Contract Rate</th>
                 <th scope="col" className="px-4 py-3 text-right font-medium">PINs sold</th>
-                <th scope="col" className="px-5 py-3 text-right font-medium sm:px-6">BMS PIN share</th>
+                <th scope="col" className="px-5 py-3 text-right font-medium sm:px-6">Platform PIN share</th>
                 <th scope="col" className="px-4 py-3 font-medium">Status & Renewal</th>
               </tr>
             </thead>
@@ -210,21 +212,21 @@ export function FinanceClient({ financials }: FinanceClientProps) {
                     <td className="px-4 py-3.5">
                       <span className="block font-medium adm-text-primary">{tenant.planName}</span>
                       <span className="mt-0.5 block text-[11px] font-medium text-[#17834b]">
-                        Contract: {shortNaira(tenant.annualContractPrice ?? tenant.planPrice)}/yr
+                        Contract: {fmtShort(tenant.annualContractPrice ?? tenant.planPrice)}/yr
                       </span>
                       {tenant.annualContractPrice && tenant.annualContractPrice !== tenant.planPrice && (
                         <span className="block text-[10px] adm-text-muted">
-                          Catalog: {shortNaira(tenant.planPrice)}/yr
+                          Catalog: {fmtShort(tenant.planPrice)}/yr
                         </span>
                       )}
                     </td>
-                    <td className="px-4 py-3.5 text-right tabular-nums adm-text-primary">{tenant.pinSalesCount.toLocaleString('en-NG')}</td>
-                    <td className="px-5 py-3.5 text-right font-medium tabular-nums adm-text-accent sm:px-6">{shortNaira(tenant.pinRevenueAmount)}</td>
+                    <td className="px-4 py-3.5 text-right tabular-nums adm-text-primary">{tenant.pinSalesCount.toLocaleString(localization.locale)}</td>
+                    <td className="px-5 py-3.5 text-right font-medium tabular-nums adm-text-accent sm:px-6">{fmtShort(tenant.pinRevenueAmount)}</td>
                     <td className="px-4 py-3.5">
                       <StatusLabel status={tenant.status} />
                       {tenant.subscriptionExpiresAt && (
                         <span className="mt-1 block text-[11px] adm-text-muted">
-                          Renews: {new Date(tenant.subscriptionExpiresAt).toLocaleDateString('en-NG', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          Renews: {new Date(tenant.subscriptionExpiresAt).toLocaleDateString(localization.locale, { month: 'short', day: 'numeric', year: 'numeric' })}
                         </span>
                       )}
                     </td>

@@ -86,27 +86,27 @@ export function PublicNavbar({
 
   return (
     <header
-      className="sticky top-0 z-40 border-b border-white/10 text-white"
-      style={{ backgroundColor: brand.primaryColor }}
+      className="sticky top-0 z-40 border-b border-white/10 text-white backdrop-blur-md"
+      style={{ backgroundColor: `color-mix(in srgb, ${brand.primaryColor} 94%, transparent)` }}
     >
-      <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-5 sm:px-8 lg:px-10 gap-4">
+      <div className="mx-auto flex h-[74px] max-w-7xl items-center justify-between px-5 sm:px-8 lg:px-10 gap-4">
         {/* Brand */}
         <Link href="/" onClick={handleNavClick} className="group flex shrink-0 items-center gap-3 min-w-0">
           {brand.logoUrl ? (
-            <img src={brand.logoUrl} alt={brand.name} className="h-9 w-auto object-contain" />
+            <img src={brand.logoUrl} alt={brand.name} className="h-9 w-auto rounded-lg object-contain" />
           ) : (
             <div
-              className="grid h-10 w-10 place-items-center text-sm font-bold text-white shrink-0"
+              className="grid h-9 w-9 place-items-center rounded-lg text-xs font-bold text-white shrink-0 shadow-xs"
               style={{ backgroundColor: brand.accentColor }}
             >
               {monogram}
             </div>
           )}
           <div className="min-w-0">
-            <span className="block text-[16px] font-semibold leading-tight tracking-[-0.02em] text-white truncate">
+            <span data-no-translate="true" className="block text-[15.5px] font-semibold leading-tight tracking-[-0.02em] text-white truncate">
               {brand.name}
             </span>
-            <span className="block pt-0.5 text-[11px] font-normal text-white/65 truncate max-w-[180px]">
+            <span className="block pt-0.5 text-[11px] font-normal text-white/60 truncate max-w-[180px]">
               {brand.tagline || 'School management'}
             </span>
           </div>
@@ -118,8 +118,8 @@ export function PublicNavbar({
             isForcedMobile
               ? 'hidden'
               : isForcedDesktop
-              ? 'flex items-center gap-6'
-              : 'hidden items-center gap-7 md:flex'
+              ? 'flex items-center gap-1'
+              : 'hidden items-center gap-1 md:flex'
           }
         >
           {navLinks.map((link, i) => {
@@ -129,8 +129,10 @@ export function PublicNavbar({
                 key={`${link.href}-${i}`}
                 href={link.href}
                 onClick={handleNavClick}
-                className={`py-2 text-[13px] font-semibold transition-colors whitespace-nowrap ${
-                  isActive ? 'text-white underline underline-offset-4' : 'text-white/75 hover:text-white'
+                className={`px-3.5 py-2 rounded-lg text-[13px] font-medium transition-colors whitespace-nowrap ${
+                  isActive
+                    ? 'bg-white/12 text-white'
+                    : 'text-white/72 hover:bg-white/6 hover:text-white'
                 }`}
               >
                 {tp(link.label)}
@@ -145,8 +147,8 @@ export function PublicNavbar({
             isForcedMobile
               ? 'hidden'
               : isForcedDesktop
-              ? 'flex items-center gap-3 shrink-0'
-              : 'hidden md:flex items-center gap-3 shrink-0'
+              ? 'flex items-center gap-2.5 shrink-0'
+              : 'hidden md:flex items-center gap-2.5 shrink-0'
           }
         >
           {!disableNavigation && <LanguageSwitcher variant="public" />}
@@ -154,7 +156,7 @@ export function PublicNavbar({
             <Link
               href="/admin/login"
               onClick={handleNavClick}
-              className="px-2 py-2 text-[13px] font-semibold text-white/80 transition-colors hover:text-white whitespace-nowrap"
+              className="px-3 py-2 rounded-lg text-[13px] font-medium text-white/80 transition-colors hover:bg-white/8 hover:text-white whitespace-nowrap"
             >
               {t('nav.signIn', 'Sign in')}
             </Link>
@@ -163,7 +165,7 @@ export function PublicNavbar({
             <Link
               href={brand.headerCtaHref || '/register'}
               onClick={handleNavClick}
-              className="h-10 px-5 text-[13px] font-medium text-white transition-opacity hover:opacity-90 inline-flex items-center whitespace-nowrap"
+              className="h-9 px-4 rounded-lg text-[13px] font-semibold text-white transition-all hover:opacity-90 shadow-xs inline-flex items-center whitespace-nowrap"
               style={{ backgroundColor: brand.accentColor }}
             >
               {tp(brand.headerCtaLabel)}

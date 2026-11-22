@@ -40,8 +40,6 @@ interface OverviewClientProps {
   }>;
 }
 
-const naira = (amount: number) => `₦${amount.toLocaleString('en-NG', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-
 function StatusLabel({ status }: { status: string }) {
   const normalized = status.toLowerCase();
   const styles: Record<string, string> = {
@@ -148,6 +146,126 @@ export function OverviewClient({
           </div>
           <span className="adm-text-accent mt-0.5"><CreditCard size={15} aria-hidden="true" /></span>
         </Link>
+      </section>
+
+      {/* Revenue Composition & Platform Pulse Telemetry */}
+      <section className="grid grid-cols-1 gap-5 lg:grid-cols-12">
+        <div className="adm-card rounded-xl border p-5 sm:p-6 lg:col-span-7 flex flex-col justify-between gap-5">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] adm-text-muted">
+                Revenue mix
+              </p>
+              <h2 className="mt-1 text-[16px] font-semibold adm-text-primary">
+                Subscriptions vs. Result PIN fees
+              </h2>
+            </div>
+            <Link
+              href="/admin/finance"
+              className="inline-flex items-center gap-1.5 rounded-lg border adm-divider adm-surface adm-surface-hover px-3 py-1.5 text-[12px] font-medium adm-text-secondary transition-colors"
+            >
+              Ledger <ArrowRight size={13} aria-hidden="true" />
+            </Link>
+          </div>
+
+          {(() => {
+            const total = Math.max(platformRevenue.totalPlatformRevenue, 1);
+            const subPct = Math.round((platformRevenue.subscriptionRevenue / total) * 100);
+            const pinPct = platformRevenue.totalPlatformRevenue > 0 ? 100 - subPct : 0;
+            return (
+              <div className="space-y-4">
+                <div className="h-2.5 w-full overflow-hidden rounded-full adm-surface flex">
+                  <div
+                    className="h-full transition-all duration-500"
+                    style={{
+                      width: `${platformRevenue.totalPlatformRevenue > 0 ? Math.max(subPct, 2) : 0}%`,
+                      backgroundColor: 'var(--adm-accent)',
+                    }}
+                  />
+                  <div
+                    className="h-full bg-emerald-500 transition-all duration-500"
+                    style={{
+                      width: `${platformRevenue.totalPlatformRevenue > 0 ? Math.max(pinPct, 2) : 0}%`,
+                    }}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4 pt-1">
+                  <div className="rounded-lg border adm-divider adm-surface px-4 py-3">
+                    <div className="flex items-center justify-between text-[11px] adm-text-muted">
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full" style={{ backgroundColor: 'var(--adm-accent)' }} />
+                        Annual Subscriptions
+                      </span>
+                      <span className="font-mono">{platformRevenue.totalPlatformRevenue > 0 ? `${subPct}%` : '0%'}</span>
+                    </div>
+                    <p className="mt-1.5 text-[18px] font-semibold tabular-nums adm-text-primary">
+                      {fmtCurrency(platformRevenue.subscriptionRevenue)}
+                    </p>
+                  </div>
+                  <div className="rounded-lg border adm-divider adm-surface px-4 py-3">
+                    <div className="flex items-center justify-between text-[11px] adm-text-muted">
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                        PIN Fee Share
+                      </span>
+                      <span className="font-mono">{platformRevenue.totalPlatformRevenue > 0 ? `${pinPct}%` : '0%'}</span>
+                    </div>
+                    <p className="mt-1.5 text-[18px] font-semibold tabular-nums adm-text-primary">
+                      {fmtCurrency(platformRevenue.pinRevenue)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+
+        <div className="adm-card rounded-xl border p-5 sm:p-6 lg:col-span-5 flex flex-col justify-between gap-4">
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.12em] adm-text-muted">
+                Fleet health
+              </p>
+              <h2 className="mt-1 text-[16px] font-semibold adm-text-primary">
+                Tenant status snapshot
+              </h2>
+            </div>
+            <span className="inline-flex items-center gap-1.5 rounded-full border adm-divider adm-surface px-2.5 py-0.5 text-[11px] font-medium adm-text-secondary">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Live
+            </span>
+          </div>
+
+          <div className="grid grid-cols-3 gap-2.5">
+            <div className="rounded-lg border adm-divider adm-surface p-3">
+              <p className="text-[10.5px] font-medium adm-text-muted">Avg. students</p>
+              <p className="mt-1 text-[19px] font-semibold tabular-nums adm-text-primary">
+                {tenantCount > 0 ? Math.round(studentCount / tenantCount).toLocaleString() : '0'}
+              </p>
+              <p className="text-[10px] adm-text-faint">per school</p>
+            </div>
+            <div className="rounded-lg border adm-divider adm-surface p-3">
+              <p className="text-[10.5px] font-medium adm-text-muted">Staff ratio</p>
+              <p className="mt-1 text-[19px] font-semibold tabular-nums adm-text-primary">
+                {staffCount > 0 ? `${Math.round(studentCount / staffCount)}:1` : '—'}
+              </p>
+              <p className="text-[10px] adm-text-faint">student/staff</p>
+            </div>
+            <div className="rounded-lg border adm-divider adm-surface p-3">
+              <p className="text-[10.5px] font-medium adm-text-muted">Alerts</p>
+              <p className={`mt-1 text-[19px] font-semibold tabular-nums ${healthAlerts.length > 0 ? 'text-amber-500' : 'adm-text-primary'}`}>
+                {healthAlerts.length}
+              </p>
+              <p className="text-[10px] adm-text-faint">{healthAlerts.length === 0 ? 'all healthy' : 'needs review'}</p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between border-t adm-divider pt-3 text-[12px]">
+            <span className="adm-text-muted">Quick jump to school directory</span>
+            <Link href="/admin/tenants" className="font-medium adm-text-primary hover:underline inline-flex items-center gap-1">
+              Manage schools <ArrowRight size={12} />
+            </Link>
+          </div>
+        </div>
       </section>
 
       {/* Two Column Grid */}
@@ -297,7 +415,7 @@ export function OverviewClient({
               {t('overview.viewLogs', 'View logs')} <ArrowRight size={14} aria-hidden="true" />
             </Link>
           </div>
-          <div className="max-h-[460px] divide-y divide-[#edf0ed] overflow-y-auto">
+          <div className="max-h-[460px] divide-y adm-divider overflow-y-auto">
             {impersonationLogs.length === 0 ? (
               <div className="px-5 py-10 text-center">
                 <p className="text-[13px] font-medium adm-text-primary">No admin activity recorded yet.</p>

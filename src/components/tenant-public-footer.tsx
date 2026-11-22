@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import type { PublicSiteData } from '@/lib/site-content';
+import { useLanguage } from '@/components/language-provider';
 
 interface TenantPublicFooterProps {
   data: PublicSiteData;
@@ -11,6 +12,7 @@ interface TenantPublicFooterProps {
 
 export function TenantPublicFooter({ data }: TenantPublicFooterProps) {
   const { tenant, contact, hero } = data;
+  const { t, tp } = useLanguage();
   const currentYear = new Date().getFullYear();
   const pathname = usePathname() || '';
 
@@ -42,7 +44,7 @@ export function TenantPublicFooter({ data }: TenantPublicFooterProps) {
         <div className="grid grid-cols-1 md:grid-cols-12 gap-10 py-14 border-b border-white/15">
           {/* Campus Contact */}
           <div className="md:col-span-5 space-y-3">
-            <h2 className="text-[14px] font-medium text-[#9b9890]">Campus office</h2>
+            <h2 className="text-[14px] font-medium text-[#9b9890]">{tp('Campus office')}</h2>
             <p className="text-[16px] leading-relaxed text-white max-w-sm">
               {contact.address || 'School Campus'}
             </p>
@@ -57,36 +59,36 @@ export function TenantPublicFooter({ data }: TenantPublicFooterProps) {
 
           {/* Explore */}
           <div className="md:col-span-3">
-            <h2 className="text-[14px] font-medium text-[#9b9890] mb-4">School</h2>
+            <h2 className="text-[14px] font-medium text-[#9b9890] mb-4">{tp('School')}</h2>
             <ul className="space-y-3 text-[15px] text-[#e4e2dd]">
               <li>
                 <Link href={resolveHref('/')} className="hover:text-white transition-colors">
-                  Home
+                  {tp('Home')}
                 </Link>
               </li>
               <li>
                 <Link href={resolveHref('/about')} className="hover:text-white transition-colors">
-                  About us
+                  {tp('About us')}
                 </Link>
               </li>
               <li>
                 <Link href={resolveHref('/academics')} className="hover:text-white transition-colors">
-                  Academics
+                  {tp('Academics')}
                 </Link>
               </li>
               <li>
                 <Link href={resolveHref('/admissions')} className="hover:text-white transition-colors">
-                  Admissions
+                  {tp('Admissions')}
                 </Link>
               </li>
               <li>
                 <Link href={resolveHref('/gallery')} className="hover:text-white transition-colors">
-                  Campus gallery
+                  {tp('Campus gallery')}
                 </Link>
               </li>
               <li>
                 <Link href={resolveHref('/contact')} className="hover:text-white transition-colors">
-                  Contact
+                  {tp('Contact')}
                 </Link>
               </li>
             </ul>
@@ -94,21 +96,21 @@ export function TenantPublicFooter({ data }: TenantPublicFooterProps) {
 
           {/* Portals */}
           <div className="md:col-span-4">
-            <h2 className="text-[14px] font-medium text-[#9b9890] mb-4">Portals &amp; services</h2>
+            <h2 className="text-[14px] font-medium text-[#9b9890] mb-4">{tp('Portals & services')}</h2>
             <ul className="space-y-3 text-[15px] text-[#e4e2dd]">
               <li>
                 <Link href={resolveHref('/results/check')} className="hover:text-white transition-colors">
-                  Term result checker
+                  {tp('Term result checker')}
                 </Link>
               </li>
               <li>
                 <Link href={resolveHref('/login')} className="hover:text-white transition-colors">
-                  Staff, student &amp; parent login
+                  {tp('Staff, student & parent login')}
                 </Link>
               </li>
               <li>
                 <Link href={resolveHref('/admissions')} className="hover:text-white transition-colors">
-                  Admission inquiry
+                  {tp('Admission inquiry')}
                 </Link>
               </li>
             </ul>
@@ -117,9 +119,9 @@ export function TenantPublicFooter({ data }: TenantPublicFooterProps) {
 
         {/* Bottom Legal Row */}
         <div className="pt-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 text-[13px] text-[#9b9890]">
-          <p>© {currentYear} {tenant.name}. All rights reserved.</p>
+          <p>© {currentYear} {tenant.name}. {t('common.allRightsReserved', 'All rights reserved.')}</p>
           <a href="#top" className="hover:text-white transition-colors">
-            Back to top ↑
+            {tp('Back to top ↑')}
           </a>
         </div>
       </div>

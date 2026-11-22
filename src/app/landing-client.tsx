@@ -113,30 +113,30 @@ function LeadFormWidget({
   };
 
   return (
-    <section className="bg-[#f4f3f1] border-y border-[#e4e2dd]">
+    <section className="bg-[#f4f2ec] border-y border-[#e6e4de]">
       <div
         className={`mx-auto max-w-4xl px-5 ${
-          isMobilePreview ? 'py-12' : 'py-16 sm:px-8 sm:py-20'
+          isMobilePreview ? 'py-12' : 'py-16 sm:px-8 sm:py-24'
         }`}
       >
         <div className="max-w-2xl">
           <h2
-            className={`tenant-editorial-display font-normal leading-[1.05] tracking-[-0.025em] text-[#0a0a0a] ${
+            className={`tenant-editorial-display font-normal leading-[1.04] tracking-[-0.025em] text-[#141518] ${
               isMobilePreview ? 'text-[32px]' : 'text-[36px] sm:text-[48px]'
             }`}
           >
             {heading || 'Book a live walkthrough'}
           </h2>
-          {subtitle && <p className="mt-2.5 text-sm leading-6 text-[#57554f]">{subtitle}</p>}
+          {subtitle && <p className="mt-3 text-sm leading-6 text-[#5a5b60]">{subtitle}</p>}
         </div>
 
         <form
           onSubmit={handleSubmit}
-          className="mt-8 bg-white border border-[#e4e2dd] p-5 sm:p-7 space-y-4"
+          className="mt-8 rounded-2xl bg-white border border-[#e6e4de] p-6 sm:p-8 space-y-4 shadow-[0_1px_3px_rgba(17,17,16,0.04)]"
         >
           {feedback && (
             <div
-              className={`px-4 py-3 text-xs font-medium border ${
+              className={`rounded-lg px-4 py-3 text-xs font-medium border ${
                 feedback.type === 'success'
                   ? 'bg-emerald-50 border-emerald-200 text-emerald-900'
                   : 'bg-rose-50 border-rose-200 text-rose-900'
@@ -148,62 +148,62 @@ function LeadFormWidget({
 
           <div className={`grid gap-4 ${isMobilePreview ? 'grid-cols-1' : 'sm:grid-cols-2'}`}>
             <div>
-              <label className="block text-xs font-semibold text-[#0a0a0a] mb-1">Full name *</label>
+              <label className="block text-xs font-semibold text-[#141518] mb-1.5">Full name *</label>
               <input
                 type="text"
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 placeholder="e.g. Mrs. Adebayo"
-                className="w-full border border-[#d4d1ca] bg-white px-3 py-2.5 text-sm text-[#0a0a0a] focus:outline-none focus:border-[#0a0a0a]"
+                className="w-full rounded-lg border border-[#d5d2ca] bg-white px-3.5 py-2.5 text-sm text-[#141518] focus:outline-none focus:border-[#141518]"
               />
             </div>
             <div>
-              <label className="block text-xs font-semibold text-[#0a0a0a] mb-1">Email address *</label>
+              <label className="block text-xs font-semibold text-[#141518] mb-1.5">Email address *</label>
               <input
                 type="email"
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="principal@school.edu"
-                className="w-full border border-[#d4d1ca] bg-white px-3 py-2.5 text-sm text-[#0a0a0a] focus:outline-none focus:border-[#0a0a0a]"
+                className="w-full rounded-lg border border-[#d5d2ca] bg-white px-3.5 py-2.5 text-sm text-[#141518] focus:outline-none focus:border-[#141518]"
               />
             </div>
             {showSchoolField !== false && (
               <div>
-                <label className="block text-xs font-semibold text-[#0a0a0a] mb-1">School name</label>
+                <label className="block text-xs font-semibold text-[#141518] mb-1.5">School name</label>
                 <input
                   type="text"
                   value={schoolName}
                   onChange={(e) => setSchoolName(e.target.value)}
                   placeholder="e.g. Greenfield Academy"
-                  className="w-full border border-[#d4d1ca] bg-white px-3 py-2.5 text-sm text-[#0a0a0a] focus:outline-none focus:border-[#0a0a0a]"
+                  className="w-full rounded-lg border border-[#d5d2ca] bg-white px-3.5 py-2.5 text-sm text-[#141518] focus:outline-none focus:border-[#141518]"
                 />
               </div>
             )}
             {showPhoneField !== false && (
               <div>
-                <label className="block text-xs font-semibold text-[#0a0a0a] mb-1">Phone / WhatsApp</label>
+                <label className="block text-xs font-semibold text-[#141518] mb-1.5">Phone / WhatsApp</label>
                 <input
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+234 800 000 0000"
-                  className="w-full border border-[#d4d1ca] bg-white px-3 py-2.5 text-sm text-[#0a0a0a] focus:outline-none focus:border-[#0a0a0a]"
+                  placeholder="+1 (555) 000-0000"
+                  className="w-full rounded-lg border border-[#d5d2ca] bg-white px-3.5 py-2.5 text-sm text-[#141518] focus:outline-none focus:border-[#141518]"
                 />
               </div>
             )}
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-[#0a0a0a] mb-1">How can we help? *</label>
+            <label className="block text-xs font-semibold text-[#141518] mb-1.5">How can we help? *</label>
             <textarea
               required
               rows={4}
               value={message}
               onChange={(e) => setMessage(e.target.value)}
               placeholder="Tell us your approximate student population and what you'd like to see..."
-              className="w-full border border-[#d4d1ca] bg-white px-3 py-2.5 text-sm text-[#0a0a0a] focus:outline-none focus:border-[#0a0a0a]"
+              className="w-full rounded-lg border border-[#d5d2ca] bg-white px-3.5 py-2.5 text-sm text-[#141518] focus:outline-none focus:border-[#141518]"
             />
           </div>
 
@@ -211,7 +211,7 @@ function LeadFormWidget({
             <button
               type="submit"
               disabled={submitting}
-              className="inline-flex min-h-11 items-center justify-center gap-2 px-6 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:opacity-50 cursor-pointer"
+              className="inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-6 text-sm font-semibold text-white shadow-xs transition-opacity hover:opacity-90 disabled:opacity-50 cursor-pointer"
               style={{ backgroundColor: accentColor }}
             >
               {submitting ? 'Sending...' : buttonLabel || 'Request Demo'} <span aria-hidden="true">→</span>
@@ -224,109 +224,201 @@ function LeadFormWidget({
 }
 
 function ProductPreview({ platformName, accentColor }: { platformName: string; accentColor: string }) {
-  return (
-    <div className="relative mx-auto w-full max-w-[640px] pb-10 sm:pb-14" data-ui="sample-product-preview">
-      <div className="relative z-10 w-[92%] overflow-hidden border border-white/20 bg-white text-[#102d43]">
-        <div className="flex h-8 items-center gap-1.5 border-b border-[#e6eaf0] bg-[#f6f8fa] px-3" aria-hidden="true">
-          <span className="h-2 w-2 rounded-full bg-[#ef6c62]" />
-          <span className="h-2 w-2 rounded-full bg-[#f1bd4f]" />
-          <span className="h-2 w-2 rounded-full bg-[#62bd6c]" />
-          <span className="ml-3 flex-1 bg-white px-2 py-0.5 text-[9px] text-[#8693a0]">school.yourdomain.com</span>
-        </div>
-        <div className="flex items-center justify-between border-b border-[#e8edf1] px-4 py-3 sm:px-5">
-          <div className="flex items-center gap-2">
-            <span
-              className="grid h-6 w-6 place-items-center text-[10px] font-bold text-white"
-              style={{ backgroundColor: accentColor }}
-            >
-              S
-            </span>
-            <span className="text-[11px] font-bold text-[#102d43]">Your school website</span>
-          </div>
-          <div className="hidden gap-4 text-[9px] font-medium text-[#71808e] sm:flex">
-            <span>About</span>
-            <span>Academics</span>
-            <span>Admissions</span>
-            <span>Contact</span>
-          </div>
-          <span className="px-2.5 py-1 text-[9px] font-bold text-white" style={{ backgroundColor: accentColor }}>
-            Portal login
-          </span>
-        </div>
-        <div className="grid min-h-[168px] grid-cols-[1.1fr_.9fr] bg-[#f4f3f1] sm:min-h-[200px]">
-          <div className="flex flex-col justify-center px-5 py-5 sm:px-7">
-            <p className="text-[19px] font-bold leading-tight tracking-[-0.02em] text-[#0a0a0a] sm:text-[24px]">
-              A welcoming place to learn and grow.
-            </p>
-            <p className="mt-2 text-[10px] leading-4 text-[#57554f]">
-              Share school information, admissions, and termly updates.
-            </p>
-            <span
-              className="mt-3 inline-flex w-fit items-center gap-1.5 px-2.5 py-1.5 text-[9px] font-bold text-white"
-              style={{ backgroundColor: accentColor }}
-            >
-              Explore admissions →
-            </span>
-          </div>
-          <div className="relative m-3 bg-[#dcd8cc] sm:m-4 flex items-center justify-center p-4 text-center">
-            <span className="text-[10px] font-medium text-[#4f4d48]">Campus cover photo</span>
-          </div>
-        </div>
-      </div>
+  const [activeView, setActiveView] = useState<'portal' | 'fees' | 'schools'>('portal');
 
-      <div className="absolute bottom-0 right-0 z-20 w-[72%] overflow-hidden border border-[#d9e0e7] bg-white text-[#102d43]">
-        <div className="flex h-7 items-center gap-1.5 border-b border-[#e7ebef] bg-[#f4f6f8] px-3" aria-hidden="true">
-          <span className="h-2 w-2 rounded-full bg-[#ef6c62]" />
-          <span className="h-2 w-2 rounded-full bg-[#f1bd4f]" />
-          <span className="h-2 w-2 rounded-full bg-[#62bd6c]" />
-          <span className="ml-2 text-[8px] text-[#78848f]">{platformName} workspace</span>
-        </div>
-        <div className="flex min-h-[144px] sm:min-h-[168px]">
-          <aside className="hidden w-[28%] flex-col gap-2 bg-[#f4f3f1] border-r border-[#e4e2dd] px-3 py-3 text-[9px] text-[#4f4d48] sm:flex">
-            <strong className="text-[#0a0a0a] truncate">{platformName}</strong>
-            <span className="bg-[#e7e5e0] text-[#0a0a0a] px-2 py-1 font-medium">Overview</span>
-            <span>Students</span>
-            <span>Attendance</span>
-            <span>Fees</span>
-            <span>Results</span>
-          </aside>
-          <div className="min-w-0 flex-1 px-3 py-3 sm:px-4">
-            <div className="flex items-center justify-between">
-              <p className="text-[11px] font-bold text-[#0a0a0a]">School office</p>
-              <span className="bg-[#eaf4ec] px-2 py-0.5 text-[8px] font-semibold text-[#177343]">Current term</span>
-            </div>
-            <div className="mt-2.5 grid grid-cols-3 border border-[#e4e2dd] divide-x divide-[#e4e2dd]">
-              <div className="p-2">
-                <p className="text-[8px] text-[#66645e]">Attendance</p>
-                <p className="mt-0.5 text-[10px] font-bold text-[#0a0a0a]">Registers</p>
-              </div>
-              <div className="p-2">
-                <p className="text-[8px] text-[#66645e]">Fees</p>
-                <p className="mt-0.5 text-[10px] font-bold text-[#0a0a0a]">Ledgers</p>
-              </div>
-              <div className="p-2">
-                <p className="text-[8px] text-[#66645e]">Results</p>
-                <p className="mt-0.5 text-[10px] font-bold text-[#0a0a0a]">Reports</p>
-              </div>
-            </div>
-            <div className="mt-2.5 border border-[#e4e2dd] text-[9px]">
-              <div className="grid grid-cols-3 bg-[#f4f3f1] px-2 py-1 font-semibold text-[#66645e]">
-                <span>Queue</span>
-                <span>Next step</span>
-                <span>Status</span>
-              </div>
-              <div className="grid grid-cols-3 border-t border-[#efede9] px-2 py-1.5">
-                <span>Attendance</span>
-                <span>Review register</span>
-                <span className="font-semibold text-[#1f6b3a]">Ready</span>
-              </div>
-              <div className="grid grid-cols-3 border-t border-[#efede9] px-2 py-1.5">
-                <span>Term results</span>
-                <span>Publish reports</span>
-                <span className="font-semibold text-[#8f4f0e]">In review</span>
-              </div>
-            </div>
+  const tabs: Array<{ id: 'portal' | 'fees' | 'schools'; label: string }> = [
+    { id: 'portal', label: 'Results & Reports' },
+    { id: 'fees', label: 'Fee Ledger' },
+    { id: 'schools', label: 'Multi-School Hub' },
+  ];
+
+  return (
+    <div className="relative mx-auto w-full max-w-[620px]" data-ui="sample-product-preview">
+      {/* Main Interactive App Stage (Warm Alabaster + Precision Chrome) */}
+      <div className="overflow-hidden rounded-2xl border border-white/15 bg-[#faf9f6] text-[#141518] shadow-[0_24px_64px_rgba(0,0,0,0.38)]">
+        {/* Top Browser / App Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#e6e4de] bg-[#f2f0eb] px-4 py-2.5">
+          <div className="flex items-center gap-1.5" aria-hidden="true">
+            <span className="h-2.5 w-2.5 rounded-full bg-[#d4d1ca]" />
+            <span className="h-2.5 w-2.5 rounded-full bg-[#d4d1ca]" />
+            <span className="h-2.5 w-2.5 rounded-full bg-[#d4d1ca]" />
+            <span className="ml-2 font-mono text-[10px] text-[#717278]">
+              {activeView === 'schools' ? 'admin.yourdomain.com' : 'apex.yourdomain.com'}
+            </span>
           </div>
+
+          <div className="flex items-center gap-1 rounded-lg bg-[#e6e4de]/70 p-0.5">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveView(tab.id)}
+                className={`rounded-md px-2.5 py-1 text-[10px] font-semibold transition-all cursor-pointer ${
+                  activeView === tab.id
+                    ? 'bg-white text-[#141518] shadow-xs'
+                    : 'text-[#5a5b60] hover:text-[#141518]'
+                }`}
+              >
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Interactive Stage Content */}
+        <div className="p-5 sm:p-6">
+          {activeView === 'portal' && (
+            <div className="space-y-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-700">
+                    <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
+                    Result PIN Verified
+                  </span>
+                  <h3 className="mt-2 text-[17px] font-semibold tracking-[-0.02em] text-[#141518]">
+                    Second Term Academic Report
+                  </h3>
+                  <p className="text-[11px] text-[#717278]">JSS 3 Gold · 2025/2026 Session · Apex Academy</p>
+                </div>
+                <div className="rounded-xl border border-[#e6e4de] bg-white px-3.5 py-2 text-right">
+                  <p className="text-[10px] font-medium uppercase tracking-wider text-[#717278]">Average</p>
+                  <p className="text-[20px] font-bold tabular-nums text-[#141518]">91.4%</p>
+                </div>
+              </div>
+
+              <div className="overflow-hidden rounded-xl border border-[#e6e4de] bg-white">
+                <div className="grid grid-cols-[1.4fr_.6fr_.6fr_.5fr] border-b border-[#e6e4de] bg-[#f6f5f2] px-3.5 py-2 text-[10px] font-semibold uppercase tracking-wider text-[#717278]">
+                  <span>Subject</span>
+                  <span className="text-right">CA</span>
+                  <span className="text-right">Exam</span>
+                  <span className="text-right">Grade</span>
+                </div>
+                {[
+                  { subject: 'Mathematics', ca: 38, exam: 56, grade: 'A1' },
+                  { subject: 'English Language', ca: 36, exam: 53, grade: 'A1' },
+                  { subject: 'Basic Science', ca: 35, exam: 54, grade: 'A1' },
+                  { subject: 'Civic Education', ca: 37, exam: 51, grade: 'A1' },
+                ].map((row) => (
+                  <div
+                    key={row.subject}
+                    className="grid grid-cols-[1.4fr_.6fr_.6fr_.5fr] items-center border-t border-[#efede9] px-3.5 py-2.5 text-[12px]"
+                  >
+                    <span className="font-medium text-[#141518]">{row.subject}</span>
+                    <span className="text-right tabular-nums text-[#5a5b60]">{row.ca}</span>
+                    <span className="text-right tabular-nums text-[#5a5b60]">{row.exam}</span>
+                    <span className="text-right font-mono text-[11px] font-bold text-emerald-700">{row.grade}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {activeView === 'fees' && (
+            <div className="space-y-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[#717278]">
+                    Direct-to-School Settlement
+                  </p>
+                  <h3 className="mt-1 text-[17px] font-semibold tracking-[-0.02em] text-[#141518]">
+                    Term Fee Collection Ledger
+                  </h3>
+                </div>
+                <span
+                  className="rounded-lg px-2.5 py-1 text-[10px] font-semibold text-white"
+                  style={{ backgroundColor: accentColor }}
+                >
+                  88% Collected
+                </span>
+              </div>
+
+              <div className="rounded-xl border border-[#e6e4de] bg-white p-4">
+                <div className="flex items-center justify-between text-[11px] text-[#717278]">
+                  <span>Settled directly to school bank account</span>
+                  <span className="font-mono font-semibold text-[#141518]">412 / 468 students</span>
+                </div>
+                <div className="mt-2.5 h-2 w-full overflow-hidden rounded-full bg-[#efede9]">
+                  <div className="h-full rounded-full" style={{ width: '88%', backgroundColor: accentColor }} />
+                </div>
+                <div className="mt-4 grid grid-cols-3 gap-3 border-t border-[#efede9] pt-3">
+                  <div>
+                    <p className="text-[10px] text-[#717278]">Online Gateways</p>
+                    <p className="mt-0.5 text-[12px] font-semibold text-[#141518]">Stripe · Paystack</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-[#717278]">Receipts</p>
+                    <p className="mt-0.5 text-[12px] font-semibold text-emerald-700">Auto-issued</p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] text-[#717278]">Reconciliation</p>
+                    <p className="mt-0.5 text-[12px] font-semibold text-[#141518]">Instant</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5 text-[11px]">
+                <div className="flex items-center justify-between rounded-lg border border-[#e6e4de] bg-white px-3 py-2.5">
+                  <span className="font-medium text-[#141518]">Tuition — SS 2</span>
+                  <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                    Settled
+                  </span>
+                </div>
+                <div className="flex items-center justify-between rounded-lg border border-[#e6e4de] bg-white px-3 py-2.5">
+                  <span className="font-medium text-[#141518]">Transport — Term 2</span>
+                  <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                    Settled
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeView === 'schools' && (
+            <div className="space-y-4">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[#717278]">
+                    {platformName} Control Plane
+                  </p>
+                  <h3 className="mt-1 text-[17px] font-semibold tracking-[-0.02em] text-[#141518]">
+                    Isolated School Workspaces
+                  </h3>
+                </div>
+                <span className="rounded-full border border-[#e6e4de] bg-white px-2.5 py-0.5 font-mono text-[10px] font-semibold text-[#141518]">
+                  Multi-Tenant
+                </span>
+              </div>
+
+              <div className="space-y-2">
+                {[
+                  { name: 'Apex International Academy', slug: '/apex', students: '1,240', plan: 'Enterprise', status: 'Active' },
+                  { name: 'Greenfield Grammar School', slug: '/greenfield', students: '680', plan: 'Growth', status: 'Active' },
+                  { name: 'St. Jude Preparatory', slug: '/stjude', students: '310', plan: 'Starter', status: 'Trial' },
+                ].map((school) => (
+                  <div
+                    key={school.slug}
+                    className="flex items-center justify-between gap-3 rounded-xl border border-[#e6e4de] bg-white px-3.5 py-2.5"
+                  >
+                    <div className="min-w-0">
+                      <p className="truncate text-[12.5px] font-semibold text-[#141518]">{school.name}</p>
+                      <p className="font-mono text-[10px] text-[#717278]">
+                        {school.slug} · {school.students} students · {school.plan}
+                      </p>
+                    </div>
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                        school.status === 'Active'
+                          ? 'bg-emerald-500/10 text-emerald-700'
+                          : 'bg-amber-500/15 text-amber-800'
+                      }`}
+                    >
+                      {school.status}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -634,7 +726,7 @@ export function LandingClient({
                     <Link
                       href={d.primaryCtaHref || '/register'}
                       onClick={handleLinkClick}
-                      className="inline-flex min-h-12 items-center justify-center gap-2 px-6 text-sm font-bold text-white transition-opacity hover:opacity-90"
+                      className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg px-6 text-sm font-semibold text-white shadow-sm transition-all hover:opacity-90"
                       style={{ backgroundColor: s.accentColor || brand.accentColor }}
                     >
                       {tp(d.primaryCtaLabel)} <span aria-hidden="true">→</span>
@@ -644,7 +736,7 @@ export function LandingClient({
                     <Link
                       href={d.secondaryCtaHref || '/services'}
                       onClick={handleLinkClick}
-                      className="inline-flex min-h-12 items-center justify-center gap-2 border border-white/40 px-6 text-sm font-semibold text-white transition-colors hover:bg-white/10"
+                      className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg border border-white/25 bg-white/5 px-6 text-sm font-medium text-white transition-colors hover:bg-white/12"
                     >
                       {tp(d.secondaryCtaLabel)}
                     </Link>
@@ -727,7 +819,10 @@ export function LandingClient({
                         }`
                   }
                 >
-                  <h3 className="text-base font-bold text-[#0a0a0a]">{tp(item.title)}</h3>
+                  <span className="mb-2 block font-mono text-[11px] font-semibold tracking-wider text-[#717278]">
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
+                  <h3 className="text-[17px] font-semibold tracking-[-0.015em] text-[#141518]">{tp(item.title)}</h3>
                   <p className="mt-2 max-w-lg text-sm leading-6 text-[#57554f]">{tp(item.description)}</p>
                 </article>
               ))}
@@ -780,13 +875,13 @@ export function LandingClient({
                   </Link>
                 )}
               </div>
-              <div className="overflow-hidden border border-[#e4e2dd] bg-white" data-ui="sample-workspace">
-                <div className="flex items-center justify-between border-b border-[#e4e2dd] px-4 py-3.5">
+              <div className="overflow-hidden rounded-2xl border border-[#e6e4de] bg-white shadow-[0_8px_30px_rgba(17,17,16,0.06)]" data-ui="sample-workspace">
+                <div className="flex items-center justify-between border-b border-[#e6e4de] px-5 py-4">
                   <div>
-                    <p className="text-sm font-bold text-[#0a0a0a]">{brand.name}</p>
-                    <p className="text-[11px] text-[#66645e]">{tp('School administration overview')}</p>
+                    <p className="text-sm font-semibold text-[#141518]">{brand.name}</p>
+                    <p className="text-[11px] text-[#717278]">{tp('School administration overview')}</p>
                   </div>
-                  <span className="bg-[#eaf4ec] px-2.5 py-1 text-[11px] font-semibold text-[#177343] shrink-0">
+                  <span className="rounded-full bg-emerald-500/10 px-2.5 py-1 text-[11px] font-semibold text-emerald-700 shrink-0">
                     {tp('Current term')}
                   </span>
                 </div>
@@ -907,26 +1002,46 @@ export function LandingClient({
                       : 'md:grid-cols-2 xl:grid-cols-3'
                   }`}
                 >
-                  {plans.slice(0, 3).map((plan) => {
+                  {plans.slice(0, 3).map((plan, planIdx) => {
                     const enabledFeatures = plan.features.filter((feature) => feature.enabledByDefault);
-                    const previewFeatures = enabledFeatures.slice(0, 3);
+                    const previewFeatures = enabledFeatures.slice(0, 4);
                     const remainingFeatures = Math.max(0, enabledFeatures.length - previewFeatures.length);
+                    const isFeatured = plans.length >= 2 && planIdx === 1;
                     return (
-                      <article key={plan.id} className="flex flex-col border border-white/20 bg-white p-5 text-[#0a0a0a] sm:p-6">
-                        <div>
-                          <h3 className="text-lg font-bold">{plan.name}</h3>
-                          <p className="mt-1 text-xs text-[#66645e]">
-                            {t('common.upToStudents', 'Up to {count} students').replace('{count}', plan.studentCeiling.toLocaleString())}
-                          </p>
+                      <article
+                        key={plan.id}
+                        className={`relative flex flex-col rounded-2xl border p-6 text-[#141518] transition-all sm:p-7 ${
+                          isFeatured
+                            ? 'border-white bg-white shadow-[0_20px_50px_rgba(0,0,0,0.28)]'
+                            : 'border-white/15 bg-[#faf9f6]'
+                        }`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <h3 className="text-lg font-semibold tracking-[-0.02em]">{plan.name}</h3>
+                            <p className="mt-1 text-xs text-[#66645e]">
+                              {t('common.upToStudents', 'Up to {count} students').replace('{count}', plan.studentCeiling.toLocaleString())}
+                            </p>
+                          </div>
+                          {isFeatured && (
+                            <span
+                              className="rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white"
+                              style={{ backgroundColor: brand.accentColor }}
+                            >
+                              Popular
+                            </span>
+                          )}
                         </div>
-                        <p className="mt-5 text-2xl font-bold tracking-tight ws-tabular">
+                        <p className="mt-5 text-3xl font-bold tracking-tight ws-tabular">
                           {formatMoney(Number(plan.price), 0)}
-                          <span className="ml-1 text-[11px] font-normal text-[#66645e]">
+                          <span className="ml-1.5 text-xs font-normal text-[#66645e]">
                             {t('common.perAcademicYear', 'per academic year')}
                           </span>
                         </p>
                         <div className="mt-5 border-t border-[#e4e2dd] pt-4 flex-1">
-                          <p className="text-xs font-bold">{t('common.includedTools', 'Included tools')}</p>
+                          <p className="text-[11px] font-semibold uppercase tracking-wider text-[#717278]">
+                            {t('common.includedTools', 'Included tools')}
+                          </p>
                           <ul className="mt-3 space-y-2.5">
                             {previewFeatures.map((feature) => {
                               const copy = getPlanFeatureCopy(
@@ -935,15 +1050,21 @@ export function LandingClient({
                                 feature.feature.description
                               );
                               return (
-                                <li key={feature.featureKey}>
-                                  <p className="text-xs font-semibold">{copy.name}</p>
-                                  <p className="mt-0.5 text-[11px] leading-4 text-[#66645e]">{copy.description}</p>
+                                <li key={feature.featureKey} className="flex items-start gap-2">
+                                  <span
+                                    className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full"
+                                    style={{ backgroundColor: brand.accentColor }}
+                                  />
+                                  <div>
+                                    <p className="text-xs font-semibold text-[#141518]">{copy.name}</p>
+                                    <p className="mt-0.5 text-[11px] leading-4 text-[#66645e]">{copy.description}</p>
+                                  </div>
                                 </li>
                               );
                             })}
                           </ul>
                           {remainingFeatures > 0 && (
-                            <p className="mt-3 text-[11px] text-[#66645e]">
+                            <p className="mt-3 text-[11px] font-medium text-[#66645e]">
                               {t('common.plusMoreTools', 'Plus {count} more included tools.').replace('{count}', String(remainingFeatures))}
                             </p>
                           )}
@@ -951,7 +1072,7 @@ export function LandingClient({
                         <Link
                           href={`/register?planId=${encodeURIComponent(plan.id)}`}
                           onClick={handleLinkClick}
-                          className="mt-5 inline-flex min-h-11 items-center justify-center gap-2 px-4 text-xs font-bold text-white transition-opacity hover:opacity-90"
+                          className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold text-white transition-opacity hover:opacity-90"
                           style={{ backgroundColor: brand.accentColor }}
                         >
                           {t('common.choosePlan', 'Choose')} {plan.name} <span aria-hidden="true">→</span>
@@ -1002,7 +1123,7 @@ export function LandingClient({
               <Link
                 href={d.buttonHref || '/register'}
                 onClick={handleLinkClick}
-                className="inline-flex min-h-12 items-center justify-center gap-2 px-6 text-sm font-bold text-white transition-opacity hover:opacity-90"
+                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-lg px-6 text-sm font-semibold text-white shadow-xs transition-opacity hover:opacity-90"
                 style={{ backgroundColor: brand.accentColor }}
               >
                 {tp(d.buttonLabel)} <span aria-hidden="true">→</span>
@@ -1040,12 +1161,12 @@ export function LandingClient({
                 {items.map((item, idx) => (
                   <blockquote
                     key={idx}
-                    className="bg-white border border-[#e4e2dd] p-6 flex flex-col justify-between gap-5"
+                    className="rounded-2xl bg-white border border-[#e6e4de] p-6 flex flex-col justify-between gap-5 shadow-[0_1px_3px_rgba(17,17,16,0.04)]"
                   >
                     <p className="text-sm leading-7 text-[#1a1917]">“{item.quote}”</p>
                     <footer className="pt-4 border-t border-[#efede9]">
-                      <p className="text-xs font-bold text-[#0a0a0a]">{item.author}</p>
-                      <p className="text-[11px] text-[#66645e] mt-0.5">{item.role}</p>
+                      <p className="text-xs font-semibold text-[#141518]">{item.author}</p>
+                      <p className="text-[11px] text-[#717278] mt-0.5">{item.role}</p>
                     </footer>
                   </blockquote>
                 ))}
@@ -1221,7 +1342,7 @@ export function LandingClient({
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-white font-sans text-[#0a0a0a] antialiased">
+    <div className="min-h-screen flex flex-col bg-[#faf9f6] font-sans text-[#141518] antialiased">
       <PublicNavbar brand={brand} disableNavigation={editorMode} previewViewport={previewViewport} />
 
       <main

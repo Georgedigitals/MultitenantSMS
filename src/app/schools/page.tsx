@@ -1,15 +1,21 @@
 import React from 'react';
 import prisma from '@/lib/prisma';
+import { getPublicSiteCmsConfig } from '@/lib/public-site-cms';
 import { SchoolsDirectoryClient, SchoolTenant } from './schools-directory-client';
 
 export const dynamic = 'force-dynamic';
 
-export const metadata = {
-  title: 'Find Your School Portal | BMS',
-  description: 'Search the BMS directory to find a Nigerian school website, parent portal or results page.',
-};
+export async function generateMetadata() {
+  const cms = await getPublicSiteCmsConfig();
+  const name = cms.brand.name || 'School Platform';
+  return {
+    title: `Find Your School Portal | ${name}`,
+    description: `Search the ${name} directory to find your school website, student & parent portal, or results page.`,
+  };
+}
 
 export default async function SchoolsDirectoryPage() {
+  const cms = await getPublicSiteCmsConfig();
   let schools: SchoolTenant[] = [];
   let directoryAvailable = true;
 
@@ -45,7 +51,7 @@ export default async function SchoolsDirectoryPage() {
         status: tenant.status,
         lowestClass: tenant.lowestClassLevel?.name || null,
         highestClass: tenant.highestClassLevel?.name || null,
-        primaryColor: typeof branding.primaryColor === 'string' ? branding.primaryColor : '#17834b',
+        primaryColor: typeof branding.primaryColor === 'string' ? branding.primaryColor : cms.brand.accentColor || '#17834b',
         logoUrl: typeof branding.logoUrl === 'string' ? branding.logoUrl : null,
         createdAt: tenant.createdAt.toISOString(),
       };
@@ -55,5 +61,11 @@ export default async function SchoolsDirectoryPage() {
     console.error('[SchoolsDirectoryPage] Failed to load school directory:', error);
   }
 
-  return <SchoolsDirectoryClient initialSchools={schools} directoryAvailable={directoryAvailable} />;
+  return (
+    <SchoolsDirectoryClient
+      initialSchools={schools}
+      directoryAvailable={directoryAvailable}
+      brand={cms.brand}
+    />
+  );
 }

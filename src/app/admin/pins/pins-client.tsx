@@ -1,6 +1,8 @@
 'use client';
 
 import React, { useState } from 'react';
+import { CheckCircle2, Download, Info, KeyRound, Layers, Wallet } from 'lucide-react';
+import { useLanguage } from '@/components/language-provider';
 
 interface PinBatchItem {
   id: string;
@@ -27,32 +29,39 @@ interface PinsClientProps {
   tenants: TenantSimple[];
 }
 
-export function PinsClient({ initialBatches, totalPins, pinUsages, totalPlatformRevenue = 0, tenants }: PinsClientProps) {
-  const [batches, setBatches] = useState<PinBatchItem[]>(initialBatches);
-  const [totalCount, setTotalCount] = useState(totalPins);
-
-  // Modal State
-  const [showGenerateModal, setShowGenerateModal] = useState(false);
-  const [selectedTenantId, setSelectedTenantId] = useState(tenants[0]?.id || '');
-  const [pinCount, setPinCount] = useState('50');
-  const [maxUses, setMaxUses] = useState('5');
-  const [price, setPrice] = useState('1000');
-  const [generating, setGenerating] = useState(false);
-  const [error, setError] = useState('');
+export function PinsClient({
+  initialBatches,
+  totalPins,
+  pinUsages,
+  totalPlatformRevenue = 0,
+}: PinsClientProps) {
+  const { formatMoney, localization } = useLanguage();
+  const [batches] = useState<PinBatchItem[]>(initialBatches);
+  const [exportingId, setExportingId] = useState<string | null>(null);
+  const [exportError, setExportError] = useState('');
 
   // Export PIN Batch CSV
   const handleExportBatchCSV = async (batch: PinBatchItem) => {
+    setExportingId(batch.id);
+    setExportError('');
     try {
-      const res = await fetch(`/api/admin/pins/export?batchId=${batch.id}`);
+      const res = await fetch(`/api/admin/pins/export?batchId=${encodeURIComponent(batch.id)}`);
       if (!res.ok) {
-        alert('Failed to fetch batch serials for export.');
+        setExportError('Failed to fetch batch serials for export.');
         return;
       }
       const data = await res.json();
       const pins = data.pins || [];
 
-      const headers = ['Serial Number', 'PIN Code', 'Price (Naira)', 'Max Uses', 'School Name', 'Created At'];
-      const rows = pins.map((p: any) => [
+      const headers = [
+        'Serial Number',
+        'PIN Code',
+        `Price (${localization.currencyCode})`,
+        'Max Uses',
+        'School Name',
+        'Created At',
+      ];
+      const rows = pins.map((p: { serialNumber: string; pinCode: string; pricePaid?: number }) => [
         `"${p.serialNumber}"`,
         `"${p.pinCode}"`,
         p.pricePaid || batch.pricePerPin,
@@ -61,176 +70,183 @@ export function PinsClient({ initialBatches, totalPins, pinUsages, totalPlatform
         `"${new Date(batch.createdAt).toLocaleString()}"`,
       ]);
 
-      const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((r: any) => r.join(','))].join('\n');
-      const encodedUri = encodeURI(csvContent);
+      const csvContent = [headers.join(','), ...rows.map((r: (string | number)[]) => r.join(','))].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
-      link.setAttribute('href', encodedUri);
+      link.setAttribute('href', url);
       link.setAttribute('download', `${batch.batchNumber || batch.id}_serials.csv`);
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
-    } catch (err) {
-      alert('Error exporting PIN batch CSV');
-    }
-  };
-
-  // Generate PIN Batch
-  const handleGenerateBatch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedTenantId) return;
-
-    setGenerating(true);
-    setError('');
-
-    try {
-      const res = await fetch('/api/admin/pins', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          tenantId: selectedTenantId,
-          count: Number(pinCount),
-          maxUsesPerPin: Number(maxUses),
-          pricePerPin: Number(price),
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to generate PIN batch');
-
-      setBatches([data.batch, ...batches]);
-      setTotalCount((prev) => prev + (data.batch._count?.pins || 0));
-      setShowGenerateModal(false);
-
-      // Auto trigger CSV download for vendor printing
-      if (data.pins && data.pins.length > 0) {
-        const headers = ['Serial Number', 'PIN Code', 'Price (Naira)', 'Max Uses', 'School Name', 'Created At'];
-        const rows = data.pins.map((p: any) => [
-          `"${p.serialNumber}"`,
-          `"${p.pinCode}"`,
-          p.pricePaid,
-          data.batch.maxUsesPerPin,
-          `"${data.batch.tenant?.name || 'Global'}"`,
-          `"${new Date(data.batch.createdAt).toLocaleString()}"`,
-        ]);
-        const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((r: any) => r.join(','))].join('\n');
-        const encodedUri = encodeURI(csvContent);
-        const link = document.createElement('a');
-        link.setAttribute('href', encodedUri);
-        link.setAttribute('download', `${data.batch.batchNumber}_serials.csv`);
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-      }
-    } catch (err: any) {
-      setError(err.message);
+      URL.revokeObjectURL(url);
+    } catch {
+      setExportError('Error exporting PIN batch CSV.');
     } finally {
-      setGenerating(false);
+      setExportingId(null);
     }
   };
+
+  const metrics = [
+    {
+      label: 'Total PIN batches',
+      value: batches.length.toLocaleString(),
+      detail: 'Bulk batches ordered by schools',
+      icon: <Layers size={15} aria-hidden="true" />,
+    },
+    {
+      label: 'Total individual serials',
+      value: totalPins.toLocaleString(),
+      detail: 'Batch & online scratch card PINs',
+      icon: <KeyRound size={15} aria-hidden="true" />,
+    },
+    {
+      label: 'Validated usages',
+      value: pinUsages.toLocaleString(),
+      detail: 'Result-checking attempts recorded',
+      icon: <CheckCircle2 size={15} aria-hidden="true" />,
+    },
+    {
+      label: 'Platform PIN revenue',
+      value: formatMoney(totalPlatformRevenue, 2),
+      detail: 'Platform fee retained from PIN sales',
+      icon: <Wallet size={15} aria-hidden="true" />,
+      highlight: true,
+    },
+  ];
 
   return (
-    <div className="space-y-8">
+    <div data-ui="accent-ladder" className="space-y-7">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b adm-border-replace">
+      <header className="flex flex-col justify-between gap-4 pb-5 border-b adm-divider sm:flex-row sm:items-end">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-white">Scratch Card PIN Monetization Engine</h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Track PIN batch creation, usage metrics, serial numbers, and platform revenue collection across all tenants.
+          <p className="text-[11px] font-semibold uppercase tracking-[0.15em] adm-text-muted">
+            Result PIN operations
+          </p>
+          <h1 className="mt-1.5 text-[27px] font-semibold leading-tight tracking-[-0.03em] adm-text-primary sm:text-[30px]">
+            Scratch Card PINs
+          </h1>
+          <p className="mt-1.5 max-w-2xl text-[14px] leading-6 adm-text-secondary">
+            Track bulk PIN batch orders, individual serial issuance, result-checking usages, and platform fee earnings across all schools.
           </p>
         </div>
-        <div className="flex items-center gap-3">
-          <button
-            disabled
-            title="Schools must purchase PIN stock from their own Result PIN dashboard."
-            className="px-4 py-2 bg-slate-700 text-slate-300 font-bold text-xs rounded-xl shadow-lg transition cursor-not-allowed flex items-center gap-1.5 opacity-70"
+
+        <div
+          title="Schools purchase PIN batches or enable online student PIN checkout from their own Result PIN dashboard."
+          className="inline-flex min-h-9 shrink-0 items-center gap-2 rounded-lg border adm-divider adm-surface px-3.5 py-1.5 text-[12px] font-medium adm-text-secondary"
+        >
+          <Info size={14} className="adm-text-muted shrink-0" aria-hidden="true" />
+          <span>Self-service school purchases</span>
+        </div>
+      </header>
+
+      {exportError && (
+        <div role="alert" className="adm-status-error rounded-lg border border-rose-500/30 px-4 py-3 text-[13px]">
+          {exportError}
+        </div>
+      )}
+
+      {/* Unified Achromatic Ledger KPI Strip */}
+      <section
+        aria-label="Scratch card PIN metrics"
+        className="adm-card grid grid-cols-1 divide-y sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4 lg:divide-x rounded-xl border overflow-hidden"
+        style={{ borderColor: 'var(--adm-card-border)' }}
+      >
+        {metrics.map((metric) => (
+          <article
+            key={metric.label}
+            className={`flex items-start justify-between gap-3 p-5 sm:px-6 ${metric.highlight ? 'adm-surface' : ''}`}
+            style={{ borderColor: 'var(--adm-divider)' }}
           >
-            <span><svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 inline-block mr-1"><path fillRule="evenodd" d="M5 2a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0V6H3a1 1 0 110-2h1V3a1 1 0 011-1zm0 10a1 1 0 011 1v1h1a1 1 0 110 2H6v1a1 1 0 11-2 0v-1H3a1 1 0 110-2h1v-1a1 1 0 011-1zM12 2a1 1 0 01.967.744L14.146 7.2l4.456.967a1 1 0 01.54 1.706l-3.37 3.003.957 4.417a1 1 0 01-1.488 1.08L11 16.03l-3.741 2.343a1 1 0 01-1.488-1.08l.957-4.417-3.37-3.003a1 1 0 01.54-1.706l4.456-.967L9.033 2.744A1 1 0 0110 2z" clipRule="evenodd" /></svg></span>
-            <span>School purchases only</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Metrics Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="adm-card-bg-replace border adm-border-replace rounded-2xl p-6">
-          <span className="text-xs font-mono uppercase tracking-wider text-slate-400 block mb-1">
-            Total PIN Batches
-          </span>
-          <span className="text-3xl font-extrabold text-white">{batches.length}</span>
-          <span className="text-xs text-slate-500 block mt-1">Generated across all school tenants</span>
-        </div>
-
-        <div className="adm-card-bg-replace border adm-border-replace rounded-2xl p-6">
-          <span className="text-xs font-mono uppercase tracking-wider text-slate-400 block mb-1">
-            Total Individual Serials
-          </span>
-          <span className="text-3xl font-extrabold text-cyan-400">{totalCount.toLocaleString()}</span>
-          <span className="text-xs text-slate-500 block mt-1">Unique scratch card PIN records</span>
-        </div>
-
-        <div className="adm-card-bg-replace border adm-border-replace rounded-2xl p-6">
-          <span className="text-xs font-mono uppercase tracking-wider text-slate-400 block mb-1">
-            Total Validated Usages
-          </span>
-          <span className="text-3xl font-extrabold text-emerald-400">{pinUsages.toLocaleString()}</span>
-          <span className="text-xs text-slate-500 block mt-1">Result checking attempts recorded</span>
-        </div>
-
-        <div className="adm-card-bg-replace border adm-border-replace rounded-2xl p-6">
-          <span className="text-xs font-mono uppercase tracking-wider text-amber-400 font-bold block mb-1">
-            Platform PIN Revenue
-          </span>
-          <span className="text-3xl font-extrabold text-cyan-400">
-            ₦{totalPlatformRevenue.toLocaleString()}
-          </span>
-          <span className="text-xs text-slate-500 block mt-1">Platform fee cut collected via Paystack</span>
-        </div>
-      </div>
+            <div className="min-w-0">
+              <p className="text-[12px] font-medium adm-text-secondary">{metric.label}</p>
+              <p
+                className={`mt-2.5 text-[26px] font-semibold leading-none tracking-[-0.03em] tabular-nums ${
+                  metric.highlight ? 'adm-text-accent' : 'adm-text-primary'
+                }`}
+              >
+                {metric.value}
+              </p>
+              <p className="mt-2 text-[11px] adm-text-muted">{metric.detail}</p>
+            </div>
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border adm-divider adm-surface adm-text-muted">
+              {metric.icon}
+            </span>
+          </article>
+        ))}
+      </section>
 
       {/* PIN Batches Table */}
-      <div className="adm-card-bg-replace border adm-border-replace rounded-2xl overflow-hidden shadow-sm">
-        <div className="px-6 py-4 border-b adm-border-replace bg-slate-950/40 flex justify-between items-center">
-          <div>
-            <h2 className="font-bold text-white">Recent PIN Batches</h2>
-            <p className="text-xs text-slate-400">Batches created for result-checker authentication.</p>
-          </div>
+      <section className="adm-card min-w-0 overflow-hidden rounded-xl border">
+        <div className="flex flex-col gap-1 border-b adm-divider px-5 py-4 sm:px-6">
+          <h2 className="text-[15px] font-semibold adm-text-primary">Recent bulk PIN batches</h2>
+          <p className="text-[12px] leading-5 adm-text-secondary">
+            Printed or downloadable batch orders generated by school administrators for result-checker authentication.
+          </p>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm text-slate-300">
-            <thead className="bg-slate-950/80 text-xs uppercase tracking-wider text-slate-400 font-mono">
-              <tr>
-                <th className="px-6 py-3">Batch Reference</th>
-                <th className="px-6 py-3">School Tenant</th>
-                <th className="px-6 py-3">PIN Count</th>
-                <th className="px-6 py-3">Price / PIN</th>
-                <th className="px-6 py-3">Platform Fee Paid</th>
-                <th className="px-6 py-3">Created At</th>
-                <th className="px-6 py-3 text-right">Actions</th>
+          <table className="w-full min-w-[720px] text-left text-[13px]">
+            <thead>
+              <tr className="border-b adm-divider text-[11px] font-medium uppercase tracking-wider adm-text-muted">
+                <th scope="col" className="px-5 py-3 font-medium sm:px-6">Batch reference</th>
+                <th scope="col" className="px-4 py-3 font-medium">School tenant</th>
+                <th scope="col" className="px-4 py-3 text-right font-medium">PIN count</th>
+                <th scope="col" className="px-4 py-3 text-right font-medium">Price / PIN</th>
+                <th scope="col" className="px-4 py-3 text-right font-medium">Platform fee</th>
+                <th scope="col" className="px-4 py-3 font-medium">Created</th>
+                <th scope="col" className="px-5 py-3 text-right font-medium sm:px-6">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800">
+            <tbody>
               {batches.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-slate-500 text-xs font-mono">
-                    No PIN batches generated yet. Click &quot;Generate PIN Batch&quot; above to issue scratch cards.
+                  <td colSpan={7} className="px-6 py-12 text-center">
+                    <p className="text-[13px] font-medium adm-text-primary">
+                      No bulk PIN batches ordered yet.
+                    </p>
+                    <p className="mx-auto mt-1 max-w-lg text-[12px] leading-5 adm-text-muted">
+                      Schools order bulk PIN stock directly from their own Result PIN dashboard. Individual online PIN purchases are already counted in Total Individual Serials and Platform PIN Revenue above.
+                    </p>
                   </td>
                 </tr>
               ) : (
                 batches.map((batch) => (
-                  <tr key={batch.id} className="hover:bg-slate-800/40 transition-colors font-mono text-xs">
-                    <td className="px-6 py-4 text-white font-bold">{batch.batchNumber || batch.id}</td>
-                    <td className="px-6 py-4 text-cyan-400 font-sans">{batch.tenant?.name || 'Global'}</td>
-                    <td className="px-6 py-4 text-emerald-400">{batch._count?.pins || 0} PINs</td>
-                    <td className="px-6 py-4 text-slate-300">₦{Number(batch.pricePerPin || 0).toLocaleString()}</td>
-                    <td className="px-6 py-4 text-amber-400 font-bold">₦{Number(batch.platformFeeTotal || 0).toLocaleString()}</td>
-                    <td className="px-6 py-4 text-slate-400">{new Date(batch.createdAt).toLocaleString()}</td>
-                    <td className="px-6 py-4 text-right font-sans">
+                  <tr key={batch.id} className="border-b adm-divider last:border-b-0 adm-surface-hover transition-colors">
+                    <td className="px-5 py-3.5 font-mono text-[12px] font-semibold adm-text-primary sm:px-6">
+                      {batch.batchNumber || batch.id}
+                    </td>
+                    <td className="px-4 py-3.5">
+                      <span className="block font-medium adm-text-primary">{batch.tenant?.name || 'Global'}</span>
+                      {batch.tenant?.slug && (
+                        <span className="block text-[11px] adm-text-muted">/{batch.tenant.slug}</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3.5 text-right font-medium tabular-nums adm-text-primary">
+                      {(batch._count?.pins || 0).toLocaleString()}
+                    </td>
+                    <td className="px-4 py-3.5 text-right tabular-nums adm-text-secondary">
+                      {formatMoney(Number(batch.pricePerPin || 0), 2)}
+                    </td>
+                    <td className="px-4 py-3.5 text-right font-medium tabular-nums adm-text-accent">
+                      {formatMoney(Number(batch.platformFeeTotal || 0), 2)}
+                    </td>
+                    <td className="px-4 py-3.5 text-[12px] tabular-nums adm-text-muted">
+                      {new Date(batch.createdAt).toLocaleDateString(localization.locale, {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })}
+                    </td>
+                    <td className="px-5 py-3.5 text-right sm:px-6">
                       <button
+                        type="button"
                         onClick={() => handleExportBatchCSV(batch)}
-                        className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 border adm-border-replace text-xs font-semibold cursor-pointer"
+                        disabled={exportingId === batch.id}
+                        className="inline-flex items-center gap-1.5 rounded-md border adm-divider adm-surface px-2.5 py-1.5 text-[12px] font-medium adm-text-secondary transition-colors adm-surface-hover disabled:opacity-50 cursor-pointer"
                       >
-                        <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 inline-block mr-1"><path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" /></svg> Export CSV
+                        <Download size={13} aria-hidden="true" />
+                        {exportingId === batch.id ? 'Exporting…' : 'Export CSV'}
                       </button>
                     </td>
                   </tr>
@@ -239,97 +255,7 @@ export function PinsClient({ initialBatches, totalPins, pinUsages, totalPlatform
             </tbody>
           </table>
         </div>
-      </div>
-
-      {/* Generate PIN Batch Modal */}
-      {showGenerateModal && (
-        <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="max-w-md w-full adm-card-bg-replace border adm-border-replace rounded-3xl p-6 shadow-2xl text-white space-y-4">
-            <div className="flex justify-between items-center border-b adm-border-replace pb-3">
-              <h2 className="text-lg font-bold">Generate Scratch Card PIN Batch</h2>
-              <button onClick={() => setShowGenerateModal(false)} className="text-slate-400 hover:text-white font-bold cursor-pointer">
-                ×
-              </button>
-            </div>
-
-            {error && <div className="p-3 bg-rose-950 border border-rose-800 text-rose-300 text-xs rounded-xl">{error}</div>}
-
-            <form onSubmit={handleGenerateBatch} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1">Target School Tenant</label>
-                <select
-                  value={selectedTenantId}
-                  onChange={(e) => setSelectedTenantId(e.target.value)}
-                  className="w-full px-3 py-2 adm-surface-bg-replace border adm-border-replace rounded-xl text-xs text-white font-bold"
-                >
-                  {tenants.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name} ({t.slug})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1">Quantity of PINs</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="1000"
-                    value={pinCount}
-                    onChange={(e) => setPinCount(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 adm-surface-bg-replace border adm-border-replace rounded-xl text-xs text-white font-mono"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-semibold text-slate-400 mb-1">Max Uses Per PIN</label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="100"
-                    value={maxUses}
-                    onChange={(e) => setMaxUses(e.target.value)}
-                    required
-                    className="w-full px-3 py-2 adm-surface-bg-replace border adm-border-replace rounded-xl text-xs text-white font-mono"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-400 mb-1">Price Per PIN (₦)</label>
-                <input
-                  type="number"
-                  min="0"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                  required
-                  className="w-full px-3 py-2 adm-surface-bg-replace border adm-border-replace rounded-xl text-xs text-white font-mono"
-                />
-              </div>
-
-              <div className="pt-2 flex justify-end gap-3 border-t adm-border-replace">
-                <button
-                  type="button"
-                  onClick={() => setShowGenerateModal(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold bg-slate-800 text-slate-300 hover:bg-slate-700 cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={generating}
-                  className="px-5 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white shadow-md disabled:opacity-50 cursor-pointer"
-                >
-                  {generating ? 'Generating...' : 'Issue Batch & Download CSV'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      </section>
     </div>
   );
 }

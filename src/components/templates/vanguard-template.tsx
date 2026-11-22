@@ -7,6 +7,7 @@ import { ArrowRight } from 'lucide-react';
 import { FeaturedStudent } from './featured-student';
 import { SchoolHero } from './school-hero';
 import type { PublicSiteData } from '@/lib/site-content';
+import { useLanguage } from '@/components/language-provider';
 
 interface TemplateProps {
   data: PublicSiteData;
@@ -14,6 +15,7 @@ interface TemplateProps {
 
 export function VanguardTemplate({ data }: TemplateProps) {
   const { tenant, branding, about, academics, admissions, gallery } = data;
+  const { tp } = useLanguage();
   const pathname = usePathname() || '';
   const isSlugPath = pathname.startsWith(`/${tenant.slug}`);
   const resolveHref = (path: string) => {
@@ -68,7 +70,7 @@ export function VanguardTemplate({ data }: TemplateProps) {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-12 border-b border-[#e4e2dd] items-end">
             <div className="lg:col-span-6">
               <h2 className="tenant-editorial-display text-[38px] sm:text-[54px] leading-[1.0] tracking-[-0.025em] text-[#0a0a0a]">
-                Academic program architecture
+                {tp('Academic program architecture')}
               </h2>
             </div>
             <div className="lg:col-span-6">
@@ -96,7 +98,7 @@ export function VanguardTemplate({ data }: TemplateProps) {
                       : 'bg-[#f4f3f1] text-[#4f4d48] hover:bg-[#e7e5e0] hover:text-[#0a0a0a]'
                   }`}
                 >
-                  {stage.name}
+                  {tp(stage.name)}
                 </button>
               );
             })}
@@ -108,7 +110,7 @@ export function VanguardTemplate({ data }: TemplateProps) {
               <div className="lg:col-span-5 space-y-2">
                 <p className="text-[14px] font-medium text-[#66645e]">{currentStage.ages}</p>
                 <h3 className="text-[28px] sm:text-[34px] font-semibold tracking-[-0.02em] text-[#0a0a0a]">
-                  {currentStage.name}
+                  {tp(currentStage.name)}
                 </h3>
               </div>
               <div className="lg:col-span-7 space-y-6">
@@ -120,14 +122,14 @@ export function VanguardTemplate({ data }: TemplateProps) {
                     href={resolveHref('/academics')}
                     className="inline-flex items-center gap-2 text-[14px] font-medium text-[#0a0a0a] underline underline-offset-4 hover:opacity-70"
                   >
-                    <span>Explore full curriculum</span>
+                    <span>{tp('Explore full curriculum')}</span>
                     <ArrowRight className="w-4 h-4" aria-hidden="true" />
                   </Link>
                   <Link
                     href={resolveHref('/results/check')}
                     className="inline-flex items-center gap-2 text-[14px] font-medium text-[#57554f] underline underline-offset-4 hover:text-[#0a0a0a]"
                   >
-                    <span>Term result checker</span>
+                    <span>{tp('Term result checker')}</span>
                     <ArrowRight className="w-4 h-4" aria-hidden="true" />
                   </Link>
                 </div>
@@ -142,7 +144,7 @@ export function VanguardTemplate({ data }: TemplateProps) {
         <div className="max-w-[1360px] mx-auto px-5 sm:px-8 grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
           <div className="lg:col-span-5 space-y-3">
             <h2 className="tenant-editorial-display text-[38px] sm:text-[52px] leading-[1.02]">
-              Prepared for what comes next
+              {tp('Prepared for what comes next')}
             </h2>
             <p className="text-[15px] text-[#a5a9b1]">{tenant.name}</p>
           </div>

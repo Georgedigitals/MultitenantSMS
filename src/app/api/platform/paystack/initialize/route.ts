@@ -4,6 +4,8 @@ import { getTenantUserFromCookies } from '@/lib/auth/tenant-auth';
 import { randomUUID } from 'node:crypto';
 import { getPublicUrl } from '@/lib/public-url';
 import { initializePlatformCheckout } from '@/lib/payments/platform-gateway';
+import { getPlatformLocalization } from '@/lib/platform-settings';
+import { convertAmount } from '@/lib/i18n/currency';
 
 export async function POST(req: NextRequest) {
   try {
@@ -115,10 +117,13 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    const localization = await getPlatformLocalization();
+    const convertedChargeAmount = Number(convertAmount(chargeAmount, localization).toFixed(2));
+
     const checkout = await initializePlatformCheckout({
       reference,
       email: adminEmail,
-      amount: chargeAmount,
+      amount: convertedChargeAmount,
       productName: `${plan.name} Subscription — ${schoolName || slug || 'School'}`,
       callbackUrl: getPublicUrl('/api/platform/paystack/callback', req).toString(),
       cancelUrl: getPublicUrl('/pricing', req).toString(),

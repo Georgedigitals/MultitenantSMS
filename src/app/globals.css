@@ -134,54 +134,56 @@ body {
 
 /* ── Admin Control Plane Design Tokens ──────────────────────────────────────── */
 
-/* Light Mode (default — Achromatic Ledger aesthetic) */
+/* Light Mode (default — Warm Alabaster + Institutional Ledger) */
 :root,
 [data-admin-theme="light"] {
-  --adm-bg: #f4f3f1;
+  --adm-bg: #f6f5f2;
   --adm-bg-secondary: #ffffff;
-  --adm-sidebar-bg: #f9f8f6;
-  --adm-header-bg: rgba(249, 248, 246, 0.94);
+  --adm-sidebar-bg: #faf9f6;
+  --adm-header-bg: rgba(250, 249, 246, 0.88);
   --adm-card-bg: #ffffff;
-  --adm-card-border: #e4e2dd;
-  --adm-surface: #f2f1ee;
-  --adm-surface-hover: #eae8e3;
-  --adm-divider: #e4e2dd;
-  --adm-text-primary: #111110;
-  --adm-text-secondary: #4a4843;
-  --adm-text-muted: #706d66;
-  --adm-text-faint: #96928a;
+  --adm-card-border: #e6e4de;
+  --adm-card-shadow: 0 1px 2px rgba(17, 17, 16, 0.04), 0 1px 1px rgba(17, 17, 16, 0.02);
+  --adm-surface: #f2f0eb;
+  --adm-surface-hover: #eae7e0;
+  --adm-divider: #e6e4de;
+  --adm-text-primary: #141518;
+  --adm-text-secondary: #4a4b50;
+  --adm-text-muted: #717278;
+  --adm-text-faint: #98999f;
   --adm-input-bg: #ffffff;
-  --adm-input-border: #d4d1ca;
-  --adm-badge-bg: #eceae5;
-  --adm-accent: #141414;
+  --adm-input-border: #d5d2ca;
+  --adm-badge-bg: #eceae3;
+  --adm-accent: #141518;
   --adm-accent-fg: #ffffff;
-  --adm-accent-subtle: color-mix(in srgb, var(--adm-accent) 10%, transparent);
-  --adm-accent-border: color-mix(in srgb, var(--adm-accent) 26%, transparent);
+  --adm-accent-subtle: color-mix(in srgb, var(--adm-accent) 9%, transparent);
+  --adm-accent-border: color-mix(in srgb, var(--adm-accent) 24%, transparent);
   --adm-warning: #8f4f0e;
 }
 
-/* Dark Mode (Refined Charcoal Ledger) */
+/* Dark Mode (Precision Obsidian + Top-Lit Graphite) */
 [data-admin-theme="dark"] {
-  --adm-bg: #0d0f12;
-  --adm-bg-secondary: #13161b;
-  --adm-sidebar-bg: #111419;
-  --adm-header-bg: rgba(17, 20, 25, 0.94);
-  --adm-card-bg: #151921;
-  --adm-card-border: rgba(255, 255, 255, 0.09);
-  --adm-surface: rgba(255, 255, 255, 0.045);
-  --adm-surface-hover: rgba(255, 255, 255, 0.08);
-  --adm-divider: rgba(255, 255, 255, 0.09);
-  --adm-text-primary: #f4f4f5;
-  --adm-text-secondary: #c8cdd6;
-  --adm-text-muted: #8e96a4;
-  --adm-text-faint: #677080;
-  --adm-input-bg: #101318;
-  --adm-input-border: rgba(255, 255, 255, 0.14);
-  --adm-badge-bg: rgba(255, 255, 255, 0.08);
-  --adm-accent: #10b981;
-  --adm-accent-fg: #ffffff;
-  --adm-accent-subtle: color-mix(in srgb, var(--adm-accent) 16%, transparent);
-  --adm-accent-border: color-mix(in srgb, var(--adm-accent) 36%, transparent);
+  --adm-bg: #0a0b0e;
+  --adm-bg-secondary: #111318;
+  --adm-sidebar-bg: #0e1015;
+  --adm-header-bg: rgba(14, 16, 21, 0.88);
+  --adm-card-bg: #13161d;
+  --adm-card-border: rgba(255, 255, 255, 0.085);
+  --adm-card-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.045), 0 2px 8px rgba(0, 0, 0, 0.28);
+  --adm-surface: rgba(255, 255, 255, 0.04);
+  --adm-surface-hover: rgba(255, 255, 255, 0.075);
+  --adm-divider: rgba(255, 255, 255, 0.085);
+  --adm-text-primary: #f4f5f7;
+  --adm-text-secondary: #c5cad3;
+  --adm-text-muted: #8b92a1;
+  --adm-text-faint: #616878;
+  --adm-input-bg: #0e1016;
+  --adm-input-border: rgba(255, 255, 255, 0.13);
+  --adm-badge-bg: rgba(255, 255, 255, 0.075);
+  --adm-accent: #f4f5f7;
+  --adm-accent-fg: #0a0b0e;
+  --adm-accent-subtle: color-mix(in srgb, var(--adm-accent) 13%, transparent);
+  --adm-accent-border: color-mix(in srgb, var(--adm-accent) 30%, transparent);
   --adm-warning: #f3d58c;
 }
 
@@ -230,6 +232,7 @@ body {
   background: var(--adm-card-bg);
   border-color: var(--adm-card-border);
   color: var(--adm-text-primary);
+  box-shadow: var(--adm-card-shadow);
 }
 
 .adm-surface {
@@ -296,6 +299,15 @@ body {
   outline: none;
   border-color: var(--adm-accent);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--adm-accent) 22%, transparent);
+}
+
+.adm-input:-webkit-autofill,
+.adm-input:-webkit-autofill:hover,
+.adm-input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--adm-text-primary);
+  caret-color: var(--adm-text-primary);
+  box-shadow: 0 0 0 1000px var(--adm-input-bg) inset;
+  transition: background-color 5000s ease-in-out 0s;
 }
 
 .adm-badge {

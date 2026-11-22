@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { BUILT_IN_FEATURE_CAPABILITIES, type BuiltInFeatureKey } from '@/lib/feature-catalog';
+import { useLanguage } from '@/components/language-provider';
 
 interface FeatureData {
  key: string;
@@ -39,6 +40,7 @@ interface PlansClientProps {
 }
 
 export function PlansClient({ initialPlans, initialFeatures, initialAvailableCapabilities }: PlansClientProps) {
+ const { formatMoney, localization } = useLanguage();
  const [plans, setPlans] = useState<PlanData[]>(initialPlans);
  const [features, setFeatures] = useState<FeatureData[]>(initialFeatures);
  const [availableCapabilities, setAvailableCapabilities] = useState<FeatureCapability[]>(initialAvailableCapabilities);
@@ -312,7 +314,7 @@ export function PlansClient({ initialPlans, initialFeatures, initialAvailableCap
  <div>
  <h1 className="text-2xl font-bold tracking-tight adm-text-primary">Subscription Tier & Feature Control Plane</h1>
  <p className="text-xs adm-text-muted mt-1 leading-relaxed">
- Configure plan prices (in ₦), student limits, platform fee percentages, and manage the feature registry.
+ Configure plan prices (in {localization.baseCurrencyCode || localization.currencyCode}), student limits, platform fee percentages, and manage the feature registry.
  </p>
  </div>
 
@@ -320,7 +322,7 @@ export function PlansClient({ initialPlans, initialFeatures, initialAvailableCap
  <button
  type="button"
  onClick={() => setShowAddFeature(true)}
- className="px-4 py-2 rounded-xl text-xs font-semibold adm-surface border adm-divider adm-text-secondary hover:text-[var(--adm-text-primary)] transition-all flex items-center gap-1.5"
+ className="px-4 py-2 rounded-lg text-xs font-semibold adm-surface border adm-divider adm-text-secondary adm-surface-hover transition-colors flex items-center gap-1.5 cursor-pointer"
  >
  <span>+</span>
  <span>Add Feature</span>
@@ -328,7 +330,7 @@ export function PlansClient({ initialPlans, initialFeatures, initialAvailableCap
  <button
  type="button"
  onClick={() => setShowAddPlan(true)}
- className="px-4 py-2 rounded-xl text-xs font-semibold bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-600/20 transition-all flex items-center gap-1.5 hover:-translate-y-0.5"
+ className="adm-btn-primary px-4 py-2 rounded-lg text-xs font-semibold transition-all flex items-center gap-1.5 cursor-pointer"
  >
  <span>+</span>
  <span>Create New Plan</span>
@@ -354,7 +356,7 @@ export function PlansClient({ initialPlans, initialFeatures, initialAvailableCap
  </div>
 
  <div className="mb-5">
- <span className="text-3xl font-bold adm-text-primary">₦{Number(p.price).toLocaleString()}</span>
+ <span className="text-3xl font-bold adm-text-primary tabular-nums">{formatMoney(Number(p.price), 0)}</span>
  <span className="adm-text-muted text-xs"> / year</span>
  </div>
 
@@ -383,7 +385,7 @@ export function PlansClient({ initialPlans, initialFeatures, initialAvailableCap
  return (
  <label
  key={f.key}
- className="flex items-center justify-between p-2 rounded-xl bg-slate-950/60 border border-slate-800/60 hover:border-[var(--adm-card-border)] transition-colors cursor-pointer text-xs"
+ className="flex items-center justify-between p-2.5 rounded-lg adm-surface border adm-divider adm-surface-hover transition-colors cursor-pointer text-xs"
  >
  <span className="adm-text-secondary font-medium">{f.name}</span>
  <input
@@ -391,7 +393,7 @@ export function PlansClient({ initialPlans, initialFeatures, initialAvailableCap
  checked={isEnabled}
  disabled={saving}
  onChange={() => handleToggleFeature(p, f.key)}
- className="w-4 h-4 rounded adm-card adm-divider text-red-600 focus:ring-red-500 cursor-pointer"
+ className="w-4 h-4 rounded adm-card adm-divider accent-[var(--adm-accent)] cursor-pointer"
  />
  </label>
  );
@@ -400,23 +402,23 @@ export function PlansClient({ initialPlans, initialFeatures, initialAvailableCap
  </div>
  </div>
 
- <div className="pt-4 border-t border-slate-800/80 flex items-center justify-between gap-2">
+ <div className="pt-4 border-t adm-divider flex items-center justify-between gap-2">
  <span className="text-[11px] font-mono adm-text-muted truncate" title={p.id}>ID: {p.id}</span>
  <div className="flex items-center gap-2">
  <button
  type="button"
  onClick={() => handleDeletePlan(p)}
- className="px-2.5 py-1.5 rounded-lg text-xs font-semibold bg-red-950/60 hover:bg-red-900/80 text-red-300 border border-red-800/80 transition-colors cursor-pointer"
+ className="px-2.5 py-1.5 rounded-lg text-xs font-medium adm-surface hover:bg-rose-500/10 adm-text-muted hover:text-rose-500 border adm-divider hover:border-rose-500/30 transition-colors cursor-pointer"
  title="Delete Plan"
  >
- <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 inline-block mr-1"><path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" /></svg> Delete
+ Delete
  </button>
  <button
  type="button"
  onClick={() => setEditingPlan(p)}
- className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-blue-900/60 hover:bg-blue-800 text-blue-200 border border-blue-700 transition-colors cursor-pointer"
+ className="adm-btn-primary px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
  >
- <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 inline-block mr-1"><path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.381z" clipRule="evenodd" /></svg> Edit
+ Edit
  </button>
  </div>
  </div>
@@ -426,16 +428,16 @@ export function PlansClient({ initialPlans, initialFeatures, initialAvailableCap
  </div>
 
  {/* Feature Registry Table */}
- <div className="adm-card border adm-divider rounded-2xl overflow-hidden shadow-sm">
- <div className="px-6 py-4 border-b adm-divider bg-slate-950/40 flex justify-between items-center">
+ <div className="adm-card border adm-divider rounded-2xl overflow-hidden">
+ <div className="px-6 py-4 border-b adm-divider adm-surface flex justify-between items-center">
  <div>
- <h2 className="font-bold adm-text-primary">Connected BMS Modules</h2>
- <p className="text-xs adm-text-muted">Built-in modules connected to plan controls. Each module is enforced by BMS when its access switch is off.</p>
+ <h2 className="font-semibold text-[15px] adm-text-primary">Connected Platform Modules</h2>
+ <p className="text-xs adm-text-muted mt-0.5">Built-in modules connected to plan controls. Each module is enforced when its access switch is off.</p>
  </div>
  <button
  type="button"
  onClick={() => setShowAddFeature(true)}
- className="px-3 py-1.5 rounded-lg text-xs font-semibold adm-surface hover:bg-[var(--adm-surface-hover)] adm-text-secondary border adm-divider"
+ className="px-3 py-1.5 rounded-lg text-xs font-semibold adm-card adm-surface-hover adm-text-secondary border adm-divider cursor-pointer"
  >
  + Register Feature
  </button>
@@ -443,10 +445,10 @@ export function PlansClient({ initialPlans, initialFeatures, initialAvailableCap
 
  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 p-6">
  {features.map((f) => (
- <div key={f.key} className="adm-surface p-4 rounded-xl border border-slate-800/80 space-y-1.5 group hover:border-[var(--adm-card-border)] transition-colors flex flex-col justify-between">
+ <div key={f.key} className="adm-surface p-4 rounded-xl border adm-divider space-y-1.5 group transition-colors flex flex-col justify-between">
  <div>
  <div className="flex items-center justify-between">
- <span className="text-xs font-mono font-bold text-cyan-400 block">{f.key}</span>
+ <span className="text-[11px] font-mono font-semibold adm-text-accent block">{f.key}</span>
  <div className="flex items-center gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
  <button
  type="button"
@@ -505,7 +507,7 @@ export function PlansClient({ initialPlans, initialFeatures, initialAvailableCap
  </div>
 
  <div>
- <label className="block text-xs font-mono uppercase adm-text-muted mb-1">Price per Academic Year (₦)</label>
+ <label className="block text-xs font-mono uppercase adm-text-muted mb-1">Price per Academic Year ({localization.baseCurrencyCode || localization.currencyCode})</label>
  <input
  type="number"
  value={editingPlan.price}
@@ -606,7 +608,7 @@ export function PlansClient({ initialPlans, initialFeatures, initialAvailableCap
 
  <div className="grid grid-cols-2 gap-4">
  <div>
- <label className="block text-xs font-mono uppercase adm-text-muted mb-1">Price (₦ / term)</label>
+ <label className="block text-xs font-mono uppercase adm-text-muted mb-1">Price ({localization.baseCurrencyCode || localization.currencyCode} / year)</label>
  <input
  type="number"
  value={newPlanPrice}

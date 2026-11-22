@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import { verifyWebhookSignature } from './webhook-idempotency';
 import { getTenantGatewayConfig } from './tenant-payments';
 import { getPlatformLocalization } from './platform-settings';
+import { convertAmount } from './i18n/currency';
 import {
   fromMinorUnit,
   isCurrencySupportedByGateway,
@@ -381,6 +382,7 @@ export async function initializeFeePayment(
   }
   const localization = await getPlatformLocalization();
   const { currencyCode, currencySymbol } = localization;
+  const checkoutAmount = Number(convertAmount(amount, localization).toFixed(2));
 
   if (amount > feeBal.balanceRemaining) {
     throw new Error(
@@ -423,7 +425,7 @@ export async function initializeFeePayment(
       params.set('cancel_url', callbackUrl);
       params.set('line_items[0][quantity]', '1');
       params.set('line_items[0][price_data][currency]', currencyCode.toLowerCase());
-      params.set('line_items[0][price_data][unit_amount]', String(toMinorUnit(amount, currencyCode)));
+      params.set('line_items[0][price_data][unit_amount]', String(toMinorUnit(checkoutAmount, currencyCode)));
       params.set('line_items[0][price_data][product_data][name]', `${tenant.name} — School Fees (${student.name})`);
       params.set('metadata[type]', 'fee_payment');
       params.set('metadata[reference]', paymentRef);
@@ -455,7 +457,7 @@ export async function initializeFeePayment(
         headers: { Authorization: `Bearer ${gatewayCfg.secretKey}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           tx_ref: paymentRef,
-          amount,
+          amount: checkoutAmount,
           currency: currencyCode,
           redirect_url: `${callbackUrl}?provider=flutterwave&reference=${encodeURIComponent(paymentRef)}`,
           customer: { email: customerEmail, name: student.name },
@@ -476,7 +478,7 @@ export async function initializeFeePayment(
         headers: { Authorization: `Bearer ${gatewayCfg.secretKey}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email: customerEmail,
-          amount: toMinorUnit(amount, currencyCode),
+          amount: toMinorUnit(checkoutAmount, currencyCode),
           currency: currencyCode,
           reference: paymentRef,
           callback_url: callbackUrl,

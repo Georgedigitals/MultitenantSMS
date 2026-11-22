@@ -43,9 +43,15 @@ export async function GET() {
   const platformName = map.get('platformName')?.trim() || DEFAULT_PLATFORM_NAME;
   const platformTagline = map.get('platformTagline')?.trim() || DEFAULT_PLATFORM_TAGLINE;
 
+  const baseCurrencyCode = map.get('baseCurrencyCode') || 'NGN';
   const defaultCurrencyCode = map.get('defaultCurrencyCode') || 'NGN';
   const defaultCurrencySymbol = map.get('defaultCurrencySymbol') || '₦';
   const defaultLocale = map.get('defaultLocale') || 'en-NG';
+  const parsedExRate = Number(map.get('currencyExchangeRate'));
+  const currencyExchangeRate = Number.isFinite(parsedExRate) && parsedExRate > 0 ? parsedExRate : 1;
+  const autoConvertCurrency = map.has('autoConvertCurrency')
+    ? map.get('autoConvertCurrency') === 'true'
+    : true;
   const defaultLanguage = map.get('defaultLanguage') || 'en';
   const defaultTimezone = map.get('defaultTimezone') || 'Africa/Lagos';
   let enabledLanguages: string[] = ['en', 'fr', 'es', 'pt', 'ar'];
@@ -93,9 +99,12 @@ export async function GET() {
     allowPublicRegistration,
     maintenanceMode,
     defaultTrialDays,
+    baseCurrencyCode,
     defaultCurrencyCode,
     defaultCurrencySymbol,
     defaultLocale,
+    currencyExchangeRate,
+    autoConvertCurrency,
     defaultLanguage,
     enabledLanguages,
     defaultTimezone,
@@ -145,9 +154,12 @@ export async function POST(req: Request) {
       allowPublicRegistration,
       maintenanceMode,
       defaultTrialDays,
+      baseCurrencyCode,
       defaultCurrencyCode,
       defaultCurrencySymbol,
       defaultLocale,
+      currencyExchangeRate,
+      autoConvertCurrency,
       defaultLanguage,
       enabledLanguages,
       defaultTimezone,
@@ -219,6 +231,41 @@ export async function POST(req: Request) {
           where: { key: 'defaultTrialDays' },
           create: { key: 'defaultTrialDays', value: String(days) },
           update: { value: String(days) },
+        })
+      );
+    }
+
+    if (baseCurrencyCode !== undefined) {
+      const base = String(baseCurrencyCode).trim().toUpperCase().slice(0, 6) || 'NGN';
+      operations.push((tx) =>
+        tx.platformSetting.upsert({
+          where: { key: 'baseCurrencyCode' },
+          create: { key: 'baseCurrencyCode', value: base },
+          update: { value: base },
+        })
+      );
+    }
+
+    if (currencyExchangeRate !== undefined) {
+      const rate = Number(currencyExchangeRate);
+      if (Number.isFinite(rate) && rate > 0) {
+        operations.push((tx) =>
+          tx.platformSetting.upsert({
+            where: { key: 'currencyExchangeRate' },
+            create: { key: 'currencyExchangeRate', value: String(rate) },
+            update: { value: String(rate) },
+          })
+        );
+      }
+    }
+
+    if (autoConvertCurrency !== undefined) {
+      const val = String(Boolean(autoConvertCurrency));
+      operations.push((tx) =>
+        tx.platformSetting.upsert({
+          where: { key: 'autoConvertCurrency' },
+          create: { key: 'autoConvertCurrency', value: val },
+          update: { value: val },
         })
       );
     }

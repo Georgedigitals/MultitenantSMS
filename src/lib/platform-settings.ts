@@ -66,9 +66,12 @@ export async function getPlatformCurrencySymbol(): Promise<string> {
 export async function getPlatformLocalization(): Promise<PlatformLocalizationConfig> {
   try {
     const keys = [
+      'baseCurrencyCode',
       'defaultCurrencyCode',
       'defaultCurrencySymbol',
       'defaultLocale',
+      'currencyExchangeRate',
+      'autoConvertCurrency',
       'defaultLanguage',
       'enabledLanguages',
       'defaultTimezone',
@@ -95,10 +98,19 @@ export async function getPlatformLocalization(): Promise<PlatformLocalizationCon
       }
     }
 
+    const parsedRate = Number(map.get('currencyExchangeRate'));
+    const exchangeRate = Number.isFinite(parsedRate) && parsedRate > 0 ? parsedRate : 1;
+    const autoConvertCurrency = map.has('autoConvertCurrency')
+      ? map.get('autoConvertCurrency') === 'true'
+      : true;
+
     return {
-      currencyCode: map.get('defaultCurrencyCode')?.trim() || DEFAULT_LOCALIZATION.currencyCode,
+      baseCurrencyCode: map.get('baseCurrencyCode')?.trim().toUpperCase() || DEFAULT_LOCALIZATION.baseCurrencyCode,
+      currencyCode: map.get('defaultCurrencyCode')?.trim().toUpperCase() || DEFAULT_LOCALIZATION.currencyCode,
       currencySymbol: map.get('defaultCurrencySymbol')?.trim() || DEFAULT_LOCALIZATION.currencySymbol,
       locale: map.get('defaultLocale')?.trim() || DEFAULT_LOCALIZATION.locale,
+      exchangeRate,
+      autoConvertCurrency,
       defaultLanguage,
       enabledLanguages,
       timezone: map.get('defaultTimezone')?.trim() || DEFAULT_LOCALIZATION.timezone,

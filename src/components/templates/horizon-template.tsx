@@ -7,6 +7,7 @@ import { ArrowRight } from 'lucide-react';
 import { FeaturedStudent } from './featured-student';
 import { SchoolHero } from './school-hero';
 import type { PublicSiteData } from '@/lib/site-content';
+import { useLanguage } from '@/components/language-provider';
 
 interface TemplateProps {
   data: PublicSiteData;
@@ -33,6 +34,7 @@ const pillars = [
 
 export function HorizonTemplate({ data }: TemplateProps) {
   const { tenant, branding, about, academics, admissions, gallery } = data;
+  const { tp } = useLanguage();
   const pathname = usePathname() || '';
   const isSlugPath = pathname.startsWith(`/${tenant.slug}`);
   const resolveHref = (path: string) => {
@@ -58,7 +60,7 @@ export function HorizonTemplate({ data }: TemplateProps) {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-14 border-b border-[#e4e2dd] items-end">
             <div className="lg:col-span-6">
               <h2 className="tenant-editorial-display text-[38px] sm:text-[54px] leading-[1.0] tracking-[-0.025em] text-[#152019]">
-                Care, discovery &amp; character
+                {tp('Care, discovery & character')}
               </h2>
             </div>
             <div className="lg:col-span-6">
@@ -94,7 +96,7 @@ export function HorizonTemplate({ data }: TemplateProps) {
         <div className="max-w-[1360px] mx-auto px-5 sm:px-8 grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
           <div className="lg:col-span-5 space-y-4">
             <h2 className="tenant-editorial-display text-[38px] sm:text-[52px] leading-[1.02] text-white">
-              A school built around families
+              {tp('A school built around families')}
             </h2>
             <p className="text-[15px] text-[#aeb8b1]">
               {tenant.name}
@@ -120,7 +122,7 @@ export function HorizonTemplate({ data }: TemplateProps) {
                 href={resolveHref('/academics')}
                 className="inline-flex items-center gap-2 text-[14px] font-medium text-[#c5cec7] underline underline-offset-4 hover:text-white"
               >
-                <span>Explore academics</span>
+                <span>{tp('Explore academics')}</span>
                 <ArrowRight className="w-4 h-4" aria-hidden="true" />
               </Link>
             </div>
@@ -134,13 +136,13 @@ export function HorizonTemplate({ data }: TemplateProps) {
           <div className="max-w-[1360px] mx-auto px-5 sm:px-8">
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-10">
               <h2 className="tenant-editorial-display text-[38px] sm:text-[52px] leading-[1.0] text-[#152019]">
-                Through the school day
+                {tp('Through the school day')}
               </h2>
               <Link
                 href={resolveHref('/gallery')}
                 className="inline-flex items-center gap-2 text-[14px] font-medium text-[#152019] underline underline-offset-4 hover:opacity-70"
               >
-                <span>See all campus photos</span>
+                <span>{tp('See all campus photos')}</span>
                 <ArrowRight className="w-4 h-4" aria-hidden="true" />
               </Link>
             </div>

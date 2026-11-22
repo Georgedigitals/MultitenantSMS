@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { TenantStatus } from '@prisma/client';
 import { getTenantUrl } from '@/lib/tenant-url';
+import { useLanguage } from '@/components/language-provider';
 
 const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'eduorg.ng';
 
@@ -43,6 +44,7 @@ interface TenantsClientProps {
 }
 
 export function TenantsClient({ initialTenants, availablePlans }: TenantsClientProps) {
+  const { formatMoney } = useLanguage();
   const [tenants, setTenants] = useState<TenantItem[]>(initialTenants);
   const [activeTab, setActiveTab] = useState<'directory' | 'recycle_bin'>('directory');
   const [search, setSearch] = useState('');
@@ -706,7 +708,7 @@ export function TenantsClient({ initialTenants, availablePlans }: TenantsClientP
                         >
                           {availablePlans.map((p) => (
                             <option key={p.id} value={p.id}>
-                              {p.name} (₦{Number(p.price).toLocaleString()}/term)
+                              {p.name} ({formatMoney(Number(p.price), 0)}/yr)
                             </option>
                           ))}
                         </select>
@@ -972,7 +974,7 @@ export function TenantsClient({ initialTenants, availablePlans }: TenantsClientP
                 >
                   {availablePlans.map((p) => (
                     <option key={p.id} value={p.id}>
-                      {p.name} — ₦{Number(p.price).toLocaleString()}/term
+                      {p.name} — {formatMoney(Number(p.price), 0)}/yr
                     </option>
                   ))}
                 </select>

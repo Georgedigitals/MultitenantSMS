@@ -85,9 +85,13 @@ export function SettingsClient({ superAdmin }: SettingsClientProps) {
   const [platformTagline, setPlatformTagline] = useState('Multi-Tenant School Management Platform');
   const [allowPublicRegistration, setAllowPublicRegistration] = useState(true);
   const [defaultTrialDays, setDefaultTrialDays] = useState(14);
+  const [baseCurrencyCode, setBaseCurrencyCode] = useState('NGN');
   const [defaultCurrencyCode, setDefaultCurrencyCode] = useState('NGN');
   const [defaultCurrencySymbol, setDefaultCurrencySymbol] = useState('₦');
   const [defaultLocale, setDefaultLocale] = useState('en-NG');
+  const [currencyExchangeRate, setCurrencyExchangeRate] = useState<number>(1);
+  const [autoConvertCurrency, setAutoConvertCurrency] = useState<boolean>(true);
+  const [fetchingRate, setFetchingRate] = useState(false);
   const [defaultLanguage, setDefaultLanguage] = useState('en');
   const [enabledLanguages, setEnabledLanguages] = useState<string[]>(['en', 'fr', 'es', 'pt', 'ar']);
   const [defaultTimezone, setDefaultTimezone] = useState('Africa/Lagos');
@@ -122,9 +126,16 @@ export function SettingsClient({ superAdmin }: SettingsClientProps) {
         if (data.allowPublicRegistration !== undefined) setAllowPublicRegistration(Boolean(data.allowPublicRegistration));
         if (data.maintenanceMode !== undefined) setMaintenanceMode(Boolean(data.maintenanceMode));
         if (Number.isInteger(data.defaultTrialDays)) setDefaultTrialDays(data.defaultTrialDays);
+        if (data.baseCurrencyCode) setBaseCurrencyCode(data.baseCurrencyCode);
         if (data.defaultCurrencyCode) setDefaultCurrencyCode(data.defaultCurrencyCode);
         if (data.defaultCurrencySymbol) setDefaultCurrencySymbol(data.defaultCurrencySymbol);
         if (data.defaultLocale) setDefaultLocale(data.defaultLocale);
+        if (typeof data.currencyExchangeRate === 'number' && data.currencyExchangeRate > 0) {
+          setCurrencyExchangeRate(data.currencyExchangeRate);
+        }
+        if (data.autoConvertCurrency !== undefined) {
+          setAutoConvertCurrency(Boolean(data.autoConvertCurrency));
+        }
         if (data.defaultLanguage) setDefaultLanguage(data.defaultLanguage);
         if (Array.isArray(data.enabledLanguages) && data.enabledLanguages.length > 0) {
           setEnabledLanguages(data.enabledLanguages);
@@ -172,9 +183,12 @@ export function SettingsClient({ superAdmin }: SettingsClientProps) {
           platformTagline,
           allowPublicRegistration,
           defaultTrialDays,
+          baseCurrencyCode,
           defaultCurrencyCode,
           defaultCurrencySymbol,
           defaultLocale,
+          currencyExchangeRate,
+          autoConvertCurrency,
           defaultLanguage,
           enabledLanguages,
           defaultTimezone,
@@ -262,14 +276,14 @@ export function SettingsClient({ superAdmin }: SettingsClientProps) {
             key={tab.id}
             type="button"
             onClick={() => setActiveTab(tab.id)}
-            className={`px-3.5 py-2 rounded-xl text-xs font-semibold transition-all flex flex-col items-start ${
+            className={`px-3.5 py-2 rounded-lg text-xs font-semibold transition-all flex flex-col items-start cursor-pointer ${
               activeTab === tab.id
-                ? 'bg-indigo-500 text-white shadow-md shadow-indigo-500/20'
-                : 'adm-surface border adm-divider adm-text-secondary hover:adm-text-primary'
+                ? 'adm-btn-primary'
+                : 'adm-surface border adm-divider adm-text-secondary adm-surface-hover'
             }`}
           >
             <span>{tab.label}</span>
-            <span className={`text-[9px] font-normal mt-0.5 ${activeTab === tab.id ? 'text-indigo-100' : 'adm-text-muted'}`}>{tab.desc}</span>
+            <span className={`text-[10px] font-normal mt-0.5 ${activeTab === tab.id ? 'opacity-80' : 'adm-text-muted'}`}>{tab.desc}</span>
           </button>
         ))}
       </div>
@@ -355,12 +369,28 @@ export function SettingsClient({ superAdmin }: SettingsClientProps) {
               >
                 <select
                   value={CURRENCY_PRESETS.some((c) => c.code === defaultCurrencyCode) ? defaultCurrencyCode : ''}
-                  onChange={(e) => {
+                  onChange={async (e) => {
                     const preset = CURRENCY_PRESETS.find((c) => c.code === e.target.value);
                     if (preset) {
                       setDefaultCurrencyCode(preset.code);
                       setDefaultCurrencySymbol(preset.symbol);
                       setDefaultLocale(preset.locale);
+                      if (preset.code === baseCurrencyCode) {
+                        setCurrencyExchangeRate(1);
+                      } else if (autoConvertCurrency) {
+                        setFetchingRate(true);
+                        try {
+                          const r = await fetch(
+                            `/api/platform/exchange-rates?from=${encodeURIComponent(baseCurrencyCode)}&to=${encodeURIComponent(preset.code)}`
+                          );
+                          const d = await r.json();
+                          if (r.ok && typeof d.rate === 'number' && d.rate > 0) {
+                            setCurrencyExchangeRate(d.rate);
+                          }
+                        } finally {
+                          setFetchingRate(false);
+                        }
+                      }
                     }
                   }}
                   className={inputClass}
@@ -400,6 +430,89 @@ export function SettingsClient({ superAdmin }: SettingsClientProps) {
                     placeholder="en-US"
                     className={inputClass}
                   />
+                </div>
+              </SettingField>
+
+              <SettingField
+                label="Currency Converter (Base Currency & Exchange Rate)"
+                hint="Automatically converts stored amounts (e.g. 450,000 NGN → £229 or $290) across pricing, dashboards, and checkout. Set Base = Display for 1:1 native pricing."
+                colSpan
+              >
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                      <label className="block text-[10px] adm-text-muted uppercase tracking-wider mb-1">
+                        Base Stored Currency
+                      </label>
+                      <select
+                        value={baseCurrencyCode}
+                        onChange={(e) => setBaseCurrencyCode(e.target.value)}
+                        className={inputClass}
+                      >
+                        {CURRENCY_PRESETS.map((c) => (
+                          <option key={c.code} value={c.code}>
+                            {c.code} ({c.symbol})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] adm-text-muted uppercase tracking-wider mb-1">
+                        Rate (1 {baseCurrencyCode} = ? {defaultCurrencyCode})
+                      </label>
+                      <input
+                        type="number"
+                        step="0.000001"
+                        min="0.000001"
+                        value={currencyExchangeRate}
+                        onChange={(e) => setCurrencyExchangeRate(Number(e.target.value) || 1)}
+                        className={inputClass}
+                      />
+                    </div>
+                    <div className="flex items-end">
+                      <button
+                        type="button"
+                        disabled={fetchingRate}
+                        onClick={async () => {
+                          setFetchingRate(true);
+                          try {
+                            const r = await fetch(
+                              `/api/platform/exchange-rates?from=${encodeURIComponent(baseCurrencyCode)}&to=${encodeURIComponent(defaultCurrencyCode)}`
+                            );
+                            const d = await r.json();
+                            if (r.ok && typeof d.rate === 'number' && d.rate > 0) {
+                              setCurrencyExchangeRate(d.rate);
+                            }
+                          } finally {
+                            setFetchingRate(false);
+                          }
+                        }}
+                        className="adm-btn-primary w-full h-[34px] rounded-lg text-xs font-semibold cursor-pointer disabled:opacity-50"
+                      >
+                        {fetchingRate ? 'Fetching rate...' : 'Fetch Live Rate'}
+                      </button>
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                    <label className="inline-flex items-center gap-2 cursor-pointer adm-text-secondary">
+                      <input
+                        type="checkbox"
+                        checked={autoConvertCurrency}
+                        onChange={(e) => setAutoConvertCurrency(e.target.checked)}
+                      />
+                      <span>Auto-convert amounts using exchange rate</span>
+                    </label>
+                    <span className="font-mono text-[11px] adm-text-primary">
+                      Preview: 450,000 {baseCurrencyCode} →{' '}
+                      <strong>
+                        {defaultCurrencySymbol}
+                        {(autoConvertCurrency && baseCurrencyCode !== defaultCurrencyCode
+                          ? 450000 * currencyExchangeRate
+                          : 450000
+                        ).toLocaleString(defaultLocale, { maximumFractionDigits: 2 })}
+                      </strong>
+                    </span>
+                  </div>
                 </div>
               </SettingField>
 
@@ -600,7 +713,7 @@ export function SettingsClient({ superAdmin }: SettingsClientProps) {
                   <option value="mock">Mock Simulator (Local Development)</option>
                 </select>
               </SettingField>
-              <SettingField label="Platform SMS Base Unit Rate (₦)" hint="Base cost charged per dispatched SMS broadcast page.">
+              <SettingField label={`Platform SMS Base Unit Rate (${defaultCurrencySymbol})`} hint="Base cost charged per dispatched SMS broadcast page.">
                 <input type="number" step="0.1" value={smsCostPerUnit} onChange={(e) => setSmsCostPerUnit(Number(e.target.value))} className={`${inputClass} text-amber-500`} />
               </SettingField>
               <SettingField label="Termii SMS API Master Credentials" hint="Master key for dispatching SMS broadcasts to parents across all school tenants." colSpan>
@@ -669,7 +782,7 @@ export function SettingsClient({ superAdmin }: SettingsClientProps) {
           <button
             type="submit"
             disabled={saving}
-            className="inline-flex items-center gap-2 px-6 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-sm shadow-lg shadow-indigo-600/20 transition-all hover:-translate-y-0.5 active:translate-y-0 disabled:opacity-50"
+            className="adm-btn-primary inline-flex items-center gap-2 px-6 py-2.5 font-semibold rounded-lg text-sm transition-all cursor-pointer disabled:opacity-50"
           >
             <SaveIcon />
             {saving ? 'Saving Configuration…' : 'Save Global Settings'}

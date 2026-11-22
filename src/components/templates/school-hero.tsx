@@ -5,11 +5,13 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ArrowLeft, ArrowRight } from 'lucide-react';
 import type { HeroSlide, PublicSiteData } from '@/lib/site-content';
+import { useLanguage } from '@/components/language-provider';
 
 type SchoolTemplate = 'heritage' | 'vanguard' | 'horizon';
 
 export function SchoolHero({ data, variant }: { data: PublicSiteData; variant: SchoolTemplate }) {
   const { hero, tenant, branding, gallery } = data;
+  const { tp } = useLanguage();
   const pathname = usePathname() || '';
   const isSlugPath = pathname.startsWith(`/${tenant.slug}`);
 
@@ -126,7 +128,7 @@ export function SchoolHero({ data, variant }: { data: PublicSiteData; variant: S
         {/* Editorial Copy Column */}
         <div className="lg:col-span-6 space-y-7">
           <h1 className="tenant-editorial-display text-[48px] sm:text-[64px] lg:text-[78px] leading-[0.96] tracking-[-0.03em] font-normal break-words">
-            {getCleanHeadline(slide?.title)}
+            {tp(getCleanHeadline(slide?.title))}
           </h1>
 
           <p
@@ -148,14 +150,14 @@ export function SchoolHero({ data, variant }: { data: PublicSiteData; variant: S
               className="h-12 px-6 text-[14px] font-medium inline-flex items-center gap-2.5 transition-opacity hover:opacity-90"
               style={{ backgroundColor: theme.ctaBg, color: theme.ctaInk }}
             >
-              <span>{slide?.ctaText || 'Explore admissions'}</span>
+              <span>{tp(slide?.ctaText || 'Explore admissions')}</span>
               <ArrowRight className="w-4 h-4" aria-hidden="true" />
             </Link>
             <Link
               href={resolveHref('/academics')}
               className={`h-12 px-6 border text-[14px] font-medium inline-flex items-center transition-colors ${theme.secondaryBorder}`}
             >
-              Explore academics
+              {tp('Explore academics')}
             </Link>
           </div>
         </div>
@@ -180,11 +182,27 @@ export function SchoolHero({ data, variant }: { data: PublicSiteData; variant: S
                 className="h-full w-full object-cover"
               />
             ) : (
-              <div className="h-full w-full flex flex-col items-center justify-center p-10 text-center">
+              <div className="h-full w-full flex flex-col items-center justify-center p-10 text-center border border-black/10">
+                {branding.logoUrl ? (
+                  <img
+                    src={branding.logoUrl}
+                    alt={schoolName}
+                    className="h-16 w-auto object-contain mb-5"
+                  />
+                ) : (
+                  <div
+                    className="w-14 h-14 mb-5 flex items-center justify-center font-semibold text-xl"
+                    style={{ backgroundColor: primary, color: branding.textOnPrimary || '#ffffff' }}
+                  >
+                    {schoolName.charAt(0).toUpperCase()}
+                  </div>
+                )}
                 <p className="tenant-editorial-display text-4xl sm:text-5xl">{schoolName}</p>
-                <p className="mt-3 text-[14px] max-w-xs" style={{ color: theme.muted }}>
-                  Upload campus photographs in Website Settings to feature your school here.
-                </p>
+                {hero.motto && (
+                  <p className="mt-3 text-[14px] italic max-w-xs" style={{ color: theme.muted }}>
+                    “{hero.motto}”
+                  </p>
+                )}
               </div>
             )}
           </div>

@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { AddSessionModal } from '@/components/add-session-modal';
 import { calculateStudentFeeBalance } from '@/lib/fees';
 import { getPlatformLocalization } from '@/lib/platform-settings';
+import { formatMoney } from '@/lib/i18n/currency';
 
 interface TenantDashboardProps {
   params: Promise<{ slug: string }>;
@@ -18,7 +19,7 @@ export default async function TenantDashboardPage({ params }: TenantDashboardPro
     getTenantContext({ slug }),
     getPlatformLocalization(),
   ]);
-  const currencySymbol = localization.currencySymbol;
+  const fmtMoney = (amt: number) => formatMoney(amt, localization);
 
   if (!tenant) {
     notFound();
@@ -601,7 +602,7 @@ export default async function TenantDashboardPage({ params }: TenantDashboardPro
                             : 'bg-[#fffbeb] text-[#8f4f0e]'
                         }`}
                       >
-                        {feeInfo.isPaid ? 'Fees cleared' : `Balance ${currencySymbol}${feeInfo.balance.toLocaleString()}`}
+                        {feeInfo.isPaid ? 'Fees cleared' : `Balance ${fmtMoney(feeInfo.balance)}`}
                       </span>
                       <Link
                         href={`/${slug}/results/check`}
@@ -665,7 +666,7 @@ export default async function TenantDashboardPage({ params }: TenantDashboardPro
     try {
       const feeRes = await calculateStudentFeeBalance(tenant.id, user.studentId, currentTerm.id);
       if (!feeRes.isFullyPaid) {
-        feeStatusText = `${currencySymbol}${Number(feeRes.balanceRemaining || 0).toLocaleString()} due`;
+        feeStatusText = `${fmtMoney(Number(feeRes.balanceRemaining || 0))} due`;
       }
     } catch {
       feeStatusText = 'Active';

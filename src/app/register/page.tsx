@@ -4,9 +4,11 @@ import React, { useState, useEffect, Suspense } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { extractColorsFromImage } from '@/lib/color-extractor';
+import { useLanguage } from '@/components/language-provider';
 import { Sparkles, Palette, Shield, Rocket, Heart, ChevronLeft, ChevronRight, Check } from 'lucide-react';
 
 function RegisterFormContent() {
+  const { formatMoney } = useLanguage();
   const searchParams = useSearchParams();
   const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost:3000';
   const initialPlanFromUrl = searchParams.get('planId') || 'plan_growth';
@@ -58,7 +60,7 @@ function RegisterFormContent() {
         const options = data.plans.map((plan: any) => ({
           id: plan.id,
           name: plan.name,
-          priceFormatted: `₦${Number(plan.price).toLocaleString()}`,
+          priceFormatted: formatMoney(Number(plan.price), 0),
           cap: plan.studentCeiling,
           features: (plan.features || []).map((feature: any) => feature.name),
         }));

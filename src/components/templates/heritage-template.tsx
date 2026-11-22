@@ -7,6 +7,7 @@ import { ArrowRight } from 'lucide-react';
 import { FeaturedStudent } from './featured-student';
 import { SchoolHero } from './school-hero';
 import type { PublicSiteData } from '@/lib/site-content';
+import { useLanguage } from '@/components/language-provider';
 
 interface TemplateProps {
   data: PublicSiteData;
@@ -14,6 +15,7 @@ interface TemplateProps {
 
 export function HeritageTemplate({ data }: TemplateProps) {
   const { tenant, branding, about, academics, admissions, gallery } = data;
+  const { tp } = useLanguage();
   const pathname = usePathname() || '';
   const isSlugPath = pathname.startsWith(`/${tenant.slug}`);
   const resolveHref = (path: string) => {
@@ -60,10 +62,10 @@ export function HeritageTemplate({ data }: TemplateProps) {
         <div className="max-w-[1360px] mx-auto px-5 sm:px-8 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-16 items-start">
           <div className="lg:col-span-5">
             <h2 className="tenant-editorial-display text-[38px] sm:text-[52px] leading-[1.02] tracking-[-0.025em] text-[#0a0a0a]">
-              From the Principal’s office
+              {tp('From the Principal’s office')}
             </h2>
             <p className="mt-4 text-[15px] text-[#66645e]">
-              {tenant.name} Administration
+              {tp(`${tenant.name} Administration`)}
             </p>
           </div>
 
@@ -89,7 +91,7 @@ export function HeritageTemplate({ data }: TemplateProps) {
                 href={resolveHref('/about')}
                 className="inline-flex items-center gap-2 text-[14px] font-medium text-[#0a0a0a] underline underline-offset-4 hover:opacity-70 transition-opacity"
               >
-                <span>Read our school story</span>
+                <span>{tp('Read our school story')}</span>
                 <ArrowRight className="w-4 h-4" aria-hidden="true" />
               </Link>
             </div>
@@ -103,7 +105,7 @@ export function HeritageTemplate({ data }: TemplateProps) {
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-14 border-b border-[#0a0a0a]/15 items-end">
             <div className="lg:col-span-6">
               <h2 className="tenant-editorial-display text-[38px] sm:text-[54px] leading-[1.0] tracking-[-0.025em] text-[#0a0a0a]">
-                Academic standard &amp; tiers
+                {tp('Academic standard & tiers')}
               </h2>
             </div>
             <div className="lg:col-span-6">
@@ -122,7 +124,7 @@ export function HeritageTemplate({ data }: TemplateProps) {
               >
                 <div className="md:col-span-4">
                   <h3 className="text-[20px] sm:text-[22px] font-semibold tracking-[-0.015em] text-[#0a0a0a]">
-                    {level.name}
+                    {tp(level.name)}
                   </h3>
                 </div>
                 <div className="md:col-span-2">
@@ -140,7 +142,7 @@ export function HeritageTemplate({ data }: TemplateProps) {
               href={resolveHref('/academics')}
               className="inline-flex items-center gap-2 text-[14px] font-medium text-[#0a0a0a] underline underline-offset-4 hover:opacity-70 transition-opacity"
             >
-              <span>Inspect full curriculum &amp; assessment</span>
+              <span>{tp('Inspect full curriculum & assessment')}</span>
               <ArrowRight className="w-4 h-4" aria-hidden="true" />
             </Link>
           </div>
@@ -153,13 +155,13 @@ export function HeritageTemplate({ data }: TemplateProps) {
           <div className="max-w-[1360px] mx-auto px-5 sm:px-8">
             <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-10">
               <h2 className="tenant-editorial-display text-[38px] sm:text-[52px] leading-[1.0] tracking-[-0.025em] text-[#0a0a0a]">
-                Life on campus
+                {tp('Life on campus')}
               </h2>
               <Link
                 href={resolveHref('/gallery')}
                 className="inline-flex items-center gap-2 text-[14px] font-medium text-[#0a0a0a] underline underline-offset-4 hover:opacity-70"
               >
-                <span>View full gallery</span>
+                <span>{tp('View full gallery')}</span>
                 <ArrowRight className="w-4 h-4" aria-hidden="true" />
               </Link>
             </div>
@@ -194,7 +196,7 @@ export function HeritageTemplate({ data }: TemplateProps) {
         <div className="max-w-[1360px] mx-auto px-5 sm:px-8 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
           <div className="lg:col-span-7 space-y-5">
             <h2 className="tenant-editorial-display text-[42px] sm:text-[60px] leading-[0.98] tracking-[-0.025em]">
-              Begin your child’s admission
+              {tp('Begin your child’s admission')}
             </h2>
             <p className="text-[17px] leading-[1.6] opacity-85 max-w-xl">
               {admissions.text ||
@@ -206,14 +208,14 @@ export function HeritageTemplate({ data }: TemplateProps) {
               href={resolveHref('/admissions')}
               className="h-12 px-6 bg-white text-[#0a0a0a] hover:bg-[#f4f3f1] text-[14px] font-medium inline-flex items-center gap-2 transition-colors"
             >
-              <span>Apply for admission</span>
+              <span>{tp('Apply for admission')}</span>
               <ArrowRight className="w-4 h-4" aria-hidden="true" />
             </Link>
             <Link
               href={resolveHref('/results/check')}
               className="h-12 px-6 border border-current/40 text-[14px] font-medium inline-flex items-center hover:bg-white/10 transition-colors"
             >
-              Check term result
+              {tp('Check term result')}
             </Link>
           </div>
         </div>

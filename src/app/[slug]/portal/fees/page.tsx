@@ -21,10 +21,12 @@ export default async function PortalFeesPage({ params }: PortalFeesPageProps) {
 
   const formatNaira = (amount: number) =>
     formatMoney(amount, {
+      baseCurrencyCode: localization.baseCurrencyCode,
       currencyCode: localization.currencyCode,
       currencySymbol: localization.currencySymbol,
       locale: localization.locale,
-      decimals: 0,
+      exchangeRate: localization.exchangeRate,
+      autoConvertCurrency: localization.autoConvertCurrency,
     });
 
   const auth = await getTenantUserFromCookies(tenant.id);
