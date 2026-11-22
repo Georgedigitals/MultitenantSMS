@@ -2,7 +2,6 @@ import React from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getPublicSiteContent } from '@/lib/site-content';
-import { tenantHasFeature } from '@/lib/features';
 import { TenantPublicHeader } from '@/components/tenant-public-header';
 import { TenantPublicFooter } from '@/components/tenant-public-footer';
 import { GalleryClient } from './gallery-client';
@@ -19,44 +18,44 @@ export default async function TenantGalleryPage({ params }: PageProps) {
   let siteData: Awaited<ReturnType<typeof getPublicSiteContent>>;
   try {
     siteData = await getPublicSiteContent(slug);
-  } catch (err) {
+  } catch {
     notFound();
   }
 
   const { tenant, branding, gallery } = siteData;
-  if (!(await tenantHasFeature(tenant.id, 'gallery'))) notFound();
-  const primaryColor = branding.primaryColor || '#1E3A8A';
+  const primary = branding.primaryColor || '#141414';
+  const textOnPrimary = branding.textOnPrimary || '#ffffff';
 
   return (
-    <div className="min-h-screen flex flex-col font-sans text-slate-800 bg-slate-50">
+    <div className="min-h-screen flex flex-col tenant-editorial text-[#0a0a0a] bg-[#f4f3f1]">
       <TenantPublicHeader slug={tenant.slug} tenantName={tenant.name} branding={branding} />
 
-      {/* Header Banner */}
+      {/* Chapter 1: Flat Brand Header */}
       <section
-        className="py-16 lg:py-20 text-white relative overflow-hidden"
-        style={{
-          background: `linear-gradient(135deg, ${primaryColor} 0%, #0F172A 100%)`,
-        }}
+        className="w-full py-16 sm:py-24"
+        style={{ backgroundColor: primary, color: textOnPrimary }}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
-          <div className="flex items-center justify-center gap-2 text-xs font-mono uppercase tracking-widest text-slate-300 mb-3">
-            <Link href="/" className="hover:text-white transition-colors">Home</Link>
+        <div className="max-w-[1360px] mx-auto px-5 sm:px-8 space-y-5">
+          <div className="flex items-center gap-2 text-[13px] opacity-75">
+            <Link href={`/${tenant.slug}`} className="hover:opacity-100 underline-offset-4 hover:underline">
+              Home
+            </Link>
             <span>/</span>
-            <span className="text-white font-bold">Campus Gallery</span>
+            <span>Gallery</span>
           </div>
-          <h1 className="text-3xl sm:text-5xl font-black tracking-tight mb-4">
-            Campus Life & Events Gallery
+          <h1 className="tenant-editorial-display text-[44px] sm:text-[64px] leading-[0.98] tracking-[-0.025em]">
+            Campus life &amp; events
           </h1>
-          <p className="text-base text-slate-200 max-w-xl mx-auto font-light leading-relaxed">
-            A window into the vibrant day-to-day experience of students, faculty, and campus traditions at {tenant.name}.
+          <p className="text-[17px] sm:text-[19px] leading-[1.6] opacity-85 max-w-2xl">
+            Scenes from classrooms, laboratories, assemblies, and school traditions at {tenant.name}.
           </p>
         </div>
       </section>
 
-      {/* Main Gallery Section */}
-      <section className="py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <GalleryClient images={gallery} primaryColor={primaryColor} />
+      {/* Chapter 2: Gallery Grid */}
+      <section className="w-full py-16 sm:py-24">
+        <div className="max-w-[1360px] mx-auto px-5 sm:px-8">
+          <GalleryClient images={gallery} primaryColor={primary} />
         </div>
       </section>
 

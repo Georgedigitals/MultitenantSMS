@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { FeeBalanceResult } from '@/lib/fees';
+import { useLanguage } from '@/components/language-provider';
 
 interface MyFeesClientProps {
   slug: string;
@@ -18,6 +19,7 @@ export default function MyFeesClient({
   activeTerm,
   feeBalance,
 }: MyFeesClientProps) {
+  const { localization: { currencySymbol, locale } } = useLanguage();
   const [payAmount, setPayAmount] = useState<string>('');
   const [isInitializing, setIsInitializing] = useState(false);
   const [showPayModal, setShowPayModal] = useState(false);
@@ -91,7 +93,7 @@ export default function MyFeesClient({
             }}
             className="px-6 py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm transition-colors shadow-xs"
           >
-            Pay Fees (₦{feeBalance.balanceRemaining.toLocaleString()})
+            Pay Fees ({currencySymbol}{feeBalance.balanceRemaining.toLocaleString()})
           </button>
         )}
       </div>
@@ -103,7 +105,7 @@ export default function MyFeesClient({
             Total Assigned
           </span>
           <span className="text-2xl font-extrabold text-slate-900">
-            ₦{feeBalance.totalAssigned.toLocaleString()}
+            {currencySymbol}{feeBalance.totalAssigned.toLocaleString()}
           </span>
         </div>
 
@@ -112,7 +114,7 @@ export default function MyFeesClient({
             Discounts / Waivers
           </span>
           <span className="text-2xl font-extrabold text-purple-600">
-            -₦{feeBalance.totalAdjustments.toLocaleString()}
+            -{currencySymbol}{feeBalance.totalAdjustments.toLocaleString()}
           </span>
         </div>
 
@@ -121,7 +123,7 @@ export default function MyFeesClient({
             Total Paid
           </span>
           <span className="text-2xl font-extrabold text-emerald-600">
-            ₦{feeBalance.totalPaid.toLocaleString()}
+            {currencySymbol}{feeBalance.totalPaid.toLocaleString()}
           </span>
         </div>
 
@@ -130,7 +132,7 @@ export default function MyFeesClient({
             Balance Due
           </span>
           <span className="text-2xl font-extrabold text-white">
-            ₦{feeBalance.balanceRemaining.toLocaleString()}
+            {currencySymbol}{feeBalance.balanceRemaining.toLocaleString()}
           </span>
         </div>
       </div>
@@ -150,7 +152,7 @@ export default function MyFeesClient({
                     {fi.classLevelId ? 'Class-Level Fee' : 'General School Fee'}
                   </span>
                 </div>
-                <span className="font-mono font-bold text-slate-900">₦{fi.amount.toLocaleString()}</span>
+                <span className="font-mono font-bold text-slate-900">{currencySymbol}{fi.amount.toLocaleString()}</span>
               </div>
             ))
           )}
@@ -171,7 +173,7 @@ export default function MyFeesClient({
               >
                 <div>
                   <div className="font-bold text-slate-900 text-sm mb-0.5">
-                    ₦{p.amount.toLocaleString()} — {p.method.toUpperCase()}
+                    {currencySymbol}{p.amount.toLocaleString()} — {p.method.toUpperCase()}
                   </div>
                   <div className="text-slate-500 font-mono">
                     Ref: {p.paymentRef || 'Cash / Internal Receipt'} • Date:{' '}
@@ -193,20 +195,20 @@ export default function MyFeesClient({
           <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200">
             <h3 className="text-lg font-bold text-slate-900 mb-1">Pay School Fees</h3>
             <p className="text-xs text-slate-500 mb-4">
-              Partial payments allowed. Outstanding balance is ₦
+              Partial payments allowed. Outstanding balance is {currencySymbol}
               {feeBalance.balanceRemaining.toLocaleString()}.
             </p>
 
             <form onSubmit={handlePaySubmit} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                  Payment Amount (₦)
+                  Payment Amount ({currencySymbol})
                 </label>
                 <input
                   type="number"
                   step="0.01"
                   max={feeBalance.balanceRemaining}
-                  placeholder={`Max: ₦${feeBalance.balanceRemaining}`}
+                  placeholder={`Max: ${currencySymbol}${feeBalance.balanceRemaining}`}
                   value={payAmount}
                   onChange={(e) => setPayAmount(e.target.value)}
                   required

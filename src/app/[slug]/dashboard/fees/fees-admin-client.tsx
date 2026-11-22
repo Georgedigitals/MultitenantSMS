@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { TermFeeOverviewResult } from '@/lib/fees';
+import { useLanguage } from '@/components/language-provider';
 
 export interface ClassLevelOption {
   id: string;
@@ -71,6 +72,7 @@ export default function FeesAdminClient({
   bankDetails,
   pastTerms = [],
 }: FeesAdminClientProps) {
+  const { localization: { currencySymbol, currencyCode, locale } } = useLanguage();
   const [overview, setOverview] = useState<TermFeeOverviewResult | null>(initialOverview);
   const [feeItems, setFeeItems] = useState<FeeItemRecord[]>(initialFeeItems);
   const [selectedClassLevel, setSelectedClassLevel] = useState<string>('all');
@@ -421,7 +423,7 @@ This is a gentle fee notification from *${tenantName}* for *${activeTerm.session
 
 • *Student:* ${reminderStudent.studentName}
 • *Class:* ${reminderStudent.classLevelName || 'Unassigned'}
-• *Outstanding Fee Balance:* ₦${reminderStudent.balanceRemaining.toLocaleString()}
+• *Outstanding Fee Balance:* ${currencySymbol}${reminderStudent.balanceRemaining.toLocaleString()}
 
 ${bankDetails?.bankName ? `*Official School Bank Details for Direct Transfer:*
 • Bank: ${bankDetails.bankName}
@@ -537,9 +539,9 @@ Kindly notify the bursar's office or upload your payment receipt once completed.
               <span className="text-xs uppercase tracking-wider text-slate-500 font-bold block mb-1.5">
                 Total Expected
               </span>
-              <div className="text-xl sm:text-2xl xl:text-3xl font-extrabold text-slate-900 tabular-nums tracking-tight truncate" title={`₦${(overview?.totalExpected || 0).toLocaleString('en-NG')}`}>
-                <span className="text-slate-400 font-bold text-lg sm:text-xl mr-1">₦</span>
-                {(overview?.totalExpected || 0).toLocaleString('en-NG', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+              <div className="text-xl sm:text-2xl xl:text-3xl font-extrabold text-slate-900 tabular-nums tracking-tight truncate" title={`${currencySymbol}${(overview?.totalExpected || 0).toLocaleString(locale)}`}>
+                <span className="text-slate-400 font-bold text-lg sm:text-xl mr-1">{currencySymbol}</span>
+                {(overview?.totalExpected || 0).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
               </div>
               <span className="text-xs text-slate-500 block mt-1.5 font-medium">
                 {overview?.totalStudents || 0} Enrolled Students
@@ -550,9 +552,9 @@ Kindly notify the bursar's office or upload your payment receipt once completed.
               <span className="text-xs uppercase tracking-wider text-emerald-800 font-bold block mb-1.5">
                 Total Collected
               </span>
-              <div className="text-xl sm:text-2xl xl:text-3xl font-extrabold text-emerald-700 tabular-nums tracking-tight truncate" title={`₦${(overview?.totalCollected || 0).toLocaleString('en-NG')}`}>
-                <span className="text-emerald-500/80 font-bold text-lg sm:text-xl mr-1">₦</span>
-                {(overview?.totalCollected || 0).toLocaleString('en-NG', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+              <div className="text-xl sm:text-2xl xl:text-3xl font-extrabold text-emerald-700 tabular-nums tracking-tight truncate" title={`${currencySymbol}${(overview?.totalCollected || 0).toLocaleString(locale)}`}>
+                <span className="text-emerald-500/80 font-bold text-lg sm:text-xl mr-1">{currencySymbol}</span>
+                {(overview?.totalCollected || 0).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
               </div>
               <span className="text-xs text-emerald-700 block mt-1.5 font-medium">
                 {overview?.fullyPaidCount || 0} Paid • {overview?.partiallyPaidCount || 0} Partial
@@ -563,9 +565,9 @@ Kindly notify the bursar's office or upload your payment receipt once completed.
               <span className="text-xs uppercase tracking-wider text-amber-800 font-bold block mb-1.5">
                 Total Outstanding
               </span>
-              <div className="text-xl sm:text-2xl xl:text-3xl font-extrabold text-amber-700 tabular-nums tracking-tight truncate" title={`₦${(overview?.totalOutstanding || 0).toLocaleString('en-NG')}`}>
-                <span className="text-amber-500/80 font-bold text-lg sm:text-xl mr-1">₦</span>
-                {(overview?.totalOutstanding || 0).toLocaleString('en-NG', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+              <div className="text-xl sm:text-2xl xl:text-3xl font-extrabold text-amber-700 tabular-nums tracking-tight truncate" title={`${currencySymbol}${(overview?.totalOutstanding || 0).toLocaleString(locale)}`}>
+                <span className="text-amber-500/80 font-bold text-lg sm:text-xl mr-1">{currencySymbol}</span>
+                {(overview?.totalOutstanding || 0).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
               </div>
               <span className="text-xs text-amber-700 block mt-1.5 font-medium">
                 {overview?.unpaidCount || 0} Unpaid Students
@@ -576,9 +578,9 @@ Kindly notify the bursar's office or upload your payment receipt once completed.
               <span className="text-xs uppercase tracking-wider text-purple-800 font-bold block mb-1.5">
                 Discounts &amp; Waivers
               </span>
-              <div className="text-xl sm:text-2xl xl:text-3xl font-extrabold text-purple-700 tabular-nums tracking-tight truncate" title={`₦${(overview?.totalAdjustments || 0).toLocaleString('en-NG')}`}>
-                <span className="text-purple-400 font-bold text-lg sm:text-xl mr-1">₦</span>
-                {(overview?.totalAdjustments || 0).toLocaleString('en-NG', { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
+              <div className="text-xl sm:text-2xl xl:text-3xl font-extrabold text-purple-700 tabular-nums tracking-tight truncate" title={`${currencySymbol}${(overview?.totalAdjustments || 0).toLocaleString(locale)}`}>
+                <span className="text-purple-400 font-bold text-lg sm:text-xl mr-1">{currencySymbol}</span>
+                {(overview?.totalAdjustments || 0).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: 2 })}
               </div>
               <span className="text-xs text-purple-700 block mt-1.5 font-medium">Student Adjustments</span>
             </div>
@@ -677,30 +679,30 @@ Kindly notify the bursar's office or upload your payment receipt once completed.
                         </td>
                         <td className="px-5 py-3.5 text-sm tabular-nums whitespace-nowrap">
                           {s.totalAssigned > 0 ? (
-                            <span className="font-semibold text-slate-900">₦ {s.totalAssigned.toLocaleString()}</span>
+                            <span className="font-semibold text-slate-900">{currencySymbol} {s.totalAssigned.toLocaleString()}</span>
                           ) : (
-                            <span className="font-normal text-slate-400">₦ 0</span>
+                            <span className="font-normal text-slate-400">{currencySymbol} 0</span>
                           )}
                         </td>
                         <td className="px-5 py-3.5 text-sm tabular-nums whitespace-nowrap">
                           {s.totalAdjustments > 0 ? (
-                            <span className="font-semibold text-purple-700">-₦ {s.totalAdjustments.toLocaleString()}</span>
+                            <span className="font-semibold text-purple-700">-{currencySymbol} {s.totalAdjustments.toLocaleString()}</span>
                           ) : (
                             <span className="text-slate-300 font-normal">—</span>
                           )}
                         </td>
                         <td className="px-5 py-3.5 text-sm tabular-nums whitespace-nowrap">
                           {s.totalPaid > 0 ? (
-                            <span className="font-bold text-emerald-700">₦ {s.totalPaid.toLocaleString()}</span>
+                            <span className="font-bold text-emerald-700">{currencySymbol} {s.totalPaid.toLocaleString()}</span>
                           ) : (
-                            <span className="font-normal text-slate-400">₦ 0</span>
+                            <span className="font-normal text-slate-400">{currencySymbol} 0</span>
                           )}
                         </td>
                         <td className="px-5 py-3.5 text-sm tabular-nums whitespace-nowrap">
                           {s.balanceRemaining > 0 ? (
-                            <span className="font-bold text-amber-800">₦ {s.balanceRemaining.toLocaleString()}</span>
+                            <span className="font-bold text-amber-800">{currencySymbol} {s.balanceRemaining.toLocaleString()}</span>
                           ) : (
-                            <span className="font-normal text-slate-400">₦ 0</span>
+                            <span className="font-normal text-slate-400">{currencySymbol} 0</span>
                           )}
                         </td>
                         <td className="px-5 py-3.5 whitespace-nowrap">
@@ -857,7 +859,7 @@ Kindly notify the bursar's office or upload your payment receipt once completed.
                                     : 'bg-purple-50/80 text-purple-800 border-purple-200'
                                 }`}
                               >
-                                {fi.name} (₦ {fi.amount.toLocaleString()})
+                                {fi.name} ({currencySymbol} {fi.amount.toLocaleString()})
                                 {fi.classLevelId === null && <span className="opacity-60 text-[10px] ml-1">[All]</span>}
                               </span>
                             ))}
@@ -865,7 +867,7 @@ Kindly notify the bursar's office or upload your payment receipt once completed.
                         )}
                       </td>
                       <td className="px-6 py-4 text-base font-extrabold tabular-nums text-slate-900">
-                        ₦ {totalFeeForClass.toLocaleString()}
+                        {currencySymbol} {totalFeeForClass.toLocaleString()}
                       </td>
                       <td className="px-6 py-4 text-right">
                         <div className="flex items-center justify-end gap-2">
@@ -973,7 +975,7 @@ Kindly notify the bursar's office or upload your payment receipt once completed.
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                  Amount (₦) *
+                  Amount ({currencySymbol}) *
                 </label>
                 <input
                   type="number"
@@ -1079,7 +1081,7 @@ Kindly notify the bursar's office or upload your payment receipt once completed.
                           )}
                         </td>
                         <td className="px-5 py-3.5 font-extrabold text-sm tabular-nums text-slate-900">
-                          ₦ {fi.amount.toLocaleString()}
+                          {currencySymbol} {fi.amount.toLocaleString()}
                         </td>
                         <td className="px-5 py-3.5 text-right">
                           <div className="flex items-center justify-end gap-2">
@@ -1228,7 +1230,7 @@ Kindly notify the bursar's office or upload your payment receipt once completed.
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                  Amount (₦) *
+                  Amount ({currencySymbol}) *
                 </label>
                 <input
                   type="number"
@@ -1328,7 +1330,7 @@ Kindly notify the bursar's office or upload your payment receipt once completed.
             <form onSubmit={handleRecordOfflinePayment} className="space-y-4">
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                  Amount Paid (₦) *
+                  Amount Paid ({currencySymbol}) *
                 </label>
                 <input
                   type="number"
@@ -1422,7 +1424,7 @@ Kindly notify the bursar's office or upload your payment receipt once completed.
                 >
                   {feeItems.map((fi) => (
                     <option key={fi.id} value={fi.id}>
-                      {fi.name} (₦ {fi.amount.toLocaleString()})
+                      {fi.name} ({currencySymbol} {fi.amount.toLocaleString()})
                     </option>
                   ))}
                 </select>
@@ -1460,7 +1462,7 @@ Kindly notify the bursar's office or upload your payment receipt once completed.
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                  Adjustment Amount (₦) *
+                  Adjustment Amount ({currencySymbol}) *
                 </label>
                 <input
                   type="number"

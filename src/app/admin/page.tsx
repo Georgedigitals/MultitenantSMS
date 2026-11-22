@@ -3,12 +3,16 @@ import { redirect } from 'next/navigation';
 import prisma from '@/lib/prisma';
 import { getSuperAdminFromCookies } from '@/lib/auth/super-admin-auth';
 import { getPlatformFinancialOverview } from '@/lib/super-admin';
+import { getPlatformName } from '@/lib/platform-settings';
 import { OverviewClient } from './overview-client';
 
 export const dynamic = 'force-dynamic';
 
 export default async function SuperAdminDashboard() {
-  const auth = await getSuperAdminFromCookies();
+  const [auth, platformName] = await Promise.all([
+    getSuperAdminFromCookies(),
+    getPlatformName(),
+  ]);
   if (!auth) {
     redirect('/admin/login');
   }
@@ -22,6 +26,13 @@ export default async function SuperAdminDashboard() {
   };
   let impersonationLogs: any[] = [];
   let recentTenants: any[] = [];
+  let healthAlerts: Array<{
+    id: string;
+    tenantName: string;
+    slug: string;
+    type: 'capacity' | 'trial' | 'suspended';
+    message: string;
+  }> = [];
 
   try {
     tenantCount = await prisma.tenant.count();
@@ -29,14 +40,56 @@ export default async function SuperAdminDashboard() {
     staffCount = await prisma.staff.count();
     financials = await getPlatformFinancialOverview();
 
-    recentTenants = await prisma.tenant.findMany({
+    const allTenantsForHealth = await prisma.tenant.findMany({
       include: {
         plan: true,
         _count: { select: { students: true, staff: true } },
       },
       orderBy: { createdAt: 'desc' },
-      take: 6,
+      take: 50,
     });
+
+    recentTenants = allTenantsForHealth.slice(0, 6);
+
+    const now = Date.now();
+    const sevenDaysMs = 7 * 24 * 60 * 60 * 1000;
+    for (const t of allTenantsForHealth) {
+      const ceiling = t.plan?.studentCeiling || 0;
+      const students = t._count?.students || 0;
+      if (ceiling > 0 && students / ceiling >= 0.8) {
+        const pct = Math.min(100, Math.round((students / ceiling) * 100));
+        healthAlerts.push({
+          id: `cap-${t.id}`,
+          tenantName: t.name,
+          slug: t.slug,
+          type: 'capacity',
+          message: `At ${pct}% student capacity (${students}/${ceiling} on ${t.plan?.name || 'current'} plan).`,
+        });
+      }
+      if (t.status === 'trial' && t.trialEndsAt) {
+        const msLeft = new Date(t.trialEndsAt).getTime() - now;
+        if (msLeft <= sevenDaysMs) {
+          const days = Math.max(0, Math.ceil(msLeft / (24 * 60 * 60 * 1000)));
+          healthAlerts.push({
+            id: `trial-${t.id}`,
+            tenantName: t.name,
+            slug: t.slug,
+            type: 'trial',
+            message: days === 0 ? 'Trial has expired.' : `Trial expires in ${days} day${days === 1 ? '' : 's'}.`,
+          });
+        }
+      }
+      if (t.status === 'suspended') {
+        healthAlerts.push({
+          id: `susp-${t.id}`,
+          tenantName: t.name,
+          slug: t.slug,
+          type: 'suspended',
+          message: 'Account is currently suspended.',
+        });
+      }
+    }
+    healthAlerts = healthAlerts.slice(0, 8);
 
     impersonationLogs = await prisma.impersonationLog.findMany({
       include: {
@@ -72,12 +125,14 @@ export default async function SuperAdminDashboard() {
 
   return (
     <OverviewClient
+      platformName={platformName}
       financials={financials}
       tenantCount={tenantCount}
       studentCount={studentCount}
       staffCount={staffCount}
       recentTenants={formattedTenants}
       impersonationLogs={formattedLogs}
+      healthAlerts={healthAlerts}
     />
   );
 }

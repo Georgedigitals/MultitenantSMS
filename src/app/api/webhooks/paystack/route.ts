@@ -8,6 +8,8 @@ import {
   processSubscriptionPaymentWebhook,
 } from '@/lib/webhook-idempotency';
 import { getTenantPaystackSecret } from '@/lib/tenant-payments';
+import { getPlatformPaymentConfig } from '@/lib/payments/platform-gateway';
+import { toMinorUnit } from '@/lib/payments/gateway';
 
 export async function POST(req: NextRequest) {
   try {
@@ -20,8 +22,12 @@ export async function POST(req: NextRequest) {
     const metadata = data.metadata || {};
     const type = metadata.type;
 
-    if (payload?.event !== 'charge.success' || data?.status !== 'success' || !ref || data?.currency !== 'NGN') {
-      return NextResponse.json({ status: 'ignored', reason: 'Only successful NGN Paystack charges are processed' }, { status: 200 });
+    const platformPaymentCfg = await getPlatformPaymentConfig();
+    const expectedCurrency = platformPaymentCfg.currencyCode;
+    const paidCurrency = String(data?.currency || '').toUpperCase();
+
+    if (payload?.event !== 'charge.success' || data?.status !== 'success' || !ref || paidCurrency !== expectedCurrency) {
+      return NextResponse.json({ status: 'ignored', reason: `Only successful ${expectedCurrency} Paystack charges are processed` }, { status: 200 });
     }
 
     // Verify webhook signature in production
@@ -53,12 +59,12 @@ export async function POST(req: NextRequest) {
           if (tenant) tenantId = tenant.id;
         }
         if (tenantId && Number.isInteger(quantity) && quantity >= 1 && quantity <= 10_000 &&
-            Number.isFinite(pricePerPin) && pricePerPin >= 100 && Number.isFinite(platformFeePercent) &&
-            platformFeePercent >= 0 && platformFeePercent <= 100 && data.currency === 'NGN') {
+            Number.isFinite(pricePerPin) && pricePerPin >= 1 && Number.isFinite(platformFeePercent) &&
+            platformFeePercent >= 0 && platformFeePercent <= 100 && paidCurrency === expectedCurrency) {
           const { calculateBatchFees } = await import('@/lib/pin');
           const fee = await calculateBatchFees(tenantId, quantity, pricePerPin, platformFeePercent);
-          if (Math.round(fee.totalPlatformFee * 100) !== Number(data.amount) ||
-              Math.round(fee.totalPlatformFee * 100) !== Math.round(Number(metadata.platformFee) * 100)) {
+          if (toMinorUnit(fee.totalPlatformFee, expectedCurrency) !== Number(data.amount) ||
+              toMinorUnit(fee.totalPlatformFee, expectedCurrency) !== toMinorUnit(Number(metadata.platformFee), expectedCurrency)) {
             return { status: 'failed', reason: 'PIN batch payment amount does not match the recorded order' };
           }
           const batchRes = await createPinBatch({

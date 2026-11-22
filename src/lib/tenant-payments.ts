@@ -1,5 +1,12 @@
 import crypto from 'node:crypto';
 import prisma from '@/lib/prisma';
+import type { PlatformPaymentGateway } from '@/lib/payments/gateway';
+
+export interface TenantGatewayConfig {
+  provider: PlatformPaymentGateway;
+  secretKey: string;
+  webhookSecret?: string;
+}
 
 function encryptionKey() {
   const encoded = process.env.TENANT_SECRET_ENCRYPTION_KEY;
@@ -24,14 +31,71 @@ export function decryptTenantSecret(value: string) {
   return Buffer.concat([decipher.update(Buffer.from(cipherPart, 'base64')), decipher.final()]).toString('utf8');
 }
 
-export async function getTenantPaystackSecret(tenantId: string) {
+export function encryptTenantGatewayConfig(cfg: TenantGatewayConfig): string {
+  return encryptTenantSecret(JSON.stringify(cfg));
+}
+
+export function parseDecryptedGatewayConfig(raw: string): TenantGatewayConfig {
+  const trimmed = raw.trim();
+  if (trimmed.startsWith('{')) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      const provider: PlatformPaymentGateway =
+        parsed.provider === 'stripe' || parsed.provider === 'flutterwave'
+          ? parsed.provider
+          : 'paystack';
+      return {
+        provider,
+        secretKey: String(parsed.secretKey || ''),
+        webhookSecret: parsed.webhookSecret ? String(parsed.webhookSecret) : undefined,
+      };
+    } catch {
+      // fall through to legacy Paystack secret
+    }
+  }
+  return { provider: 'paystack', secretKey: trimmed };
+}
+
+export async function getTenantGatewayConfig(tenantId: string): Promise<TenantGatewayConfig | null> {
   const gateway = await prisma.tenantPaymentGateway.findUnique({ where: { tenantId } });
   if (!gateway?.enabled) return null;
-  return decryptTenantSecret(gateway.paystackSecretCipher);
+  try {
+    const raw = decryptTenantSecret(gateway.paystackSecretCipher);
+    const parsed = parseDecryptedGatewayConfig(raw);
+    return parsed.secretKey ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+export async function getTenantPaystackSecret(tenantId: string) {
+  const cfg = await getTenantGatewayConfig(tenantId);
+  if (!cfg || cfg.provider !== 'paystack') return null;
+  return cfg.secretKey;
 }
 
 export function paystackKeyMode(secret: string) {
   if (secret.startsWith('sk_test_')) return 'test' as const;
   if (secret.startsWith('sk_live_')) return 'live' as const;
+  return null;
+}
+
+export function detectTenantKeyMode(
+  provider: PlatformPaymentGateway,
+  secret: string
+): 'test' | 'live' | null {
+  const s = secret.trim();
+  if (!s) return null;
+  if (provider === 'paystack') return paystackKeyMode(s);
+  if (provider === 'stripe') {
+    if (s.startsWith('sk_test_') || s.startsWith('rk_test_')) return 'test';
+    if (s.startsWith('sk_live_') || s.startsWith('rk_live_')) return 'live';
+    return null;
+  }
+  if (provider === 'flutterwave') {
+    if (s.startsWith('FLWSECK_TEST')) return 'test';
+    if (s.startsWith('FLWSECK-')) return 'live';
+    return null;
+  }
   return null;
 }

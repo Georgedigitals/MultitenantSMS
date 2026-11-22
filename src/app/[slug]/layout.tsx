@@ -64,16 +64,19 @@ export default async function TenantLayout({ children, params }: TenantLayoutPro
 
   const { branding, name } = tenant;
 
-  // Server-injected CSS custom properties per PRD §7
+  // Server-injected CSS custom properties
   const cssVariables = {
-    '--brand-primary': branding.primaryColor || '#0F172A',
-    '--brand-accent': branding.accentColor || '#2563EB',
-    '--font-heading': branding.fontHeading,
-    '--font-body': branding.fontBody,
+    '--brand-primary': branding.primaryColor || '#141414',
+    '--brand-accent': branding.accentColor || '#1d5fbf',
+    '--font-heading': branding.fontHeading || 'var(--font-instrument-serif)',
+    '--font-body': branding.fontBody || 'var(--font-geist-sans)',
   } as React.CSSProperties;
 
   return (
-    <div style={cssVariables} className="min-h-screen flex flex-col bg-slate-50 font-sans text-slate-900 antialiased selection:bg-blue-600 selection:text-white">
+    <div
+      style={cssVariables}
+      className="min-h-screen flex flex-col bg-[#f4f3f1] font-sans text-[#0a0a0a] antialiased selection:bg-[#141414] selection:text-white"
+    >
       <ImpersonationBanner currentTenantSlug={slug} />
       <main className="flex-1 flex flex-col">{children}</main>
     </div>

@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { PromotionEligibilityResult, PromotionRosterResult, StudentPromotionRosterItem } from '@/lib/promotion';
 import { AddSessionModal } from '@/components/add-session-modal';
+import { useLanguage } from '@/components/language-provider';
 
 interface SessionOption {
   id: string;
@@ -27,6 +28,7 @@ export default function PromotionClient({
   initialEligibility,
   initialRoster,
 }: PromotionClientProps) {
+  const { localization: { currencySymbol, locale } } = useLanguage();
   const [sessionList, setSessionList] = useState<SessionOption[]>(sessions);
   const [selectedFromSession, setSelectedFromSession] = useState<string>(activeSessionId);
   const [targetSessionId, setTargetSessionId] = useState<string>(
@@ -608,7 +610,7 @@ export default function PromotionClient({
                         {s.hasFeeDebt ? (
                           <div className="flex flex-col gap-1 items-start">
                             <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 border border-rose-300">
-                              Debt: ₦{s.feeDebtAmount.toLocaleString()}
+                              Debt: {currencySymbol}{s.feeDebtAmount.toLocaleString()}
                             </span>
                             <button
                               type="button"

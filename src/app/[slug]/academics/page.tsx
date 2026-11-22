@@ -1,10 +1,10 @@
 import React from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { ArrowRight } from 'lucide-react';
 import { getPublicSiteContent } from '@/lib/site-content';
 import { TenantPublicHeader } from '@/components/tenant-public-header';
 import { TenantPublicFooter } from '@/components/tenant-public-footer';
-import { BookOpen, GraduationCap, CheckCircle2, Award, Calendar, Laptop, ArrowRight } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,190 +18,132 @@ export default async function TenantAcademicsPage({ params }: PageProps) {
   let siteData: Awaited<ReturnType<typeof getPublicSiteContent>>;
   try {
     siteData = await getPublicSiteContent(slug);
-  } catch (err) {
+  } catch {
     notFound();
   }
 
   const { tenant, branding, academics } = siteData;
-  const primaryColor = branding.primaryColor || '#1E3A8A';
-  const accentColor = branding.accentColor || '#2563EB';
+  const primary = branding.primaryColor || '#141414';
+  const textOnPrimary = branding.textOnPrimary || '#ffffff';
 
   return (
-    <div className="min-h-screen flex flex-col font-sans text-slate-800 bg-white">
+    <div className="min-h-screen flex flex-col tenant-editorial text-[#0a0a0a] bg-white">
       <TenantPublicHeader slug={tenant.slug} tenantName={tenant.name} branding={branding} />
 
-      {/* Header Banner */}
+      {/* Chapter 1: Flat Brand Header */}
       <section
-        className="py-16 lg:py-20 text-white relative overflow-hidden"
-        style={{
-          background: `linear-gradient(135deg, ${primaryColor} 0%, #0F172A 100%)`,
-        }}
+        className="w-full py-16 sm:py-24"
+        style={{ backgroundColor: primary, color: textOnPrimary }}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-slate-300 mb-3">
-            <Link href="/" className="hover:text-white transition-colors">Home</Link>
+        <div className="max-w-[1360px] mx-auto px-5 sm:px-8 space-y-5">
+          <div className="flex items-center gap-2 text-[13px] opacity-75">
+            <Link href={`/${tenant.slug}`} className="hover:opacity-100 underline-offset-4 hover:underline">
+              Home
+            </Link>
             <span>/</span>
-            <span className="text-white font-bold">Academics</span>
+            <span>Academics</span>
           </div>
-          <h1 className="text-3xl sm:text-5xl font-black tracking-tight mb-4">
-            Curriculum & Academic Excellence
+          <h1 className="tenant-editorial-display text-[44px] sm:text-[64px] leading-[0.98] tracking-[-0.025em]">
+            Curriculum &amp; academics
           </h1>
-          <p className="text-base text-slate-200 max-w-2xl font-light leading-relaxed">
+          <p className="text-[17px] sm:text-[19px] leading-[1.6] opacity-85 max-w-2xl">
             {academics.text}
           </p>
         </div>
       </section>
 
-      {/* Curricula Frameworks */}
-      <section className="py-20 bg-slate-50 border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <span className="text-xs font-mono uppercase tracking-widest text-blue-600 font-bold block mb-2">
-              Integrated Frameworks
-            </span>
-            <h2 className="text-3xl font-black text-slate-900">
-              International & National Curricula
+      {/* Chapter 2: Curricula Frameworks (Stone Field) */}
+      <section className="w-full bg-[#f4f3f1] py-20 sm:py-28">
+        <div className="max-w-[1360px] mx-auto px-5 sm:px-8">
+          <div className="pb-10 border-b border-[#d8d5ce]">
+            <h2 className="tenant-editorial-display text-[36px] sm:text-[50px] leading-[1.02] text-[#0a0a0a]">
+              Curricula frameworks
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-16">
+          <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-[#d8d5ce] border-b border-[#d8d5ce]">
             {academics.curricula.map((curr, idx) => (
-              <div key={idx} className="p-8 rounded-3xl bg-white border border-slate-200 shadow-md">
-                <div
-                  className="w-12 h-12 rounded-2xl flex items-center justify-center text-white mb-6 shadow-md"
-                  style={{ backgroundColor: idx % 2 === 0 ? primaryColor : accentColor }}
-                >
-                  <Award className="w-6 h-6" />
-                </div>
-                <h3 className="font-bold text-lg text-slate-900 mb-2">{curr}</h3>
-                <p className="text-xs text-slate-600 leading-relaxed">
-                  Carefully structured to meet competitive global criteria while honoring local cultural and civic requirements.
+              <div key={idx} className="py-8 md:px-8 first:md:pl-0 last:md:pr-0 space-y-3">
+                <h3 className="text-[20px] font-semibold text-[#0a0a0a]">{curr}</h3>
+                <p className="text-[15px] leading-[1.65] text-[#4f4d48]">
+                  Structured to meet international academic benchmarks alongside national examination standards.
                 </p>
               </div>
             ))}
           </div>
+        </div>
+      </section>
 
-          {/* Academic Levels Breakdown */}
-          <div className="p-8 sm:p-12 rounded-3xl bg-white border border-slate-200 shadow-md">
-            <h3 className="text-2xl font-black text-slate-900 mb-8 text-center">
-              Educational Tiers & Programs
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {academics.levels.map((lvl, idx) => (
-                <div key={idx} className="p-6 rounded-2xl bg-slate-50 border border-slate-200 flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center justify-between mb-3">
-                      <h4 className="font-bold text-base text-slate-900">{lvl.name}</h4>
-                      <span className="text-[11px] font-mono font-bold text-blue-600 bg-blue-100/60 px-2.5 py-0.5 rounded-full">
-                        {lvl.ages}
-                      </span>
-                    </div>
-                    <p className="text-xs text-slate-600 leading-relaxed mb-4">
-                      {lvl.description}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-semibold">
-                    <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
-                    <span>Holistic developmental assessment included</span>
-                  </div>
+      {/* Chapter 3: Educational Tiers (White Field) */}
+      <section className="w-full bg-white py-20 sm:py-28">
+        <div className="max-w-[1360px] mx-auto px-5 sm:px-8">
+          <div className="pb-12 border-b border-[#e4e2dd]">
+            <h2 className="tenant-editorial-display text-[36px] sm:text-[50px] leading-[1.02] text-[#0a0a0a]">
+              Educational tiers &amp; programs
+            </h2>
+          </div>
+
+          <div className="divide-y divide-[#e4e2dd]">
+            {academics.levels.map((lvl, idx) => (
+              <div
+                key={idx}
+                className="py-8 sm:py-10 grid grid-cols-1 md:grid-cols-12 gap-4 md:gap-8 items-baseline"
+              >
+                <div className="md:col-span-4">
+                  <h3 className="text-[20px] font-semibold text-[#0a0a0a]">{lvl.name}</h3>
                 </div>
-              ))}
-            </div>
+                <div className="md:col-span-2">
+                  <span className="text-[14px] text-[#66645e]">{lvl.ages}</span>
+                </div>
+                <div className="md:col-span-6">
+                  <p className="text-[15px] leading-[1.65] text-[#3a3833]">{lvl.description}</p>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Assessment System & CBT Highlights */}
-      <section className="py-20 bg-white border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            <div className="lg:col-span-6">
-              <span className="text-xs font-mono uppercase tracking-widest text-blue-600 font-bold block mb-2">
-                Evaluation Standards
-              </span>
-              <h2 className="text-3xl font-black text-slate-900 mb-6">
-                Continuous Assessment & Digital Examinations
-              </h2>
-              <p className="text-sm text-slate-600 leading-relaxed mb-6">
-                Our academic grading policy uses a rigorous multi-tier evaluation system combining continuous assessments (40%) and termly examinations (60%).
+      {/* Chapter 4: Continuous Assessment & CBT (Warm Stone Field) */}
+      <section className="w-full bg-[#ece8df] py-20 sm:py-28">
+        <div className="max-w-[1360px] mx-auto px-5 sm:px-8 grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+          <div className="lg:col-span-5 space-y-4">
+            <h2 className="tenant-editorial-display text-[36px] sm:text-[50px] leading-[1.02] text-[#0a0a0a]">
+              Assessment &amp; digital exams
+            </h2>
+            <p className="text-[15px] leading-[1.65] text-[#45433e]">
+              Academic grading combines continuous assessments (40%) and termly examinations (60%), published directly to parents and students.
+            </p>
+          </div>
+          <div className="lg:col-span-7 divide-y divide-[#0a0a0a]/15 border-t border-b border-[#0a0a0a]/15">
+            <div className="py-6">
+              <h3 className="text-[18px] font-semibold text-[#0a0a0a]">Computer-based testing (CBT)</h3>
+              <p className="mt-2 text-[15px] leading-[1.6] text-[#3a3833]">
+                Students complete timed digital tests that build familiarity with UTME, WAEC, and international CBT formats.
               </p>
-              <div className="space-y-3 mb-8">
-                <div className="flex items-start gap-3 p-4 rounded-xl bg-slate-50 border border-slate-200">
-                  <Laptop className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
-                  <div>
-                    <h5 className="font-bold text-xs text-slate-900">Modern CBT Exam Hall</h5>
-                    <p className="text-[11px] text-slate-500">Students take periodic digital assessments preparing them early for UTME, SAT, and WAEC CBT.</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3 p-4 rounded-xl bg-slate-50 border border-slate-200">
-                  <Calendar className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
-                  <div>
-                    <h5 className="font-bold text-xs text-slate-900">Online Result Checking & Scratch Card PINs</h5>
-                    <p className="text-[11px] text-slate-500">Instant digital report cards with psychomotor ratings, grade rankings, and teacher remarks.</p>
-                  </div>
-                </div>
-              </div>
+            </div>
+            <div className="py-6">
+              <h3 className="text-[18px] font-semibold text-[#0a0a0a]">Online report cards &amp; result PINs</h3>
+              <p className="mt-2 text-[15px] leading-[1.6] text-[#3a3833]">
+                Verified termly report cards include subject scores, psychomotor ratings, attendance summaries, and teacher remarks.
+              </p>
+            </div>
+            <div className="py-6 flex flex-wrap gap-4">
               <Link
                 href={`/${slug}/results/check`}
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-xl font-bold text-xs text-white shadow-md"
-                style={{ backgroundColor: primaryColor }}
+                className="h-11 px-6 text-[14px] font-medium inline-flex items-center gap-2 transition-opacity hover:opacity-90"
+                style={{ backgroundColor: primary, color: textOnPrimary }}
               >
-                <span>Check Terminal Results</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                <span>Check terminal results</span>
+                <ArrowRight className="w-4 h-4" aria-hidden="true" />
+              </Link>
+              <Link
+                href={`/${slug}/admissions`}
+                className="h-11 px-6 border border-[#0a0a0a]/25 text-[14px] font-medium text-[#0a0a0a] inline-flex items-center hover:bg-white/50 transition-colors"
+              >
+                Apply for admission
               </Link>
             </div>
-
-            <div className="lg:col-span-6 bg-slate-900 text-white p-8 sm:p-10 rounded-3xl">
-              <h3 className="text-lg font-bold mb-4">Academic Calendar Framework</h3>
-              <p className="text-xs text-slate-300 leading-relaxed mb-6">
-                The school year operates on a 3-term academic calendar structured to optimize student focus and holiday rejuvenation:
-              </p>
-              <div className="space-y-4">
-                <div className="p-4 rounded-2xl bg-slate-800/80 border border-slate-700">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-bold text-xs text-white">1st Term (Autumn)</span>
-                    <span className="text-[10px] text-amber-400 font-mono">September – December</span>
-                  </div>
-                  <p className="text-[11px] text-slate-400">Orientation, diagnostic tests, mid-term evaluations, and end-of-term examinations.</p>
-                </div>
-                <div className="p-4 rounded-2xl bg-slate-800/80 border border-slate-700">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-bold text-xs text-white">2nd Term (Winter/Spring)</span>
-                    <span className="text-[10px] text-amber-400 font-mono">January – April</span>
-                  </div>
-                  <p className="text-[11px] text-slate-400">Inter-house sports athletics, STEM science fairs, and Mock national examinations.</p>
-                </div>
-                <div className="p-4 rounded-2xl bg-slate-800/80 border border-slate-700">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-bold text-xs text-white">3rd Term (Summer Promotional)</span>
-                    <span className="text-[10px] text-amber-400 font-mono">April – July</span>
-                  </div>
-                  <p className="text-[11px] text-slate-400">Annual promotional assessments, speech & prize-giving day, and graduation ceremonies.</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Admissions CTA */}
-      <section className="py-16 bg-slate-50 text-center border-t border-slate-200">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-          <h3 className="text-2xl font-black text-slate-900 mb-3">
-            Ready to Enroll at {tenant.name}?
-          </h3>
-          <p className="text-xs text-slate-600 mb-6">
-            Admissions for the upcoming academic session are currently accepting applications.
-          </p>
-          <div className="flex justify-center gap-4">
-            <Link
-              href="/admissions"
-              className="px-6 py-3 rounded-xl font-bold text-xs text-white shadow-md hover:opacity-95 transition-all flex items-center gap-2"
-              style={{ backgroundColor: primaryColor }}
-            >
-              <span>View Admission Requirements & Apply</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
           </div>
         </div>
       </section>

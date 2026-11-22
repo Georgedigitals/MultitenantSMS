@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
+import { Moon, Sun } from 'lucide-react';
 
 type AdminTheme = 'light' | 'dark';
 
@@ -50,32 +51,20 @@ export function ThemeToggle() {
       type="button"
       onClick={toggle}
       aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
-      className="relative w-[52px] h-[26px] rounded-full border transition-colors duration-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#17834b]"
-      style={{
-        background: isDark ? '#17834b' : '#e7f4ea',
-        borderColor: isDark ? '#126b3d' : '#c9e5d1',
-      }}
+      title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+      className="inline-flex items-center gap-1.5 h-8 px-2.5 rounded-lg border adm-divider adm-surface adm-surface-hover adm-text-secondary text-xs font-medium transition-colors cursor-pointer"
     >
-      {/* Track icons */}
-      <span
-        className="absolute left-1.5 top-1/2 -translate-y-1/2 text-[11px] transition-opacity duration-200"
-        style={{ opacity: isDark ? 0 : 1 }}
-        aria-hidden
-      >
-        Light
-      </span>
-      <span
-        className="absolute right-1.5 top-1/2 -translate-y-1/2 text-[11px] transition-opacity duration-200"
-        style={{ opacity: isDark ? 1 : 0 }}
-        aria-hidden
-      >
-        Dark
-      </span>
-      {/* Thumb */}
-      <span
-        className="absolute top-0.5 w-[20px] h-[20px] rounded-full bg-white transition-[left] duration-300"
-        style={{ left: isDark ? 'calc(100% - 22px)' : '3px' }}
-      />
+      {isDark ? (
+        <>
+          <Sun className="w-3.5 h-3.5 text-amber-400" />
+          <span>Light</span>
+        </>
+      ) : (
+        <>
+          <Moon className="w-3.5 h-3.5" />
+          <span>Dark</span>
+        </>
+      )}
     </button>
   );
 }

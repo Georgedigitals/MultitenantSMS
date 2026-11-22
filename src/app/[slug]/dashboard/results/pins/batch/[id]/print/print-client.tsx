@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useLanguage } from '@/components/language-provider';
 
 interface PinItem {
   id: string;
@@ -35,6 +36,7 @@ interface TenantDetail {
 }
 
 export function BatchPrintClient({ slug, batchId }: { slug: string; batchId: string }) {
+  const { localization: { currencySymbol, locale } } = useLanguage();
   const [batch, setBatch] = useState<BatchDetail | null>(null);
   const [tenant, setTenant] = useState<TenantDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -237,7 +239,7 @@ export function BatchPrintClient({ slug, batchId }: { slug: string; batchId: str
                       </p>
                       <div className="pt-1.5 flex items-center gap-1.5">
                         <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-900 font-bold">
-                          ₦{batch.pricePerPin.toLocaleString()}
+                          {currencySymbol}{batch.pricePerPin.toLocaleString()}
                         </span>
                         <span className="text-[9px] text-slate-600 font-medium">5 Uses Max</span>
                       </div>

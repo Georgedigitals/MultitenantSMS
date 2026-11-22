@@ -1,8 +1,9 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, Building2, CreditCard, ShieldCheck, UsersRound, Wallet } from 'lucide-react';
+import { ArrowRight, Building2, CreditCard, ExternalLink, ShieldCheck, UsersRound, Wallet } from 'lucide-react';
 import { PlatformFinancialOverview } from '@/lib/super-admin';
+import { useLanguage } from '@/components/language-provider';
 
 interface RecentTenantItem {
   id: string;
@@ -16,11 +17,19 @@ interface RecentTenantItem {
 }
 
 interface OverviewClientProps {
+  platformName?: string;
   financials: PlatformFinancialOverview;
   tenantCount: number;
   studentCount: number;
   staffCount: number;
   recentTenants: RecentTenantItem[];
+  healthAlerts?: Array<{
+    id: string;
+    tenantName: string;
+    slug: string;
+    type: 'capacity' | 'trial' | 'suspended';
+    message: string;
+  }>;
   impersonationLogs: Array<{
     id: string;
     reason: string;
@@ -51,80 +60,93 @@ function StatusLabel({ status }: { status: string }) {
 }
 
 export function OverviewClient({
+  platformName = 'School Platform',
   financials,
   tenantCount,
   studentCount,
   staffCount,
   recentTenants,
+  healthAlerts = [],
   impersonationLogs,
 }: OverviewClientProps) {
+  const { formatMoney, t } = useLanguage();
+  const fmtCurrency = (amount: number) => formatMoney(amount, 2);
   const { platformRevenue } = financials;
 
   const keyCounts = [
-    { label: 'School accounts', value: tenantCount, detail: 'Registered tenants', icon: <Building2 size={16} aria-hidden="true" /> },
-    { label: 'Students', value: studentCount, detail: 'Enrolled across all schools', icon: <UsersRound size={16} aria-hidden="true" /> },
-    { label: 'Teachers & staff', value: staffCount, detail: 'Active staff accounts', icon: <UsersRound size={16} aria-hidden="true" /> },
+    { label: t('overview.schoolAccounts', 'School accounts'), value: tenantCount, detail: t('overview.registeredTenants', 'Registered tenants'), icon: <Building2 size={15} aria-hidden="true" /> },
+    { label: t('overview.students', 'Students'), value: studentCount, detail: t('overview.enrolledAcross', 'Enrolled across all schools'), icon: <UsersRound size={15} aria-hidden="true" /> },
+    { label: t('overview.staff', 'Teachers & staff'), value: staffCount, detail: t('overview.activeStaff', 'Active staff accounts'), icon: <UsersRound size={15} aria-hidden="true" /> },
   ];
 
   return (
     <div data-ui="accent-ladder" className="space-y-7">
-      <header className="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+      <header className="flex flex-col justify-between gap-4 pb-5 border-b adm-divider sm:flex-row sm:items-end">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.15em] adm-text-accent">BMS platform</p>
-          <h1 className="mt-2 text-[27px] font-semibold leading-tight tracking-[-0.035em] adm-text-primary sm:text-[30px]">
-            Platform overview
+          <p className="text-[11px] font-semibold uppercase tracking-[0.15em] adm-text-muted">{platformName}</p>
+          <h1 className="mt-1.5 text-[27px] font-semibold leading-tight tracking-[-0.03em] adm-text-primary sm:text-[30px]">
+            {t('overview.title', 'Platform overview')}
           </h1>
-          <p className="mt-2 max-w-2xl text-[14px] leading-6 adm-text-secondary">
-            High-level executive pulse across school registrations, total student enrollments, platform revenue, and administrator activity.
+          <p className="mt-1.5 max-w-2xl text-[14px] leading-6 adm-text-secondary">
+            {t('overview.subtitle', 'Executive pulse across school registrations, student enrollments, platform revenue, and administrator activity.')}
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2.5">
           <Link
             href="/admin/finance"
-            className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-md border adm-divider px-4 text-[13px] font-medium adm-text-secondary transition-colors adm-surface-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#17834b]"
+            className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-lg border adm-divider adm-surface px-4 text-[13px] font-medium adm-text-secondary transition-colors adm-surface-hover"
           >
-            <Wallet size={15} aria-hidden="true" /> Platform Finance <ArrowRight size={14} aria-hidden="true" />
+            <Wallet size={15} aria-hidden="true" /> {t('admin.finance', 'Platform Finance')} <ArrowRight size={14} aria-hidden="true" />
           </Link>
           <Link
             href="/admin/tenants"
-            className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-md bg-[#17834b] px-4 text-[13px] font-semibold text-white transition-colors hover:bg-[#126b3d] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#17834b]"
+            className="adm-btn-primary inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-lg px-4 text-[13px] font-semibold"
           >
-            Manage schools <ArrowRight size={15} aria-hidden="true" />
+            {t('overview.manageSchools', 'Manage schools')} <ArrowRight size={15} aria-hidden="true" />
           </Link>
         </div>
       </header>
 
-      {/* Top Core Metrics Grid */}
-      <section aria-label="Key platform totals" className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Top Core Metrics — Unified Hairline Ledger Strip */}
+      <section
+        aria-label="Key platform totals"
+        className="adm-card grid grid-cols-1 divide-y sm:grid-cols-2 sm:divide-y-0 lg:grid-cols-4 lg:divide-x rounded-xl border overflow-hidden"
+        style={{ borderColor: 'var(--adm-card-border)' }}
+      >
         {keyCounts.map((item) => (
-          <article key={item.label} className="adm-card flex items-center gap-4 rounded-xl border p-5 sm:px-6">
-            <span className="adm-text-accent">{item.icon}</span>
+          <article
+            key={item.label}
+            className="flex items-start justify-between gap-3 p-5 sm:px-6"
+            style={{ borderColor: 'var(--adm-divider)' }}
+          >
             <div className="min-w-0 flex-1">
-              <p className="text-[12px] adm-text-secondary">{item.label}</p>
-              <p className="mt-1 text-[22px] font-semibold leading-none tabular-nums adm-text-primary">
+              <p className="text-[11px] font-medium uppercase tracking-wider adm-text-muted">{item.label}</p>
+              <p className="mt-2 text-[26px] font-semibold leading-none tabular-nums adm-text-primary">
                 {item.value.toLocaleString('en-NG')}
               </p>
-              <p className="mt-1.5 text-[11px] adm-text-muted">{item.detail}</p>
+              <p className="mt-2 text-[11px] adm-text-muted">{item.detail}</p>
             </div>
+            <span className="adm-text-muted mt-0.5">{item.icon}</span>
           </article>
         ))}
 
-        {/* Financial Snapshot Card linking to Finance */}
+        {/* Financial Snapshot Cell linking to Finance */}
         <Link
           href="/admin/finance"
-          className="adm-card adm-surface-hover group relative flex items-center gap-4 rounded-xl border p-5 transition-all sm:px-6 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#17834b]"
+          className="adm-surface-hover group flex items-start justify-between gap-3 p-5 transition-colors sm:px-6"
+          style={{ borderColor: 'var(--adm-divider)' }}
         >
-          <span className="adm-text-accent"><CreditCard size={18} aria-hidden="true" /></span>
           <div className="min-w-0 flex-1">
-            <div className="flex items-center justify-between">
-              <p className="text-[12px] adm-text-secondary">Platform revenue total</p>
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-[11px] font-medium uppercase tracking-wider adm-text-muted">{t('overview.revenue', 'Platform revenue')}</p>
               <ArrowRight size={14} className="adm-text-accent transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
             </div>
-            <p className="mt-1 text-[22px] font-semibold leading-none tabular-nums adm-text-accent">
-              {naira(platformRevenue.totalPlatformRevenue)}
+            <p className="mt-2 text-[24px] font-semibold leading-none tabular-nums adm-text-accent">
+              {fmtCurrency(platformRevenue.totalPlatformRevenue)}
             </p>
-            <p className="mt-1.5 text-[11px] adm-text-muted">Subscriptions + PIN fees →</p>
+            <p className="mt-2 text-[11px] adm-text-muted">{t('overview.subsAndPins', 'Subscriptions + PIN fees')}</p>
           </div>
+          <span className="adm-text-accent mt-0.5"><CreditCard size={15} aria-hidden="true" /></span>
         </Link>
       </section>
 
@@ -135,14 +157,14 @@ export function OverviewClient({
           <section className="adm-card min-w-0 overflow-hidden rounded-xl border">
             <div className="flex items-center justify-between border-b adm-divider px-5 py-4 sm:px-6">
               <div>
-                <h2 className="text-[15px] font-semibold adm-text-primary">Registered schools</h2>
-                <p className="mt-0.5 text-[12px] adm-text-secondary">Recently registered school accounts.</p>
+                <h2 className="text-[15px] font-semibold adm-text-primary">{t('overview.registeredSchools', 'Registered schools')}</h2>
+                <p className="mt-0.5 text-[12px] adm-text-secondary">{t('overview.recentSchoolsDesc', 'Recently registered school accounts.')}</p>
               </div>
               <Link
                 href="/admin/tenants"
                 className="inline-flex items-center gap-1 text-[12px] font-medium adm-text-accent hover:adm-text-primary"
               >
-                View all ({tenantCount}) <ArrowRight size={13} aria-hidden="true" />
+                {t('overview.viewAll', 'View all')} ({tenantCount}) <ArrowRight size={13} aria-hidden="true" />
               </Link>
             </div>
 
@@ -168,10 +190,21 @@ export function OverviewClient({
                     recentTenants.map((tenant) => (
                       <tr key={tenant.id} className="border-b adm-divider last:border-b-0 adm-surface-hover">
                         <td className="px-5 py-3.5 sm:px-6">
-                          <Link href={`/admin/tenants`} className="font-medium adm-text-primary hover:adm-text-accent">
-                            {tenant.name}
-                          </Link>
-                          <span className="mt-0.5 block text-[11px] adm-text-muted">/{tenant.slug}</span>
+                          <div className="flex items-center gap-2">
+                            <Link href={`/admin/tenants`} className="font-medium adm-text-primary hover:adm-text-accent">
+                              {tenant.name}
+                            </Link>
+                            <a
+                              href={`/${tenant.slug}`}
+                              target="_blank"
+                              rel="noreferrer"
+                              title={`Open /${tenant.slug}`}
+                              className="adm-text-muted hover:adm-text-primary transition-colors"
+                            >
+                              <ExternalLink size={12} />
+                            </a>
+                          </div>
+                          <span className="mt-0.5 block text-[11px] font-mono adm-text-muted">/{tenant.slug}</span>
                         </td>
                         <td className="px-4 py-3.5 adm-text-primary font-medium">{tenant.planName}</td>
                         <td className="px-4 py-3.5 text-right tabular-nums adm-text-primary">{tenant.studentCount.toLocaleString('en-NG')}</td>
@@ -185,18 +218,63 @@ export function OverviewClient({
             </div>
           </section>
 
+          {/* Tenant Health & Usage Alerts */}
+          {healthAlerts.length > 0 && (
+            <section className="adm-card overflow-hidden rounded-xl border">
+              <div className="flex items-center justify-between border-b adm-divider px-5 py-3.5 sm:px-6">
+                <div>
+                  <h2 className="text-[15px] font-semibold adm-text-primary">Tenant health &amp; alerts</h2>
+                  <p className="mt-0.5 text-[12px] adm-text-secondary">
+                    Schools near plan limits, expiring trials, or suspended accounts.
+                  </p>
+                </div>
+                <Link
+                  href="/admin/tenants"
+                  className="inline-flex items-center gap-1 text-[12px] font-medium adm-text-accent hover:adm-text-primary"
+                >
+                  Review <ArrowRight size={13} aria-hidden="true" />
+                </Link>
+              </div>
+              <div className="divide-y adm-divider">
+                {healthAlerts.map((alert) => (
+                  <div
+                    key={alert.id}
+                    className="px-5 py-3 sm:px-6 flex items-center justify-between gap-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-[13px] font-medium adm-text-primary truncate">
+                        {alert.tenantName}{' '}
+                        <span className="font-mono text-[11px] adm-text-muted">/{alert.slug}</span>
+                      </p>
+                      <p className="text-[12px] adm-text-secondary mt-0.5">{alert.message}</p>
+                    </div>
+                    <span
+                      className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${
+                        alert.type === 'suspended'
+                          ? 'adm-status-error'
+                          : 'adm-status-trial'
+                      }`}
+                    >
+                      {alert.type}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
           {/* Platform Finance Quick Callout Banner */}
           <section className="adm-card flex flex-col justify-between gap-4 rounded-xl border p-5 sm:flex-row sm:items-center sm:px-6">
             <div>
               <p className="text-[11px] font-semibold uppercase tracking-wider adm-text-accent">Financial Operations</p>
               <h3 className="mt-1 text-[15px] font-semibold adm-text-primary">School subscriptions & result PIN payouts</h3>
               <p className="mt-1 max-w-xl text-[12px] leading-5 adm-text-secondary">
-                Track locked annual contract ARR ({naira(platformRevenue.subscriptionRevenue)}), PIN revenue ({naira(platformRevenue.pinRevenue)}), and reconcile outstanding Paystack transfers.
+                Track locked annual contract ARR ({fmtCurrency(platformRevenue.subscriptionRevenue)}), PIN revenue ({fmtCurrency(platformRevenue.pinRevenue)}), and reconcile outstanding payment transfers.
               </p>
             </div>
             <Link
               href="/admin/finance"
-              className="inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-md bg-[#17834b] px-4 text-[12px] font-semibold text-white transition-colors hover:bg-[#126b3d] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#17834b]"
+              className="adm-btn-primary inline-flex min-h-10 shrink-0 items-center justify-center gap-2 rounded-lg px-4 text-[12px] font-semibold"
             >
               Open Finance <ArrowRight size={14} aria-hidden="true" />
             </Link>
@@ -208,15 +286,15 @@ export function OverviewClient({
           <div className="flex items-start justify-between gap-3 border-b adm-divider px-5 py-4">
             <div>
               <h2 className="flex items-center gap-2 text-[15px] font-semibold adm-text-primary">
-                <ShieldCheck size={17} className="adm-text-accent" aria-hidden="true" /> Admin activity
+                <ShieldCheck size={17} className="adm-text-accent" aria-hidden="true" /> {t('overview.adminActivity', 'Admin activity')}
               </h2>
-              <p className="mt-1 text-[12px] leading-5 adm-text-secondary">Recent tenant access sessions.</p>
+              <p className="mt-1 text-[12px] leading-5 adm-text-secondary">{t('overview.recentSessions', 'Recent tenant access sessions.')}</p>
             </div>
             <Link
               href="/admin/audit-logs"
               className="inline-flex min-h-8 shrink-0 items-center gap-1 text-[12px] font-medium adm-text-accent hover:adm-text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#17834b]"
             >
-              View logs <ArrowRight size={14} aria-hidden="true" />
+              {t('overview.viewLogs', 'View logs')} <ArrowRight size={14} aria-hidden="true" />
             </Link>
           </div>
           <div className="max-h-[460px] divide-y divide-[#edf0ed] overflow-y-auto">

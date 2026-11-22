@@ -2,7 +2,11 @@ import { NextResponse } from 'next/server';
 import { getSuperAdminFromCookies } from '@/lib/auth/super-admin-auth';
 import prisma from '@/lib/prisma';
 import bcrypt from 'bcryptjs';
-import { DEFAULT_TRIAL_DAYS } from '@/lib/platform-settings';
+import {
+  DEFAULT_PLATFORM_NAME,
+  DEFAULT_PLATFORM_TAGLINE,
+  DEFAULT_TRIAL_DAYS,
+} from '@/lib/platform-settings';
 
 export async function GET() {
   const auth = await getSuperAdminFromCookies();
@@ -36,7 +40,23 @@ export async function GET() {
     ? map.get('maintenanceMode') === 'true'
     : false;
 
+  const platformName = map.get('platformName')?.trim() || DEFAULT_PLATFORM_NAME;
+  const platformTagline = map.get('platformTagline')?.trim() || DEFAULT_PLATFORM_TAGLINE;
+
+  const defaultCurrencyCode = map.get('defaultCurrencyCode') || 'NGN';
   const defaultCurrencySymbol = map.get('defaultCurrencySymbol') || '₦';
+  const defaultLocale = map.get('defaultLocale') || 'en-NG';
+  const defaultLanguage = map.get('defaultLanguage') || 'en';
+  const defaultTimezone = map.get('defaultTimezone') || 'Africa/Lagos';
+  let enabledLanguages: string[] = ['en', 'fr', 'es', 'pt', 'ar'];
+  if (map.has('enabledLanguages')) {
+    try {
+      const parsed = JSON.parse(map.get('enabledLanguages') || '[]');
+      if (Array.isArray(parsed) && parsed.length > 0) enabledLanguages = parsed;
+    } catch {
+      // fallback
+    }
+  }
 
   const rawPinFee = Number(map.get('defaultPinFeePercent'));
   const defaultPinFeePercent = !isNaN(rawPinFee) && rawPinFee >= 0 && rawPinFee <= 50
@@ -48,8 +68,14 @@ export async function GET() {
     ? rawPinMaxUses
     : 5;
 
+  const activePaymentGateway = map.get('activePaymentGateway') || 'paystack';
   const paystackPublicKey = map.get('paystackPublicKey') || process.env.NEXT_PUBLIC_PAYSTACK_KEY || '';
   const paystackSecretKey = map.get('paystackSecretKey') || process.env.PAYSTACK_SECRET_KEY || '';
+  const flutterwavePublicKey = map.get('flutterwavePublicKey') || process.env.NEXT_PUBLIC_FLUTTERWAVE_KEY || '';
+  const flutterwaveSecretKey = map.get('flutterwaveSecretKey') || process.env.FLUTTERWAVE_SECRET_KEY || '';
+  const stripePublicKey = map.get('stripePublicKey') || process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
+  const stripeSecretKey = map.get('stripeSecretKey') || process.env.STRIPE_SECRET_KEY || '';
+  const stripeWebhookSecret = map.get('stripeWebhookSecret') || process.env.STRIPE_WEBHOOK_SECRET || '';
 
   const smsGatewayProvider = map.get('smsGatewayProvider') || 'termii';
 
@@ -62,14 +88,27 @@ export async function GET() {
 
   return NextResponse.json({
     success: true,
+    platformName,
+    platformTagline,
     allowPublicRegistration,
     maintenanceMode,
     defaultTrialDays,
+    defaultCurrencyCode,
     defaultCurrencySymbol,
+    defaultLocale,
+    defaultLanguage,
+    enabledLanguages,
+    defaultTimezone,
     defaultPinFeePercent,
     defaultPinMaxUses,
+    activePaymentGateway,
     paystackPublicKey,
     paystackSecretKey,
+    flutterwavePublicKey,
+    flutterwaveSecretKey,
+    stripePublicKey,
+    stripeSecretKey,
+    stripeWebhookSecret,
     smsGatewayProvider,
     smsCostPerUnit,
     termiiApiKey,
@@ -87,23 +126,65 @@ export async function POST(req: Request) {
   try {
     const body = await req.json();
     const {
+      platformName,
+      platformTagline,
       adminName,
       adminEmail,
       newPassword,
+      activePaymentGateway,
       paystackPublicKey,
       paystackSecretKey,
+      flutterwavePublicKey,
+      flutterwaveSecretKey,
+      stripePublicKey,
+      stripeSecretKey,
+      stripeWebhookSecret,
       termiiApiKey,
       smsGatewayProvider,
       smsCostPerUnit,
       allowPublicRegistration,
       maintenanceMode,
       defaultTrialDays,
+      defaultCurrencyCode,
       defaultCurrencySymbol,
+      defaultLocale,
+      defaultLanguage,
+      enabledLanguages,
+      defaultTimezone,
       defaultPinFeePercent,
       defaultPinMaxUses,
     } = body;
 
     const operations: ((tx: any) => Promise<any>)[] = [];
+
+    // 0. Platform White-Label Identity
+    if (platformName !== undefined) {
+      const cleanName = String(platformName).trim();
+      if (!cleanName || cleanName.length > 80) {
+        return NextResponse.json(
+          { error: 'Platform name must be between 1 and 80 characters' },
+          { status: 400 }
+        );
+      }
+      operations.push((tx) =>
+        tx.platformSetting.upsert({
+          where: { key: 'platformName' },
+          create: { key: 'platformName', value: cleanName },
+          update: { value: cleanName },
+        })
+      );
+    }
+
+    if (platformTagline !== undefined) {
+      const cleanTagline = String(platformTagline).trim().slice(0, 160);
+      operations.push((tx) =>
+        tx.platformSetting.upsert({
+          where: { key: 'platformTagline' },
+          create: { key: 'platformTagline', value: cleanTagline },
+          update: { value: cleanTagline },
+        })
+      );
+    }
 
     // 1. General Tab Settings
     if (allowPublicRegistration !== undefined) {
@@ -142,6 +223,17 @@ export async function POST(req: Request) {
       );
     }
 
+    if (defaultCurrencyCode !== undefined) {
+      const code = String(defaultCurrencyCode).trim().toUpperCase().slice(0, 6) || 'NGN';
+      operations.push((tx) =>
+        tx.platformSetting.upsert({
+          where: { key: 'defaultCurrencyCode' },
+          create: { key: 'defaultCurrencyCode', value: code },
+          update: { value: code },
+        })
+      );
+    }
+
     if (defaultCurrencySymbol !== undefined) {
       const symbol = String(defaultCurrencySymbol).trim() || '₦';
       operations.push((tx) =>
@@ -153,7 +245,85 @@ export async function POST(req: Request) {
       );
     }
 
+    if (defaultLocale !== undefined) {
+      const loc = String(defaultLocale).trim().slice(0, 20) || 'en-NG';
+      operations.push((tx) =>
+        tx.platformSetting.upsert({
+          where: { key: 'defaultLocale' },
+          create: { key: 'defaultLocale', value: loc },
+          update: { value: loc },
+        })
+      );
+    }
+
+    if (defaultLanguage !== undefined) {
+      const lang = String(defaultLanguage).trim().slice(0, 10) || 'en';
+      operations.push((tx) =>
+        tx.platformSetting.upsert({
+          where: { key: 'defaultLanguage' },
+          create: { key: 'defaultLanguage', value: lang },
+          update: { value: lang },
+        })
+      );
+    }
+
+    if (Array.isArray(enabledLanguages) && enabledLanguages.length > 0) {
+      const cleanLangs = enabledLanguages.map((l: any) => String(l).trim().slice(0, 10)).filter(Boolean);
+      if (cleanLangs.length > 0) {
+        operations.push((tx) =>
+          tx.platformSetting.upsert({
+            where: { key: 'enabledLanguages' },
+            create: { key: 'enabledLanguages', value: JSON.stringify(cleanLangs) },
+            update: { value: JSON.stringify(cleanLangs) },
+          })
+        );
+      }
+    }
+
+    if (defaultTimezone !== undefined) {
+      const tz = String(defaultTimezone).trim().slice(0, 60) || 'Africa/Lagos';
+      operations.push((tx) =>
+        tx.platformSetting.upsert({
+          where: { key: 'defaultTimezone' },
+          create: { key: 'defaultTimezone', value: tz },
+          update: { value: tz },
+        })
+      );
+    }
+
     // 2. Monetization Tab Settings
+    if (activePaymentGateway !== undefined) {
+      const gw = ['paystack', 'flutterwave', 'stripe'].includes(String(activePaymentGateway))
+        ? String(activePaymentGateway)
+        : 'paystack';
+      operations.push((tx) =>
+        tx.platformSetting.upsert({
+          where: { key: 'activePaymentGateway' },
+          create: { key: 'activePaymentGateway', value: gw },
+          update: { value: gw },
+        })
+      );
+    }
+
+    for (const [key, val] of [
+      ['flutterwavePublicKey', flutterwavePublicKey],
+      ['flutterwaveSecretKey', flutterwaveSecretKey],
+      ['stripePublicKey', stripePublicKey],
+      ['stripeSecretKey', stripeSecretKey],
+      ['stripeWebhookSecret', stripeWebhookSecret],
+    ] as const) {
+      if (val !== undefined) {
+        const clean = String(val).trim();
+        operations.push((tx) =>
+          tx.platformSetting.upsert({
+            where: { key },
+            create: { key, value: clean },
+            update: { value: clean },
+          })
+        );
+      }
+    }
+
     if (defaultPinFeePercent !== undefined) {
       const fee = Number(defaultPinFeePercent);
       if (isNaN(fee) || fee < 0 || fee > 50) {

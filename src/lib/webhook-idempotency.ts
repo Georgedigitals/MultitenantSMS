@@ -6,7 +6,7 @@ import crypto from 'node:crypto';
  * coordinated across concurrent requests, processes, and server restarts.
  */
 export async function withWebhookLock<T>(
-  provider: 'paystack' | 'flutterwave',
+  provider: 'paystack' | 'flutterwave' | 'stripe',
   reference: string,
   eventType: string | undefined,
   rawBody: string,
@@ -101,7 +101,7 @@ export function verifyWebhookSignature(
 }
 
 export interface SubscriptionWebhookParams {
-  provider: 'paystack' | 'flutterwave';
+  provider: 'paystack' | 'flutterwave' | 'stripe';
   reference: string;
   amount: number;
   tenantSlug?: string;

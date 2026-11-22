@@ -1,19 +1,27 @@
 import prisma from '@/lib/prisma';
+import { buildCmsPageMetadata, getPublicSiteCmsConfig } from '@/lib/public-site-cms';
 import { LandingClient } from './landing-client';
 
 export const dynamic = 'force-dynamic';
 
-export default async function RootPlatformLanding() {
-  let plans: any[] = [];
+export async function generateMetadata() {
+  const cmsConfig = await getPublicSiteCmsConfig();
+  return buildCmsPageMetadata(cmsConfig, 'home');
+}
 
-  try {
-    plans = await prisma.plan.findMany({
-      include: { features: { include: { feature: true } } },
-      orderBy: { price: 'asc' },
-    });
-  } catch (err) {
-    console.warn('[RootPlatformLanding] plans fetch warning:', err);
-  }
+export default async function RootPlatformLanding() {
+  const [cmsConfig, plans] = await Promise.all([
+    getPublicSiteCmsConfig(),
+    prisma.plan
+      .findMany({
+        include: { features: { include: { feature: true } } },
+        orderBy: { price: 'asc' },
+      })
+      .catch((err) => {
+        console.warn('[RootPlatformLanding] plans fetch warning:', err);
+        return [];
+      }),
+  ]);
 
   const formattedPlans = plans.map((plan: any) => ({
     id: plan.id,
@@ -32,5 +40,5 @@ export default async function RootPlatformLanding() {
     })),
   }));
 
-  return <LandingClient plans={formattedPlans} />;
+  return <LandingClient plans={formattedPlans} cmsConfig={cmsConfig} />;
 }

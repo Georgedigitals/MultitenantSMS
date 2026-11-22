@@ -3,20 +3,29 @@ import { notFound, redirect } from 'next/navigation';
 import { getTenantContext } from '@/lib/tenant';
 import { getTenantUserFromCookies } from '@/lib/auth/tenant-auth';
 import { getTenantDb } from '@/lib/tenant-db';
+import { getPlatformLocalization } from '@/lib/platform-settings';
+import { formatMoney } from '@/lib/i18n/currency';
 import prisma from '@/lib/prisma';
 
 interface PortalFeesPageProps {
   params: Promise<{ slug: string }>;
 }
 
-function formatNaira(amount: number) {
-  return new Intl.NumberFormat('en-NG', { style: 'currency', currency: 'NGN', maximumFractionDigits: 0 }).format(amount);
-}
-
 export default async function PortalFeesPage({ params }: PortalFeesPageProps) {
   const { slug } = await params;
-  const tenant = await getTenantContext({ slug });
+  const [tenant, localization] = await Promise.all([
+    getTenantContext({ slug }),
+    getPlatformLocalization(),
+  ]);
   if (!tenant) notFound();
+
+  const formatNaira = (amount: number) =>
+    formatMoney(amount, {
+      currencyCode: localization.currencyCode,
+      currencySymbol: localization.currencySymbol,
+      locale: localization.locale,
+      decimals: 0,
+    });
 
   const auth = await getTenantUserFromCookies(tenant.id);
   if (!auth) redirect(`/${slug}/login`);

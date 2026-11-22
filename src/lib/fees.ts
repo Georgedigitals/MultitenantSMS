@@ -2,7 +2,14 @@ import prisma from './prisma';
 import { findStudentByIdOrAdmissionNo } from './student-resolver';
 import crypto from 'crypto';
 import { verifyWebhookSignature } from './webhook-idempotency';
-import { getTenantPaystackSecret } from './tenant-payments';
+import { getTenantGatewayConfig } from './tenant-payments';
+import { getPlatformLocalization } from './platform-settings';
+import {
+  fromMinorUnit,
+  isCurrencySupportedByGateway,
+  toMinorUnit,
+  verifyStripeWebhookSignature,
+} from './payments/gateway';
 
 export interface FeeBalanceResult {
   studentId: string;
@@ -372,49 +379,131 @@ export async function initializeFeePayment(
   if (feeBal.totalAssigned <= 0 || feeBal.balanceRemaining <= 0) {
     throw new Error('There is no outstanding school-fee balance for this student and term');
   }
+  const localization = await getPlatformLocalization();
+  const { currencyCode, currencySymbol } = localization;
+
   if (amount > feeBal.balanceRemaining) {
     throw new Error(
-      `Payment amount (₦${amount}) exceeds remaining fee balance (₦${feeBal.balanceRemaining})`
+      `Payment amount (${currencySymbol}${amount}) exceeds remaining fee balance (${currencySymbol}${feeBal.balanceRemaining})`
     );
   }
 
   if (!customerEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail)) {
     throw new Error('A valid payer email is required');
   }
-  const [secret, tenant, student] = await Promise.all([
-    getTenantPaystackSecret(tenantId),
-    prisma.tenant.findUnique({ where: { id: tenantId }, select: { slug: true, hasOnlinePayment: true } }),
+  const [gatewayCfg, tenant, student] = await Promise.all([
+    getTenantGatewayConfig(tenantId),
+    prisma.tenant.findUnique({ where: { id: tenantId }, select: { slug: true, name: true, hasOnlinePayment: true } }),
     findStudentByIdOrAdmissionNo(tenantId, studentId),
   ]);
   if (!tenant) throw new Error('School not found');
   if (!tenant.hasOnlinePayment) throw new Error('This school has disabled online fee payments');
-  if (!secret) throw new Error('This school has not configured its own Paystack account for fee payments');
+  if (!gatewayCfg) throw new Error('This school has not configured its own payment gateway for fee payments');
   if (!student) throw new Error('Student not found for this school');
+
+  if (!isCurrencySupportedByGateway(gatewayCfg.provider, currencyCode)) {
+    throw new Error(
+      `This school's payment gateway (${gatewayCfg.provider}) does not support ${currencyCode}. Ask the school admin to switch to Stripe or Flutterwave in School Settings → Payments.`
+    );
+  }
 
   const paymentRef = `FEE_${crypto.randomUUID().replace(/-/g, '')}`;
   await prisma.paymentIntent.create({
     data: { tenantId, reference: paymentRef, purpose: 'fee_payment', studentId: student.id, termId, amount, payerEmail: customerEmail, status: 'initializing' },
   });
   try {
-    const response = await fetch('https://api.paystack.co/transaction/initialize', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${secret}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: customerEmail,
-        amount: Math.round(amount * 100),
-        reference: paymentRef,
-        callback_url: callbackUrl,
-        metadata: { type: 'fee_payment', tenantId, slug: tenant.slug, studentId: student.id, termId, amount },
-      }),
-      cache: 'no-store',
-      signal: AbortSignal.timeout(10_000),
-    });
-    const result = await response.json().catch(() => null);
-    if (!response.ok || !result?.status || result.data?.reference !== paymentRef || !result.data?.authorization_url) {
-      throw new Error('The school Paystack account could not start this payment. Please check with the school bursar.');
+    let authorizationUrl = '';
+
+    if (gatewayCfg.provider === 'stripe') {
+      const params = new URLSearchParams();
+      params.set('mode', 'payment');
+      params.set('client_reference_id', paymentRef);
+      params.set('customer_email', customerEmail);
+      params.set('success_url', `${callbackUrl}?provider=stripe&reference=${encodeURIComponent(paymentRef)}`);
+      params.set('cancel_url', callbackUrl);
+      params.set('line_items[0][quantity]', '1');
+      params.set('line_items[0][price_data][currency]', currencyCode.toLowerCase());
+      params.set('line_items[0][price_data][unit_amount]', String(toMinorUnit(amount, currencyCode)));
+      params.set('line_items[0][price_data][product_data][name]', `${tenant.name} — School Fees (${student.name})`);
+      params.set('metadata[type]', 'fee_payment');
+      params.set('metadata[reference]', paymentRef);
+      params.set('metadata[tenantId]', tenantId);
+      params.set('metadata[slug]', tenant.slug);
+      params.set('metadata[studentId]', student.id);
+      params.set('metadata[termId]', termId);
+      params.set('metadata[amount]', String(amount));
+
+      const response = await fetch('https://api.stripe.com/v1/checkout/sessions', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${gatewayCfg.secretKey}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Idempotency-Key': paymentRef,
+        },
+        body: params.toString(),
+        cache: 'no-store',
+        signal: AbortSignal.timeout(10_000),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || !result?.url) {
+        throw new Error('The school Stripe account could not start this payment. Please check with the school bursar.');
+      }
+      authorizationUrl = result.url;
+    } else if (gatewayCfg.provider === 'flutterwave') {
+      const response = await fetch('https://api.flutterwave.com/v3/payments', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${gatewayCfg.secretKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          tx_ref: paymentRef,
+          amount,
+          currency: currencyCode,
+          redirect_url: `${callbackUrl}?provider=flutterwave&reference=${encodeURIComponent(paymentRef)}`,
+          customer: { email: customerEmail, name: student.name },
+          customizations: { title: `${tenant.name} — School Fees` },
+          meta: { type: 'fee_payment', tenantId, slug: tenant.slug, studentId: student.id, termId, amount },
+        }),
+        cache: 'no-store',
+        signal: AbortSignal.timeout(10_000),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || result?.status !== 'success' || !result?.data?.link) {
+        throw new Error('The school Flutterwave account could not start this payment. Please check with the school bursar.');
+      }
+      authorizationUrl = result.data.link;
+    } else {
+      const response = await fetch('https://api.paystack.co/transaction/initialize', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${gatewayCfg.secretKey}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: customerEmail,
+          amount: toMinorUnit(amount, currencyCode),
+          currency: currencyCode,
+          reference: paymentRef,
+          callback_url: callbackUrl,
+          metadata: { type: 'fee_payment', tenantId, slug: tenant.slug, studentId: student.id, termId, amount },
+        }),
+        cache: 'no-store',
+        signal: AbortSignal.timeout(10_000),
+      });
+      const result = await response.json().catch(() => null);
+      if (!response.ok || !result?.status || result.data?.reference !== paymentRef || !result.data?.authorization_url) {
+        throw new Error('The school Paystack account could not start this payment. Please check with the school bursar.');
+      }
+      authorizationUrl = result.data.authorization_url;
     }
+
     await prisma.paymentIntent.update({ where: { reference: paymentRef }, data: { status: 'initialized' } });
-    return { paymentRef, amount, studentId: student.id, termId, tenantId, customerEmail, authorizationUrl: result.data.authorization_url };
+    return {
+      paymentRef,
+      amount,
+      currency: currencyCode,
+      provider: gatewayCfg.provider,
+      studentId: student.id,
+      termId,
+      tenantId,
+      customerEmail,
+      authorizationUrl,
+    };
   } catch (error) {
     await prisma.paymentIntent.updateMany({ where: { reference: paymentRef, status: 'initializing' }, data: { status: 'failed' } });
     throw error;
@@ -425,7 +514,7 @@ export async function initializeFeePayment(
  * Processes a verified webhook notification for fee payments (§6A.4, §11.4).
  */
 export async function processFeePaymentWebhook(
-  provider: 'paystack' | 'flutterwave',
+  provider: 'paystack' | 'flutterwave' | 'stripe',
   rawPayload: any,
   signature: string,
   tenantSecret?: string
@@ -438,7 +527,12 @@ export async function processFeePaymentWebhook(
 
   const rawString = typeof rawPayload === 'string' ? rawPayload : JSON.stringify(rawPayload);
 
-  if (!verifyWebhookSignature(provider, rawString, signature, tenantSecret)) {
+  const signatureValid =
+    provider === 'stripe'
+      ? verifyStripeWebhookSignature(rawString, signature, tenantSecret)
+      : verifyWebhookSignature(provider, rawString, signature, tenantSecret);
+
+  if (!signatureValid) {
     throw new Error(`Invalid ${provider} webhook signature`);
   }
 
@@ -453,10 +547,19 @@ export async function processFeePaymentWebhook(
     }
   }
 
-  if (provider === 'paystack') {
+  if (provider === 'stripe') {
+    const session = payload.data?.object || {};
+    const currency = String(session.currency || 'USD').toUpperCase();
+    paymentRef = session.client_reference_id || session.metadata?.reference || '';
+    amount = fromMinorUnit(Number(session.amount_total || 0), currency);
+    studentId = session.metadata?.studentId;
+    termId = session.metadata?.termId;
+    tenantId = session.metadata?.tenantId;
+  } else if (provider === 'paystack') {
     const data = payload.data;
+    const currency = String(data.currency || 'NGN').toUpperCase();
     paymentRef = data.reference;
-    amount = Number(data.amount) / 100; // Paystack in kobo
+    amount = fromMinorUnit(Number(data.amount || 0), currency);
     studentId = data.metadata?.studentId;
     termId = data.metadata?.termId;
     tenantId = data.metadata?.tenantId;
@@ -528,13 +631,14 @@ export async function processFeePaymentWebhook(
     });
 
     // In-app notification for school admin / bursar
+    const { currencySymbol } = await getPlatformLocalization();
     prisma.notification.create({
       data: {
         tenantId: student.tenantId,
         recipientId: 'school_admin_role',
         recipientType: 'school_admin',
         type: 'fee_payment_online',
-        message: `Online fee payment of ₦${amount.toLocaleString()} received for ${student.name}${paymentRef ? ` (Ref: ${paymentRef})` : ''}.`,
+        message: `Online fee payment of ${currencySymbol}${amount.toLocaleString()} received for ${student.name}${paymentRef ? ` (Ref: ${paymentRef})` : ''}.`,
         link: '/dashboard/fees',
       },
     }).catch(() => {});

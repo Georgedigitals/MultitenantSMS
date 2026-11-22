@@ -111,7 +111,17 @@ export async function storePublicImage(
   );
 
   if (hasS3Config) {
-    return { key, url: await putS3CompatibleObject(key, body, contentType) };
+    try {
+      return { key, url: await putS3CompatibleObject(key, body, contentType) };
+    } catch (err) {
+      if (process.env.NODE_ENV === 'production') {
+        throw err;
+      }
+      console.warn(
+        '[Object Storage] S3 upload unreachable in development; falling back to local public/uploads:',
+        err instanceof Error ? err.message : err
+      );
+    }
   }
 
   // Fallback to local storage (persisted via Docker uploads_data volume)

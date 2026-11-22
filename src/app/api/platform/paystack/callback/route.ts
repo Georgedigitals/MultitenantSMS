@@ -6,6 +6,8 @@ import { processFeePaymentWebhook } from '@/lib/fees';
 import { processPaymentWebhook, createPinBatch, calculateBatchFees, fulfillPinStockSale } from '@/lib/pin';
 import { getTenantPaystackSecret } from '@/lib/tenant-payments';
 import { getPublicUrl } from '@/lib/public-url';
+import { getPlatformPaymentConfig } from '@/lib/payments/platform-gateway';
+import { fromMinorUnit, toMinorUnit } from '@/lib/payments/gateway';
 
 function tenantUrl(req: NextRequest, slug: string, path: string) {
   const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost:3000').toLowerCase();
@@ -20,13 +22,15 @@ export async function GET(req: NextRequest) {
   const reference = req.nextUrl.searchParams.get('reference') || req.nextUrl.searchParams.get('trxref');
   let paymentIntent: Awaited<ReturnType<typeof prisma.paymentIntent.findUnique>> = null;
   let secret: string | null | undefined;
+  const platformPaymentCfg = await getPlatformPaymentConfig();
+  const expectedCurrency = platformPaymentCfg.currencyCode;
   try {
     paymentIntent = reference?.startsWith('FEE_') || reference?.startsWith('RPIN_')
       ? await prisma.paymentIntent.findUnique({ where: { reference } })
       : null;
     secret = paymentIntent && ['fee_payment', 'result_pin'].includes(paymentIntent.purpose)
       ? await getTenantPaystackSecret(paymentIntent.tenantId)
-      : process.env.PAYSTACK_SECRET_KEY;
+      : platformPaymentCfg.paystackSecretKey;
   } catch {
     console.error('[Paystack callback] Could not load payment configuration');
   }
@@ -43,7 +47,7 @@ export async function GET(req: NextRequest) {
     const result = await response.json().catch(() => null);
     const transaction = result?.data;
     if (!response.ok || !result?.status || transaction?.status !== 'success' ||
-        transaction?.reference !== reference || transaction?.currency !== 'NGN') {
+        transaction?.reference !== reference || String(transaction?.currency || '').toUpperCase() !== expectedCurrency) {
       return NextResponse.redirect(getPublicUrl('/checkout/paystack?payment=failed', req));
     }
 
@@ -52,8 +56,8 @@ export async function GET(req: NextRequest) {
       const { getPendingRegistration } = await import('@/lib/pending-registrations');
       const pending = await getPendingRegistration(reference);
       const plan = pending?.planId ? await prisma.plan.findUnique({ where: { id: pending.planId } }) : null;
-      const amountKobo = plan ? Math.round(Number(plan.price) * 100) : -1;
-      if (!pending || !plan || transaction.amount !== amountKobo || metadata.planId !== plan.id ||
+      const expectedMinor = plan ? toMinorUnit(Number(plan.price), expectedCurrency) : -1;
+      if (!pending || !plan || transaction.amount !== expectedMinor || metadata.planId !== plan.id ||
           metadata.slug !== pending.slug ||
           String(transaction.customer?.email || '').toLowerCase() !== pending.adminEmail.toLowerCase()) {
         return NextResponse.redirect(getPublicUrl('/checkout/paystack?payment=failed', req));
@@ -65,13 +69,13 @@ export async function GET(req: NextRequest) {
       const plan = metadata.planId ? await prisma.plan.findUnique({ where: { id: metadata.planId } }) : null;
       const expectedChargeAmount = Number(metadata.chargeAmount ?? plan?.price);
       if (!plan || !Number.isFinite(expectedChargeAmount) || expectedChargeAmount <= 0 ||
-          transaction.amount !== Math.round(expectedChargeAmount * 100) || !metadata.tenantId || !metadata.slug) {
+          transaction.amount !== toMinorUnit(expectedChargeAmount, expectedCurrency) || !metadata.tenantId || !metadata.slug) {
         return NextResponse.redirect(getPublicUrl('/checkout/paystack?payment=failed', req));
       }
       const tenant = await prisma.tenant.findFirst({ where: { id: metadata.tenantId, slug: metadata.slug } });
       if (!tenant) return NextResponse.redirect(getPublicUrl('/checkout/paystack?payment=failed', req));
       const settled = await processSubscriptionPaymentWebhook({
-        provider: 'paystack', reference, amount: Number(transaction.amount) / 100, expectedAmount: expectedChargeAmount,
+        provider: 'paystack', reference, amount: fromMinorUnit(Number(transaction.amount), expectedCurrency), expectedAmount: expectedChargeAmount,
         expectedCurrentPlanId: typeof metadata.currentPlanId === 'string' ? metadata.currentPlanId : undefined,
         tenantId: tenant.id, tenantSlug: tenant.slug, planId: plan.id,
       });

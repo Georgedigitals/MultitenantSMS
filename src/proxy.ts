@@ -41,6 +41,7 @@ const NON_TENANT_PATHS = [
   'terms',
   'privacy',
   'faq',
+  'p',
   '_next',
   'favicon.ico',
 ];

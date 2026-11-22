@@ -68,46 +68,45 @@ export default async function ResultCheckerPage({
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 print:bg-white print:min-h-0">
-      {/* Header with Tenant Branding & Main Website Navigation */}
-      <header
-        className="w-full text-white py-5 px-4 sm:px-8 shadow-md mb-8 sticky top-0 z-40 print:hidden"
-        style={{ backgroundColor: brandColor }}
-      >
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <Link href="/" className="flex items-center space-x-3 group hover:opacity-95 transition-opacity">
+    <div className="min-h-screen bg-[#f4f3f1] text-[#0a0a0a] font-sans print:bg-white print:min-h-0">
+      {/* Clean Architectural Header */}
+      <header className="w-full bg-white border-b border-[#e4e2dd] mb-8 sticky top-0 z-40 print:hidden">
+        <div className="max-w-5xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between gap-4">
+          <Link href={`/${tenant.slug}`} className="flex items-center gap-3 min-w-0">
             {(tenant.branding as any)?.logoUrl ? (
               <img
                 src={(tenant.branding as any).logoUrl}
                 alt={tenant.name}
-                className="h-10 w-10 object-contain rounded-xl bg-white p-1 shadow-xs"
+                className="h-8 w-8 object-contain shrink-0"
               />
             ) : (
-              <div className="h-10 w-10 rounded-xl bg-white/20 flex items-center justify-center font-black text-white text-lg">
+              <div
+                className="h-8 w-8 rounded-[6px] flex items-center justify-center font-semibold text-white text-xs shrink-0"
+                style={{ backgroundColor: brandColor }}
+              >
                 {tenant.name.substring(0, 2).toUpperCase()}
               </div>
             )}
-            <div>
-              <h1 className="text-lg sm:text-xl font-bold tracking-tight text-white group-hover:underline flex items-center gap-1.5">
+            <div className="min-w-0">
+              <h1 className="text-[15px] font-semibold tracking-[-0.01em] text-[#0a0a0a] truncate">
                 {tenant.name}
-                <span className="text-[10px] font-normal opacity-75 font-mono">↗ Main Site</span>
               </h1>
-              <p className="text-xs text-white/80 font-medium">Official Online Result Checker Portal</p>
+              <p className="text-[12px] text-[#66645e] truncate">Term result checker</p>
             </div>
           </Link>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2.5 shrink-0">
             <Link
-              href="/"
-              className="px-3.5 py-2 rounded-xl text-xs font-bold bg-white/15 hover:bg-white/25 text-white border border-white/20 transition-all backdrop-blur-md shadow-xs flex items-center gap-1.5"
+              href={`/${tenant.slug}`}
+              className="h-9 px-3.5 rounded-[6px] text-[13px] font-medium border border-[#d4d1ca] bg-white text-[#0a0a0a] hover:bg-[#f4f3f1] transition-colors inline-flex items-center"
             >
-              <span>← Main Website</span>
+              ← School website
             </Link>
             <Link
-              href="/login"
-              className="px-3.5 py-2 rounded-xl text-xs font-bold bg-white text-slate-900 hover:bg-slate-100 transition-all shadow-md flex items-center gap-1.5"
+              href={`/${tenant.slug}/login`}
+              className="h-9 px-4 rounded-[6px] text-[13px] font-medium bg-[#141414] text-white hover:bg-[#2a2a2a] transition-colors inline-flex items-center"
             >
-              <span>Portal Login</span>
+              Portal login
             </Link>
           </div>
         </div>

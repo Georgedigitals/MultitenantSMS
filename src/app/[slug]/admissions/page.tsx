@@ -5,7 +5,6 @@ import { getPublicSiteContent } from '@/lib/site-content';
 import { TenantPublicHeader } from '@/components/tenant-public-header';
 import { TenantPublicFooter } from '@/components/tenant-public-footer';
 import { AdmissionFormClient } from './admission-form-client';
-import { FileCheck, ClipboardList, HelpCircle, CheckCircle2, Phone, Mail } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -19,135 +18,112 @@ export default async function TenantAdmissionsPage({ params }: PageProps) {
   let siteData: Awaited<ReturnType<typeof getPublicSiteContent>>;
   try {
     siteData = await getPublicSiteContent(slug);
-  } catch (err) {
+  } catch {
     notFound();
   }
 
   const { tenant, branding, admissions, contact } = siteData;
-  const primaryColor = branding.primaryColor || '#1E3A8A';
+  const primary = branding.primaryColor || '#141414';
+  const textOnPrimary = branding.textOnPrimary || '#ffffff';
 
   return (
-    <div className="min-h-screen flex flex-col font-sans text-slate-800 bg-white">
+    <div className="min-h-screen flex flex-col tenant-editorial text-[#0a0a0a] bg-white">
       <TenantPublicHeader slug={tenant.slug} tenantName={tenant.name} branding={branding} />
 
-      {/* Header Banner */}
+      {/* Chapter 1: Flat Brand Header */}
       <section
-        className="py-16 lg:py-20 text-white relative overflow-hidden"
-        style={{
-          background: `linear-gradient(135deg, ${primaryColor} 0%, #0F172A 100%)`,
-        }}
+        className="w-full py-16 sm:py-24"
+        style={{ backgroundColor: primary, color: textOnPrimary }}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-widest text-slate-300 mb-3">
-            <Link href="/" className="hover:text-white transition-colors">Home</Link>
+        <div className="max-w-[1360px] mx-auto px-5 sm:px-8 space-y-5">
+          <div className="flex items-center gap-2 text-[13px] opacity-75">
+            <Link href={`/${tenant.slug}`} className="hover:opacity-100 underline-offset-4 hover:underline">
+              Home
+            </Link>
             <span>/</span>
-            <span className="text-white font-bold">Admissions</span>
+            <span>Admissions</span>
           </div>
-          <h1 className="text-3xl sm:text-5xl font-black tracking-tight mb-4">
-            Admissions & Enrollment
+          <h1 className="tenant-editorial-display text-[44px] sm:text-[64px] leading-[0.98] tracking-[-0.025em]">
+            Admissions &amp; enrollment
           </h1>
-          <p className="text-base text-slate-200 max-w-2xl font-light leading-relaxed">
+          <p className="text-[17px] sm:text-[19px] leading-[1.6] opacity-85 max-w-2xl">
             {admissions.text}
           </p>
         </div>
       </section>
 
-      {/* Step-by-Step Admission Process */}
-      <section className="py-20 bg-slate-50 border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto mb-16">
-            <span className="text-xs font-mono uppercase tracking-widest text-blue-600 font-bold block mb-2">
-              How To Join
-            </span>
-            <h2 className="text-3xl font-black text-slate-900">
-              The 4-Step Application Roadmap
+      {/* Chapter 2: Application Roadmap (Stone Field) */}
+      <section className="w-full bg-[#f4f3f1] py-20 sm:py-24">
+        <div className="max-w-[1360px] mx-auto px-5 sm:px-8">
+          <div className="pb-10 border-b border-[#d8d5ce]">
+            <h2 className="tenant-editorial-display text-[36px] sm:text-[48px] leading-[1.02] text-[#0a0a0a]">
+              How to apply
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+          <ol className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-[#d8d5ce] border-b border-[#d8d5ce]">
             {admissions.process.map((p) => (
-              <div key={p.step} className="p-6 rounded-2xl bg-white border border-slate-200 shadow-md flex flex-col justify-between">
-                <div>
-                  <div
-                    className="w-10 h-10 rounded-xl text-white font-bold flex items-center justify-center text-sm mb-4 shadow-sm"
-                    style={{ backgroundColor: primaryColor }}
-                  >
-                    0{p.step}
-                  </div>
-                  <h3 className="font-bold text-base text-slate-900 mb-2">{p.title}</h3>
-                  <p className="text-xs text-slate-600 leading-relaxed">
-                    {p.desc}
-                  </p>
-                </div>
-              </div>
+              <li key={p.step} className="py-8 sm:px-6 first:sm:pl-0 last:sm:pr-0 space-y-2.5">
+                <h3 className="text-[18px] font-semibold text-[#0a0a0a]">{p.title}</h3>
+                <p className="text-[14px] leading-[1.65] text-[#4f4d48]">{p.desc}</p>
+              </li>
             ))}
+          </ol>
+        </div>
+      </section>
+
+      {/* Chapter 3: Requirements & Online Application Form (White Field) */}
+      <section className="w-full bg-white py-20 sm:py-28">
+        <div className="max-w-[1360px] mx-auto px-5 sm:px-8 grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
+          {/* Left: Requirements & Tuition Policy */}
+          <div className="lg:col-span-5 space-y-10">
+            <div className="space-y-4">
+              <h2 className="tenant-editorial-display text-[34px] leading-[1.05] text-[#0a0a0a]">
+                Application requirements
+              </h2>
+              <ul className="divide-y divide-[#efede9] border-t border-b border-[#efede9]">
+                {admissions.requirements.map((req, i) => (
+                  <li key={i} className="py-3.5 text-[15px] leading-[1.55] text-[#262522]">
+                    {req}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="space-y-3">
+              <h3 className="text-[18px] font-semibold text-[#0a0a0a]">Tuition &amp; fee policy</h3>
+              <p className="text-[15px] leading-[1.65] text-[#4f4d48]">
+                {admissions.feeGuideText}
+              </p>
+              <p className="text-[14px] text-[#66645e] pt-1">
+                Payments are accepted online through the parent portal or by verified bank transfer.
+              </p>
+            </div>
+
+            <div className="p-6 bg-[#f4f3f1] border border-[#e4e2dd] space-y-1.5">
+              <p className="text-[15px] font-semibold text-[#0a0a0a]">Direct admissions office</p>
+              <p className="text-[14px] text-[#4f4d48]">
+                Call {contact.phone} or email {contact.email} for assessment dates and campus visits.
+              </p>
+            </div>
           </div>
 
-          {/* Form & Requirements Two-Column Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
-            {/* Left: Requirements & Tuition */}
-            <div className="lg:col-span-6 space-y-8">
-              <div className="p-8 rounded-3xl bg-white border border-slate-200 shadow-md">
-                <div className="flex items-center gap-2 mb-4">
-                  <ClipboardList className="w-5 h-5 text-blue-600" />
-                  <h3 className="font-bold text-lg text-slate-900">Application Requirements</h3>
-                </div>
-                <ul className="space-y-3 text-xs text-slate-700">
-                  {admissions.requirements.map((req, i) => (
-                    <li key={i} className="flex items-start gap-2.5">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                      <span className="leading-relaxed">{req}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <div className="p-8 rounded-3xl bg-white border border-slate-200 shadow-md">
-                <div className="flex items-center gap-2 mb-4">
-                  <FileCheck className="w-5 h-5 text-amber-600" />
-                  <h3 className="font-bold text-lg text-slate-900">Tuition & Fee Policy</h3>
-                </div>
-                <p className="text-xs text-slate-600 leading-relaxed mb-4">
-                  {admissions.feeGuideText}
-                </p>
-                <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 space-y-1">
-                  <p className="font-bold text-slate-800">Fee Payment Methods Accepted:</p>
-                  <p>• Online automated payment through parent portal (Paystack)</p>
-                  <p>• Verified Direct Bank Deposit / Transfer with automated receipt clearance</p>
-                </div>
-              </div>
-
-              <div className="p-6 rounded-2xl bg-blue-50 border border-blue-200 flex items-start gap-4">
-                <HelpCircle className="w-6 h-6 text-blue-600 shrink-0" />
-                <div className="text-xs text-blue-900 leading-relaxed">
-                  <span className="font-bold block mb-1">Need Direct Admissions Assistance?</span>
-                  <span>Contact our admissions counsellors at <strong>{contact.phone}</strong> or email <strong>{contact.email}</strong>.</span>
-                </div>
-              </div>
+          {/* Right: Inquiry Form */}
+          <div className="lg:col-span-7 bg-[#f4f3f1] border border-[#e4e2dd] p-7 sm:p-10">
+            <div className="pb-6 mb-6 border-b border-[#d8d5ce]">
+              <h2 className="tenant-editorial-display text-[34px] leading-[1.05] text-[#0a0a0a]">
+                Admission inquiry form
+              </h2>
+              <p className="mt-2 text-[14px] text-[#57554f]">
+                Submit your child’s details to reserve an entrance assessment seat at {tenant.name}.
+              </p>
             </div>
 
-            {/* Right: Online Application Form */}
-            <div className="lg:col-span-6">
-              <div className="p-8 sm:p-10 rounded-3xl bg-white border border-slate-200 shadow-xl">
-                <div className="mb-6">
-                  <span className="text-xs font-mono uppercase tracking-widest text-blue-600 font-bold block mb-1">
-                    Instant Online Application
-                  </span>
-                  <h3 className="text-2xl font-black text-slate-900">
-                    Admission Inquiry Form
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Submit your child&apos;s details to reserve an entrance assessment seat.
-                  </p>
-                </div>
-
-                <AdmissionFormClient
-                  tenantSlug={tenant.slug}
-                  schoolName={tenant.name}
-                  primaryColor={primaryColor}
-                />
-              </div>
-            </div>
+            <AdmissionFormClient
+              tenantSlug={tenant.slug}
+              schoolName={tenant.name}
+              primaryColor={primary}
+            />
           </div>
         </div>
       </section>

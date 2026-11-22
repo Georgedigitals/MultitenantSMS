@@ -3,10 +3,13 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useLanguage } from '@/components/language-provider';
 
 interface AdminSidebarProps {
   adminName?: string;
   adminEmail?: string;
+  platformName?: string;
+  logoUrl?: string;
 }
 
 // ── SVG Icon Set ──────────────────────────────────────────────────────────────
@@ -42,6 +45,22 @@ const Icons = {
       <path fillRule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
     </svg>
   ),
+  website: (
+    <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM4.332 8.027a6.012 6.012 0 011.912-2.706C6.512 5.73 6.974 6 7.5 6A1.5 1.5 0 019 7.5V8a2 2 0 004 0 2 2 0 011.523-1.943A5.977 5.977 0 0116 10c0 .34-.028.675-.083 1H15a2 2 0 00-2 2v2.197A5.973 5.973 0 0110 16v-2a2 2 0 00-2-2 2 2 0 01-2-2 2 2 0 00-1.668-1.973z" clipRule="evenodd" />
+    </svg>
+  ),
+  announcements: (
+    <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+      <path d="M18 3a1 1 0 00-1.447-.894L8.763 6H5a3 3 0 000 6h.28l1.771 5.316A1 1 0 008 18h1a1 1 0 001-1v-4.382l6.553 3.276A1 1 0 0018 15V3z" />
+    </svg>
+  ),
+  leads: (
+    <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+      <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+      <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+    </svg>
+  ),
   settings: (
     <svg viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
       <path fillRule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clipRule="evenodd" />
@@ -75,22 +94,36 @@ const Icons = {
 };
 
 const navItems = [
-  { label: 'Platform Overview', href: '/admin', icon: Icons.overview },
-  { label: 'Schools & Tenants', href: '/admin/tenants', icon: Icons.tenants },
-  { label: 'Plan Tiers & Features', href: '/admin/plans', icon: Icons.plans },
-  { label: 'Platform Finance', href: '/admin/finance', icon: Icons.finance },
-  { label: 'Scratch Card PINs', href: '/admin/pins', icon: Icons.pins },
-  { label: 'System Audit Logs', href: '/admin/audit-logs', icon: Icons.audit },
-  { label: 'Platform Settings', href: '/admin/settings', icon: Icons.settings },
+  { key: 'admin.overview', label: 'Platform Overview', href: '/admin', icon: Icons.overview },
+  { key: 'admin.tenants', label: 'Schools & Tenants', href: '/admin/tenants', icon: Icons.tenants },
+  { key: 'admin.plans', label: 'Plan Tiers & Features', href: '/admin/plans', icon: Icons.plans },
+  { key: 'admin.website', label: 'Public Website CMS', href: '/admin/website', icon: Icons.website },
+  { key: 'admin.announcements', label: 'Broadcasts', href: '/admin/announcements', icon: Icons.announcements },
+  { key: 'admin.leads', label: 'Leads & Inquiries', href: '/admin/leads', icon: Icons.leads },
+  { key: 'admin.finance', label: 'Platform Finance', href: '/admin/finance', icon: Icons.finance },
+  { key: 'admin.pins', label: 'Scratch Card PINs', href: '/admin/pins', icon: Icons.pins },
+  { key: 'admin.auditLogs', label: 'System Audit Logs', href: '/admin/audit-logs', icon: Icons.audit },
+  { key: 'admin.settings', label: 'Platform Settings', href: '/admin/settings', icon: Icons.settings },
 ];
 
 export function AdminSidebar({
   adminName = 'Platform Admin',
   adminEmail = 'admin@platform.com',
+  platformName = 'School Platform',
+  logoUrl = '',
 }: AdminSidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
+  const { t } = useLanguage();
+
+  const brandBadge = platformName
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase()
+    .slice(0, 3) || 'SP';
 
   useEffect(() => {
     setMobileOpen(false);
@@ -112,7 +145,10 @@ export function AdminSidebar({
     onClick?: () => void;
     showLabel?: boolean;
   }) => {
-    const isActive = pathname === item.href;
+    const isActive =
+      item.href === '/admin'
+        ? pathname === '/admin'
+        : pathname === item.href || pathname.startsWith(`${item.href}/`);
     return (
       <Link
         href={item.href}
@@ -130,7 +166,7 @@ export function AdminSidebar({
         <span className={`shrink-0 transition-colors ${isActive ? 'adm-text-accent' : 'adm-text-muted'}`}>
           {item.icon}
         </span>
-        {showLabel && <span className="truncate leading-tight">{item.label}</span>}
+        {showLabel && <span className="truncate leading-tight">{t(item.key, item.label)}</span>}
       </Link>
     );
   };
@@ -147,13 +183,27 @@ export function AdminSidebar({
         <div>
           <div className={`h-14 flex items-center border-b adm-divider ${collapsed ? 'justify-center px-3' : 'justify-between px-4'}`}>
             <Link href="/admin" className="flex items-center gap-2.5 overflow-hidden min-w-0">
-              <div className="w-7 h-7 rounded-md bg-[#17834b] flex items-center justify-center font-bold text-white text-[10px] shrink-0 select-none">
-                BMS
-              </div>
+              {logoUrl ? (
+                <img
+                  src={logoUrl}
+                  alt={platformName}
+                  className="w-7 h-7 rounded-md object-contain bg-white border adm-divider p-0.5 shrink-0"
+                />
+              ) : (
+                <div
+                  className="w-7 h-7 rounded-md flex items-center justify-center font-bold text-[10px] shrink-0 select-none"
+                  style={{
+                    backgroundColor: 'var(--adm-accent)',
+                    color: 'var(--adm-accent-fg, #ffffff)',
+                  }}
+                >
+                  {brandBadge}
+                </div>
+              )}
               {!collapsed && (
                 <div className="min-w-0">
                   <span className="font-bold text-sm adm-text-primary block leading-tight truncate">
-                    BMS Platform
+                    {platformName}
                   </span>
                   <span className="text-[10px] font-medium adm-text-muted block uppercase tracking-widest truncate">
                     Super Admin
@@ -232,15 +282,32 @@ export function AdminSidebar({
             {Icons.menu}
           </button>
           <Link href="/admin" className="flex items-center gap-2">
-            <div className="w-6 h-6 rounded-md bg-[#17834b] flex items-center justify-center font-bold text-white text-[9px]">
-              B
-            </div>
-            <span className="font-bold text-sm adm-text-primary">BMS Platform</span>
+            {logoUrl ? (
+              <img
+                src={logoUrl}
+                alt={platformName}
+                className="w-6 h-6 rounded-md object-contain bg-white border adm-divider p-0.5 shrink-0"
+              />
+            ) : (
+              <div
+                className="w-6 h-6 rounded-md flex items-center justify-center font-bold text-[9px]"
+                style={{
+                  backgroundColor: 'var(--adm-accent)',
+                  color: 'var(--adm-accent-fg, #ffffff)',
+                }}
+              >
+                {brandBadge.slice(0, 2)}
+              </div>
+            )}
+            <span className="font-bold text-sm adm-text-primary">{platformName}</span>
           </Link>
         </div>
         <div className="flex items-center gap-2">
-          <span className="w-1.5 h-1.5 rounded-full bg-[#17834b]" />
-          <span className="text-[10px] font-medium adm-text-accent">Platform access</span>
+          <span
+            className="w-1.5 h-1.5 rounded-full"
+            style={{ backgroundColor: 'var(--adm-accent)' }}
+          />
+          <span className="text-[10px] font-medium adm-text-accent">Super Admin</span>
         </div>
       </header>
 
@@ -255,11 +322,25 @@ export function AdminSidebar({
             <div>
               <div className="flex items-center justify-between pb-4 mb-3 border-b adm-divider">
                 <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 rounded-md bg-[#17834b] flex items-center justify-center font-bold text-white text-[10px]">
-                    BMS
-                  </div>
+                  {logoUrl ? (
+                    <img
+                      src={logoUrl}
+                      alt={platformName}
+                      className="w-7 h-7 rounded-md object-contain bg-white border adm-divider p-0.5 shrink-0"
+                    />
+                  ) : (
+                    <div
+                      className="w-7 h-7 rounded-md flex items-center justify-center font-bold text-[10px]"
+                      style={{
+                        backgroundColor: 'var(--adm-accent)',
+                        color: 'var(--adm-accent-fg, #ffffff)',
+                      }}
+                    >
+                      {brandBadge}
+                    </div>
+                  )}
                   <div>
-                    <span className="font-bold text-sm adm-text-primary block leading-tight">BMS Platform</span>
+                    <span className="font-bold text-sm adm-text-primary block leading-tight">{platformName}</span>
                     <span className="text-[10px] font-medium adm-text-muted uppercase tracking-widest block">Super Admin</span>
                   </div>
                 </div>

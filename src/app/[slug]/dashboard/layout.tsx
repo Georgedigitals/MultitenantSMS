@@ -7,6 +7,7 @@ import { headers } from 'next/headers';
 import { checkTrialAccess } from '@/lib/trial';
 import TenantSidebar from '@/components/tenant-sidebar';
 import TrialBanner from '@/components/trial-banner';
+import { TenantAnnouncementBanner } from '@/components/tenant-announcement-banner';
 
 interface TenantDashboardLayoutProps {
   children: React.ReactNode;
@@ -91,6 +92,7 @@ export default async function TenantDashboardLayout({
         planName={tenant.plan.name}
         userRole={user.role}
       />
+      <TenantAnnouncementBanner planName={tenant.plan.name} />
       {children}
     </TenantSidebar>
   );

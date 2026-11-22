@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { ReportCardDocument } from '@/components/report-card-document';
+import { useLanguage } from '@/components/language-provider';
 
 interface TermOption {
   id: string;
@@ -36,6 +37,7 @@ export default function ResultCheckerClient({
   hasPinStock = false,
   bankDetails,
 }: ResultCheckerClientProps) {
+  const { localization: { currencySymbol, locale } } = useLanguage();
   const [studentId, setStudentId] = useState(initialStudentId);
   const [termId, setTermId] = useState(initialTermId);
   const [pinCode, setPinCode] = useState('');
@@ -395,10 +397,10 @@ export default function ResultCheckerClient({
                 Outstanding Balance Due
               </span>
               <span className="text-3xl font-black text-amber-400 mt-0.5 block">
-                ₦{feeBlockedData.balanceRemaining.toLocaleString()}
+                {currencySymbol}{feeBlockedData.balanceRemaining.toLocaleString()}
               </span>
               <span className="text-xs text-slate-300 mt-0.5 block">
-                Total Billed: ₦{(feeBlockedData.totalAssigned || feeBlockedData.balanceRemaining).toLocaleString()} • Paid: ₦{(feeBlockedData.totalPaid || 0).toLocaleString()}
+                Total Billed: {currencySymbol}{(feeBlockedData.totalAssigned || feeBlockedData.balanceRemaining).toLocaleString()} • Paid: {currencySymbol}{(feeBlockedData.totalPaid || 0).toLocaleString()}
               </span>
             </div>
 
@@ -480,7 +482,7 @@ export default function ResultCheckerClient({
 
                 <div className="p-4 rounded-xl bg-slate-900 text-white flex items-center justify-between">
                   <span className="text-xs text-slate-300 font-mono">Amount Due for Full Clearance:</span>
-                  <span className="text-lg font-black text-amber-400">₦{feeBlockedData.balanceRemaining.toLocaleString()}</span>
+                  <span className="text-lg font-black text-amber-400">{currencySymbol}{feeBlockedData.balanceRemaining.toLocaleString()}</span>
                 </div>
 
                 <button
@@ -492,7 +494,7 @@ export default function ResultCheckerClient({
                     'Connecting to Paystack Gateway...'
                   ) : (
                     <>
-                      <span>Pay ₦{feeBlockedData.balanceRemaining.toLocaleString()} via Paystack &amp; Unlock Result</span>
+                      <span>Pay {currencySymbol}{feeBlockedData.balanceRemaining.toLocaleString()} via Paystack &amp; Unlock Result</span>
                       <span>→</span>
                     </>
                   )}
@@ -876,7 +878,7 @@ export default function ResultCheckerClient({
 
                 <div className="pt-1 flex flex-col sm:flex-row items-center justify-between gap-3">
                   <div className="text-xs text-slate-600">
-                    Standard Fee: <strong className="text-slate-900 text-sm font-black">₦{pinPrice.toLocaleString()}</strong>
+                    Standard Fee: <strong className="text-slate-900 text-sm font-black">{currencySymbol}{pinPrice.toLocaleString()}</strong>
                   </div>
 
                   <button
@@ -885,7 +887,7 @@ export default function ResultCheckerClient({
                     className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider shadow-sm hover:shadow transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
                   >
                     <span>🔒</span>
-                    <span>{buyingPin ? 'Connecting to Paystack...' : `Pay ₦${pinPrice.toLocaleString()} & Generate PIN`}</span>
+                    <span>{buyingPin ? 'Connecting to Paystack...' : `Pay ${currencySymbol}${pinPrice.toLocaleString()} & Generate PIN`}</span>
                   </button>
                 </div>
               </form>
@@ -898,7 +900,7 @@ export default function ResultCheckerClient({
                     Offline Physical Scratch Card
                   </span>
                   <span className="text-xs font-bold text-amber-900">
-                    Standard Fee: <strong>₦{pinPrice.toLocaleString()}</strong>
+                    Standard Fee: <strong>{currencySymbol}{pinPrice.toLocaleString()}</strong>
                   </span>
                 </div>
 
@@ -948,7 +950,7 @@ export default function ResultCheckerClient({
                 <div className="space-y-1.5 text-xs text-slate-600">
                   <p className="flex items-start gap-2">
                     <span className="font-bold text-amber-700">1.</span>
-                    <span>Pay <strong>₦{pinPrice.toLocaleString()}</strong> per student at the school bursary or via direct bank transfer to the account above.</span>
+                    <span>Pay <strong>{currencySymbol}{pinPrice.toLocaleString()}</strong> per student at the school bursary or via direct bank transfer to the account above.</span>
                   </p>
                   <p className="flex items-start gap-2">
                     <span className="font-bold text-amber-700">2.</span>

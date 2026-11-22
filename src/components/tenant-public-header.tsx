@@ -3,7 +3,8 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FileText, LogIn, Menu, X, GraduationCap, Sparkles } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
+import { LanguageSwitcher, useLanguage } from '@/components/language-provider';
 
 interface TenantPublicHeaderProps {
   slug: string;
@@ -20,6 +21,7 @@ interface TenantPublicHeaderProps {
 export function TenantPublicHeader({ slug, tenantName, branding }: TenantPublicHeaderProps) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname() || '';
+  const { tp } = useLanguage();
 
   const isSlugPath = pathname.startsWith(`/${slug}`);
   const resolveHref = (path: string) => {
@@ -31,9 +33,9 @@ export function TenantPublicHeader({ slug, tenantName, branding }: TenantPublicH
 
   const navLinks = [
     { label: 'Home', href: resolveHref('/') },
-    { label: 'About Us', href: resolveHref('/about') },
+    { label: 'About', href: resolveHref('/about') },
     { label: 'Academics', href: resolveHref('/academics') },
-    { label: 'Admissions', href: resolveHref('/admissions'), badge: 'Apply' },
+    { label: 'Admissions', href: resolveHref('/admissions') },
     { label: 'Gallery', href: resolveHref('/gallery') },
     { label: 'Contact', href: resolveHref('/contact') },
   ];
@@ -45,110 +47,95 @@ export function TenantPublicHeader({ slug, tenantName, branding }: TenantPublicH
     return pathname.startsWith(href);
   };
 
+  const primary = branding.primaryColor || '#141414';
+  const textOnPrimary = branding.textOnPrimary || '#FFFFFF';
+
   return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/90 shadow-2xs transition-all">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-        {/* Brand Logo & Name */}
-        <Link href={resolveHref('/')} className="flex items-center gap-3 group">
+    <header className="sticky top-0 z-50 bg-white border-b border-[#e4e2dd]">
+      <div className="max-w-[1360px] mx-auto px-5 sm:px-8 h-20 flex items-center justify-between gap-6">
+        {/* School Wordmark & Crest */}
+        <Link href={resolveHref('/')} className="flex items-center gap-3 min-w-0">
           {branding.logoUrl ? (
             <img
               src={branding.logoUrl}
               alt={tenantName}
-              className="h-10 sm:h-11 w-auto object-contain transition-transform group-hover:scale-105"
+              className="h-10 w-auto object-contain shrink-0"
             />
           ) : (
             <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-xl shadow-xs shrink-0 transition-transform group-hover:scale-105"
-              style={{ backgroundColor: branding.primaryColor, color: branding.textOnPrimary || '#FFFFFF' }}
+              className="w-10 h-10 flex items-center justify-center font-semibold text-base shrink-0"
+              style={{ backgroundColor: primary, color: textOnPrimary }}
             >
-              {tenantName.charAt(0)}
+              {tenantName.charAt(0).toUpperCase()}
             </div>
           )}
-          <div>
-            <span className="font-extrabold text-base sm:text-lg tracking-tight text-slate-900 block truncate max-w-[170px] sm:max-w-xs group-hover:text-blue-600 transition-colors">
-              {tenantName}
-            </span>
-            <span className="text-[10px] uppercase font-mono tracking-widest text-slate-400 block -mt-0.5">
-              Academic Portal
-            </span>
-          </div>
+          <span className="font-semibold text-[16px] tracking-[-0.02em] text-[#0a0a0a] truncate max-w-[180px] sm:max-w-xs">
+            {tenantName}
+          </span>
         </Link>
 
-        {/* Desktop Multi-Page Navigation */}
-        <nav className="hidden lg:flex items-center gap-1.5 text-sm font-semibold">
+        {/* Desktop Navigation */}
+        <nav className="hidden lg:flex items-center gap-7" aria-label="Main navigation">
           {navLinks.map((item) => {
             const active = isActiveLink(item.href);
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`relative px-3.5 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 ${
+                className={`py-2 text-[14px] transition-colors border-b-2 ${
                   active
-                    ? 'text-white shadow-sm'
-                    : 'text-slate-600 hover:text-slate-950 hover:bg-slate-100/80'
+                    ? 'text-[#0a0a0a] font-medium border-[#0a0a0a]'
+                    : 'text-[#66645e] border-transparent hover:text-[#0a0a0a]'
                 }`}
-                style={active ? { backgroundColor: branding.primaryColor } : undefined}
               >
-                <span>{item.label}</span>
-                {item.badge && (
-                  <span
-                    className={`text-[9px] font-black px-1.5 py-0.5 rounded-full ${
-                      active ? 'bg-white/20 text-white' : 'text-white'
-                    }`}
-                    style={!active ? { backgroundColor: branding.accentColor } : undefined}
-                  >
-                    {item.badge}
-                  </span>
-                )}
+                {tp(item.label)}
               </Link>
             );
           })}
         </nav>
 
-        {/* Desktop Quick Actions */}
-        <div className="hidden sm:flex items-center gap-3">
+        {/* Desktop Actions */}
+        <div className="hidden sm:flex items-center gap-3 shrink-0">
+          <LanguageSwitcher variant="tenant" />
           <Link
             href={resolveHref('/results/check')}
-            className="px-3.5 py-2 rounded-xl text-xs font-bold border border-slate-300 text-slate-700 hover:bg-slate-100 transition-all shadow-2xs whitespace-nowrap flex items-center gap-1.5"
+            className="h-10 px-4 border border-[#d4d1ca] text-[13px] font-medium text-[#0a0a0a] hover:bg-[#f4f3f1] transition-colors inline-flex items-center whitespace-nowrap"
           >
-            <FileText className="w-3.5 h-3.5 text-slate-500" />
-            <span>Check Result</span>
+            {tp('Check Results')}
           </Link>
           <Link
             href={resolveHref('/login')}
-            className="px-4 py-2 rounded-xl text-xs font-bold text-white shadow-md hover:opacity-95 transition-all whitespace-nowrap flex items-center gap-1.5"
-            style={{ backgroundColor: branding.accentColor, color: branding.textOnAccent || '#FFFFFF' }}
+            className="h-10 px-5 text-[13px] font-medium transition-opacity hover:opacity-90 inline-flex items-center whitespace-nowrap"
+            style={{ backgroundColor: primary, color: textOnPrimary }}
           >
-            <LogIn className="w-3.5 h-3.5" />
-            <span>Portal Login</span>
+            {tp('Portal Login')}
           </Link>
         </div>
 
-        {/* Mobile Hamburger Trigger */}
+        {/* Mobile Controls */}
         <div className="flex lg:hidden items-center gap-2">
           <Link
             href={resolveHref('/results/check')}
-            className="sm:hidden px-2.5 py-1.5 rounded-lg text-xs font-bold border border-slate-300 text-slate-700 hover:bg-slate-100 flex items-center gap-1"
+            className="sm:hidden h-9 px-3 border border-[#d4d1ca] text-[12px] font-medium text-[#0a0a0a] inline-flex items-center"
           >
-            <FileText className="w-3.5 h-3.5" />
-            <span>Results</span>
+            Results
           </Link>
-
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2.5 rounded-xl bg-slate-100 text-slate-700 hover:text-slate-900 hover:bg-slate-200 transition-colors focus:outline-none"
+            className="h-9 w-9 border border-[#d4d1ca] text-[#0a0a0a] hover:bg-[#f4f3f1] flex items-center justify-center transition-colors cursor-pointer"
             aria-label="Toggle navigation menu"
+            aria-expanded={mobileMenuOpen}
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Slide-Down Menu Drawer */}
+      {/* Mobile Navigation Drawer */}
       {mobileMenuOpen && (
-        <div className="lg:hidden border-t border-slate-200 bg-white/98 backdrop-blur-xl px-4 pt-3 pb-6 space-y-3 shadow-2xl">
-          <nav className="flex flex-col space-y-1 py-1">
+        <div className="lg:hidden border-t border-[#e4e2dd] bg-white px-5 py-5 space-y-5">
+          <nav className="flex flex-col space-y-1" aria-label="Mobile navigation">
             {navLinks.map((item) => {
               const active = isActiveLink(item.href);
               return (
@@ -156,44 +143,33 @@ export function TenantPublicHeader({ slug, tenantName, branding }: TenantPublicH
                   key={item.href}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`px-3.5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center justify-between transition-colors ${
+                  className={`px-3 py-2.5 text-[15px] transition-colors ${
                     active
-                      ? 'text-white'
-                      : 'text-slate-700 hover:bg-slate-100 hover:text-slate-900'
+                      ? 'bg-[#f4f3f1] text-[#0a0a0a] font-medium'
+                      : 'text-[#4f4d48] hover:bg-[#f4f3f1] hover:text-[#0a0a0a]'
                   }`}
-                  style={active ? { backgroundColor: branding.primaryColor } : undefined}
                 >
-                  <span>{item.label}</span>
-                  {item.badge && (
-                    <span
-                      className="text-[9px] font-black px-1.5 py-0.5 rounded-full text-white"
-                      style={{ backgroundColor: branding.accentColor }}
-                    >
-                      {item.badge}
-                    </span>
-                  )}
+                  {item.label}
                 </Link>
               );
             })}
           </nav>
 
-          <div className="pt-3 border-t border-slate-100 flex flex-col gap-2.5">
+          <div className="pt-4 border-t border-[#e4e2dd] flex flex-col gap-2.5">
             <Link
               href={resolveHref('/results/check')}
               onClick={() => setMobileMenuOpen(false)}
-              className="w-full py-2.5 px-4 rounded-xl text-center text-xs font-bold border border-slate-300 text-slate-700 hover:bg-slate-100 transition-all flex items-center justify-center gap-2"
+              className="w-full h-11 px-4 border border-[#d4d1ca] text-[14px] font-medium text-[#0a0a0a] flex items-center justify-center"
             >
-              <FileText className="w-4 h-4 text-slate-500" />
-              <span>Check Student Result</span>
+              Check student result
             </Link>
             <Link
               href={resolveHref('/login')}
               onClick={() => setMobileMenuOpen(false)}
-              className="w-full py-2.5 px-4 rounded-xl text-center text-xs font-bold text-white shadow-md hover:opacity-95 transition-all flex items-center justify-center gap-2"
-              style={{ backgroundColor: branding.accentColor, color: branding.textOnAccent || '#FFFFFF' }}
+              className="w-full h-11 px-4 text-[14px] font-medium flex items-center justify-center"
+              style={{ backgroundColor: primary, color: textOnPrimary }}
             >
-              <LogIn className="w-4 h-4" />
-              <span>Sign In to School Portal</span>
+              Sign in to school portal
             </Link>
           </div>
         </div>

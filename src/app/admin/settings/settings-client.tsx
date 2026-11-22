@@ -1,6 +1,10 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { CURRENCY_PRESETS } from '@/lib/i18n/currency';
+import { SUPPORTED_LANGUAGES, isSupportedLanguage } from '@/lib/i18n/dictionaries';
+import { useLanguage } from '@/components/language-provider';
 
 interface SuperAdminProfile {
   name: string;
@@ -74,15 +78,30 @@ function ToggleField({ label, hint, checked, onChange, benefitText }: { label: s
 }
 
 export function SettingsClient({ superAdmin }: SettingsClientProps) {
+  const router = useRouter();
+  const { setLang } = useLanguage();
   const [activeTab, setActiveTab] = useState<'general' | 'monetization' | 'gateways' | 'security'>('general');
+  const [platformName, setPlatformName] = useState('School Platform');
+  const [platformTagline, setPlatformTagline] = useState('Multi-Tenant School Management Platform');
   const [allowPublicRegistration, setAllowPublicRegistration] = useState(true);
   const [defaultTrialDays, setDefaultTrialDays] = useState(14);
+  const [defaultCurrencyCode, setDefaultCurrencyCode] = useState('NGN');
   const [defaultCurrencySymbol, setDefaultCurrencySymbol] = useState('₦');
+  const [defaultLocale, setDefaultLocale] = useState('en-NG');
+  const [defaultLanguage, setDefaultLanguage] = useState('en');
+  const [enabledLanguages, setEnabledLanguages] = useState<string[]>(['en', 'fr', 'es', 'pt', 'ar']);
+  const [defaultTimezone, setDefaultTimezone] = useState('Africa/Lagos');
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [defaultPinFeePercent, setDefaultPinFeePercent] = useState(5.0);
   const [defaultPinMaxUses, setDefaultPinMaxUses] = useState(5);
+  const [activePaymentGateway, setActivePaymentGateway] = useState<'paystack' | 'flutterwave' | 'stripe'>('paystack');
   const [paystackPublicKey, setPaystackPublicKey] = useState('');
   const [paystackSecretKey, setPaystackSecretKey] = useState('');
+  const [flutterwavePublicKey, setFlutterwavePublicKey] = useState('');
+  const [flutterwaveSecretKey, setFlutterwaveSecretKey] = useState('');
+  const [stripePublicKey, setStripePublicKey] = useState('');
+  const [stripeSecretKey, setStripeSecretKey] = useState('');
+  const [stripeWebhookSecret, setStripeWebhookSecret] = useState('');
   const [smsGatewayProvider, setSmsGatewayProvider] = useState('termii');
   const [smsCostPerUnit, setSmsCostPerUnit] = useState(3.5);
   const [termiiApiKey, setTermiiApiKey] = useState('');
@@ -98,14 +117,29 @@ export function SettingsClient({ superAdmin }: SettingsClientProps) {
       .then(async (response) => {
         const data = await response.json();
         if (!response.ok) return;
+        if (data.platformName) setPlatformName(data.platformName);
+        if (data.platformTagline !== undefined) setPlatformTagline(data.platformTagline);
         if (data.allowPublicRegistration !== undefined) setAllowPublicRegistration(Boolean(data.allowPublicRegistration));
         if (data.maintenanceMode !== undefined) setMaintenanceMode(Boolean(data.maintenanceMode));
         if (Number.isInteger(data.defaultTrialDays)) setDefaultTrialDays(data.defaultTrialDays);
+        if (data.defaultCurrencyCode) setDefaultCurrencyCode(data.defaultCurrencyCode);
         if (data.defaultCurrencySymbol) setDefaultCurrencySymbol(data.defaultCurrencySymbol);
+        if (data.defaultLocale) setDefaultLocale(data.defaultLocale);
+        if (data.defaultLanguage) setDefaultLanguage(data.defaultLanguage);
+        if (Array.isArray(data.enabledLanguages) && data.enabledLanguages.length > 0) {
+          setEnabledLanguages(data.enabledLanguages);
+        }
+        if (data.defaultTimezone) setDefaultTimezone(data.defaultTimezone);
         if (typeof data.defaultPinFeePercent === 'number') setDefaultPinFeePercent(data.defaultPinFeePercent);
         if (typeof data.defaultPinMaxUses === 'number') setDefaultPinMaxUses(data.defaultPinMaxUses);
+        if (data.activePaymentGateway) setActivePaymentGateway(data.activePaymentGateway);
         if (data.paystackPublicKey) setPaystackPublicKey(data.paystackPublicKey);
         if (data.paystackSecretKey) setPaystackSecretKey(data.paystackSecretKey);
+        if (data.flutterwavePublicKey) setFlutterwavePublicKey(data.flutterwavePublicKey);
+        if (data.flutterwaveSecretKey) setFlutterwaveSecretKey(data.flutterwaveSecretKey);
+        if (data.stripePublicKey) setStripePublicKey(data.stripePublicKey);
+        if (data.stripeSecretKey) setStripeSecretKey(data.stripeSecretKey);
+        if (data.stripeWebhookSecret) setStripeWebhookSecret(data.stripeWebhookSecret);
         if (data.smsGatewayProvider) setSmsGatewayProvider(data.smsGatewayProvider);
         if (typeof data.smsCostPerUnit === 'number') setSmsCostPerUnit(data.smsCostPerUnit);
         if (data.termiiApiKey) setTermiiApiKey(data.termiiApiKey);
@@ -134,14 +168,27 @@ export function SettingsClient({ superAdmin }: SettingsClientProps) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          platformName,
+          platformTagline,
           allowPublicRegistration,
           defaultTrialDays,
+          defaultCurrencyCode,
           defaultCurrencySymbol,
+          defaultLocale,
+          defaultLanguage,
+          enabledLanguages,
+          defaultTimezone,
           maintenanceMode,
           defaultPinFeePercent,
           defaultPinMaxUses,
+          activePaymentGateway,
           paystackPublicKey,
           paystackSecretKey,
+          flutterwavePublicKey,
+          flutterwaveSecretKey,
+          stripePublicKey,
+          stripeSecretKey,
+          stripeWebhookSecret,
           smsGatewayProvider,
           smsCostPerUnit,
           termiiApiKey,
@@ -153,8 +200,12 @@ export function SettingsClient({ superAdmin }: SettingsClientProps) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to update platform settings');
       setSaveStatus({ type: 'success', text: data.message || 'Global platform configuration updated successfully!' });
+      if (isSupportedLanguage(defaultLanguage)) {
+        setLang(defaultLanguage);
+      }
       setNewPassword('');
       setConfirmPassword('');
+      router.refresh();
     } catch (error) {
       setSaveStatus({ type: 'error', text: error instanceof Error ? error.message : 'Failed to update platform settings.' });
     } finally {
@@ -238,7 +289,40 @@ export function SettingsClient({ superAdmin }: SettingsClientProps) {
       <form onSubmit={handleSaveSettings} className="space-y-6">
         {/* ── Tab: General ─────────────────────────────────────────────────────── */}
         {activeTab === 'general' && (
-          <SettingSection title="School Self-Registration & Onboarding Controls" accentColor="bg-indigo-500">
+          <div className="space-y-6">
+            <SettingSection title="Platform Brand Identity (White-Label)" accentColor="bg-emerald-500">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <SettingField
+                  label="Platform Name"
+                  hint="Displayed across the Super Admin sidebar, footer, and platform branding instead of a hardcoded vendor name."
+                >
+                  <input
+                    type="text"
+                    required
+                    maxLength={80}
+                    value={platformName}
+                    onChange={(e) => setPlatformName(e.target.value)}
+                    placeholder="e.g. EduGrid, CampusOS, ScholarHub"
+                    className={inputClass}
+                  />
+                </SettingField>
+                <SettingField
+                  label="Platform Tagline"
+                  hint="Short description for metadata and platform branding."
+                >
+                  <input
+                    type="text"
+                    maxLength={160}
+                    value={platformTagline}
+                    onChange={(e) => setPlatformTagline(e.target.value)}
+                    placeholder="Multi-Tenant School Management Platform"
+                    className={inputClass}
+                  />
+                </SettingField>
+              </div>
+            </SettingSection>
+
+            <SettingSection title="School Self-Registration & Onboarding Controls" accentColor="bg-indigo-500">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <ToggleField
                 label="Public School Registration"
@@ -257,11 +341,119 @@ export function SettingsClient({ superAdmin }: SettingsClientProps) {
               <SettingField label="Default School Trial Duration (Days)" hint="Trial period for new schools. The trial ends automatically; the school must pay to continue using its workspace.">
                 <input type="number" min="1" max="90" value={defaultTrialDays} onChange={(e) => setDefaultTrialDays(Number(e.target.value))} className={inputClass} />
               </SettingField>
-              <SettingField label="Platform Base Currency Symbol" hint="Platform-wide currency sign used across ledgers and invoices.">
-                <input type="text" value={defaultCurrencySymbol} onChange={(e) => setDefaultCurrencySymbol(e.target.value)} className={inputClass} />
+              <SettingField label="Default Timezone" hint="IANA timezone used for platform schedules and logs (e.g. Africa/Lagos, America/New_York, Europe/London).">
+                <input type="text" value={defaultTimezone} onChange={(e) => setDefaultTimezone(e.target.value)} className={inputClass} />
               </SettingField>
             </div>
           </SettingSection>
+
+          <SettingSection title="Global Localization — Currency, Country & Multi-Language" accentColor="bg-emerald-500">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <SettingField
+                label="Quick Currency & Country Preset"
+                hint="Select any country/currency to auto-fill ISO code, symbol, and number locale for foreign deployments."
+              >
+                <select
+                  value={CURRENCY_PRESETS.some((c) => c.code === defaultCurrencyCode) ? defaultCurrencyCode : ''}
+                  onChange={(e) => {
+                    const preset = CURRENCY_PRESETS.find((c) => c.code === e.target.value);
+                    if (preset) {
+                      setDefaultCurrencyCode(preset.code);
+                      setDefaultCurrencySymbol(preset.symbol);
+                      setDefaultLocale(preset.locale);
+                    }
+                  }}
+                  className={inputClass}
+                >
+                  <option value="">Custom Currency</option>
+                  {CURRENCY_PRESETS.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.label}
+                    </option>
+                  ))}
+                </select>
+              </SettingField>
+
+              <SettingField
+                label="ISO Currency Code & Symbol"
+                hint="Applies to public pricing plans, Super Admin revenue, and invoices."
+              >
+                <div className="grid grid-cols-3 gap-2">
+                  <input
+                    type="text"
+                    value={defaultCurrencyCode}
+                    onChange={(e) => setDefaultCurrencyCode(e.target.value.toUpperCase())}
+                    placeholder="USD"
+                    className={inputClass}
+                  />
+                  <input
+                    type="text"
+                    value={defaultCurrencySymbol}
+                    onChange={(e) => setDefaultCurrencySymbol(e.target.value)}
+                    placeholder="$"
+                    className={inputClass}
+                  />
+                  <input
+                    type="text"
+                    value={defaultLocale}
+                    onChange={(e) => setDefaultLocale(e.target.value)}
+                    placeholder="en-US"
+                    className={inputClass}
+                  />
+                </div>
+              </SettingField>
+
+              <SettingField
+                label="Default Platform Language"
+                hint="Primary language shown to first-time visitors and school admins (Arabic automatically enables RTL layout)."
+              >
+                <select
+                  value={defaultLanguage}
+                  onChange={(e) => setDefaultLanguage(e.target.value)}
+                  className={inputClass}
+                >
+                  {SUPPORTED_LANGUAGES.map((lang) => (
+                    <option key={lang.code} value={lang.code}>
+                      {lang.label} — {lang.nativeLabel}
+                    </option>
+                  ))}
+                </select>
+              </SettingField>
+
+              <SettingField
+                label="Enabled Languages in Language Switcher"
+                hint="Choose which languages visitors and admins can switch between."
+              >
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {SUPPORTED_LANGUAGES.map((lang) => {
+                    const checked = enabledLanguages.includes(lang.code);
+                    return (
+                      <label
+                        key={lang.code}
+                        className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg border text-[11px] font-medium cursor-pointer ${
+                          checked ? 'adm-accent-border adm-accent-subtle adm-text-primary' : 'adm-divider adm-text-muted'
+                        }`}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={checked}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setEnabledLanguages((prev) => Array.from(new Set([...prev, lang.code])));
+                            } else if (enabledLanguages.length > 1) {
+                              setEnabledLanguages((prev) => prev.filter((c) => c !== lang.code));
+                            }
+                          }}
+                        />
+                        <span>{lang.nativeLabel}</span>
+                      </label>
+                    );
+                  })}
+                </div>
+              </SettingField>
+            </div>
+          </SettingSection>
+          </div>
         )}
 
         {/* ── Tab: Monetization ────────────────────────────────────────────────── */}
@@ -276,7 +468,27 @@ export function SettingsClient({ superAdmin }: SettingsClientProps) {
                 <input type="number" min="1" max="20" value={defaultPinMaxUses} onChange={(e) => setDefaultPinMaxUses(Number(e.target.value))} className={`${inputClass} text-sky-500`} />
                 <p className="text-[10px] text-sky-500 font-mono">Prevents PIN sharing while ensuring fair usage.</p>
               </SettingField>
-              <SettingField label="Global Paystack Payment Gateway" colSpan>
+              <SettingField label="Active Platform Payment Gateway" colSpan hint="Automatically routes school subscription checkouts with idempotent settlement and minor-unit conversion for any currency.">
+                <div className="space-y-3">
+                  <select
+                    value={activePaymentGateway}
+                    onChange={(e) => setActivePaymentGateway(e.target.value as any)}
+                    className={inputClass}
+                  >
+                    <option value="paystack">Paystack (NGN, GHS, KES, ZAR, XOF, USD)</option>
+                    <option value="flutterwave">Flutterwave (Pan-Africa + USD, GBP, EUR)</option>
+                    <option value="stripe">Stripe Global (135+ Currencies Worldwide — US/UK/EU/Global)</option>
+                  </select>
+                  {activePaymentGateway === 'paystack' &&
+                    !['NGN', 'GHS', 'ZAR', 'KES', 'XOF', 'USD'].includes(defaultCurrencyCode.toUpperCase()) && (
+                      <div className="p-2.5 rounded-lg bg-amber-500/10 border border-amber-500/30 text-[11px] text-amber-600 font-medium">
+                        Warning: Paystack does not support <strong>{defaultCurrencyCode}</strong>. Switch your Active Gateway to <strong>Stripe Global</strong> or <strong>Flutterwave</strong> so checkouts succeed.
+                      </div>
+                    )}
+                </div>
+              </SettingField>
+
+              <SettingField label="Paystack Credentials" colSpan>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block text-[10px] adm-text-muted uppercase tracking-widest mb-1">Public Key</label>
@@ -303,7 +515,74 @@ export function SettingsClient({ superAdmin }: SettingsClientProps) {
                     />
                   </div>
                 </div>
-                <p className="text-[10px] adm-text-muted pt-1">Used for processing subscription plans and result checker PIN batches.</p>
+              </SettingField>
+
+              <SettingField label="Flutterwave Credentials" colSpan>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] adm-text-muted uppercase tracking-widest mb-1">Public Key</label>
+                    <input
+                      type="text"
+                      autoComplete="off"
+                      placeholder="FLWPUBK-..."
+                      value={flutterwavePublicKey}
+                      onChange={(e) => setFlutterwavePublicKey(e.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] adm-text-muted uppercase tracking-widest mb-1">Secret Key</label>
+                    <input
+                      type="password"
+                      autoComplete="new-password"
+                      placeholder="FLWSECK-..."
+                      value={flutterwaveSecretKey}
+                      onChange={(e) => setFlutterwaveSecretKey(e.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
+                </div>
+              </SettingField>
+
+              <SettingField label="Stripe Global Credentials (135+ Currencies)" colSpan>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block text-[10px] adm-text-muted uppercase tracking-widest mb-1">Publishable Key</label>
+                    <input
+                      type="text"
+                      autoComplete="off"
+                      placeholder="pk_live_... or pk_test_..."
+                      value={stripePublicKey}
+                      onChange={(e) => setStripePublicKey(e.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] adm-text-muted uppercase tracking-widest mb-1">Secret Key</label>
+                    <input
+                      type="password"
+                      autoComplete="new-password"
+                      placeholder="sk_live_... or sk_test_..."
+                      value={stripeSecretKey}
+                      onChange={(e) => setStripeSecretKey(e.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[10px] adm-text-muted uppercase tracking-widest mb-1">Webhook Secret</label>
+                    <input
+                      type="password"
+                      autoComplete="new-password"
+                      placeholder="whsec_..."
+                      value={stripeWebhookSecret}
+                      onChange={(e) => setStripeWebhookSecret(e.target.value)}
+                      className={inputClass}
+                    />
+                  </div>
+                </div>
+                <p className="text-[10px] adm-text-muted pt-1">
+                  Point your Stripe webhook endpoint to <code className="font-mono">/api/webhooks/stripe</code> (event: <code className="font-mono">checkout.session.completed</code>).
+                </p>
               </SettingField>
             </div>
           </SettingSection>

@@ -3,13 +3,17 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --font-geist-sans: "Geist", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-geist-mono: "Geist Mono", "SFMono-Regular", Consolas, monospace;
+  --font-instrument-serif: "Instrument Serif", Georgia, "Times New Roman", serif;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: Arial, Helvetica, sans-serif;
-  --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  --font-sans: var(--font-geist-sans);
+  --font-serif: var(--font-instrument-serif);
+  --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -22,7 +26,38 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+/* ── Tenant Workspace: Achromatic Ledger Tokens ───────────────────────────── */
+.ws-shell {
+  --ws-ground: #f4f3f1;
+  --ws-surface: #ffffff;
+  --ws-raised: #eceae6;
+  --ws-border: #e4e2dd;
+  --ws-rule: #efede9;
+  --ws-control: #d4d1ca;
+  --ws-text: #0a0a0a;
+  --ws-muted: #66645e;
+  --ws-accent: #141414;
+  --ws-positive: #1f6b3a;
+  --ws-negative: #b8292f;
+  --ws-warning: #8f4f0e;
+  background-color: var(--ws-ground);
+  color: var(--ws-text);
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+}
+
+.ws-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.tenant-editorial {
+  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+}
+
+.tenant-editorial-display {
+  font-family: var(--font-instrument-serif), Georgia, serif;
 }
 
 @media print {
@@ -99,52 +134,54 @@ body {
 
 /* ── Admin Control Plane Design Tokens ──────────────────────────────────────── */
 
-/* Light Mode (default) */
+/* Light Mode (default — Achromatic Ledger aesthetic) */
 :root,
 [data-admin-theme="light"] {
-  --adm-bg: #f4f7f5;
+  --adm-bg: #f4f3f1;
   --adm-bg-secondary: #ffffff;
-  --adm-sidebar-bg: #ffffff;
-  --adm-header-bg: rgba(255, 255, 255, 0.96);
+  --adm-sidebar-bg: #f9f8f6;
+  --adm-header-bg: rgba(249, 248, 246, 0.94);
   --adm-card-bg: #ffffff;
-  --adm-card-border: #e5e9ed;
-  --adm-surface: #f2f7f3;
-  --adm-surface-hover: #edf4ee;
-  --adm-divider: #e5e9ed;
-  --adm-text-primary: #102d43;
-  --adm-text-secondary: #425c6b;
-  --adm-text-muted: #657580;
-  --adm-text-faint: #8693a0;
+  --adm-card-border: #e4e2dd;
+  --adm-surface: #f2f1ee;
+  --adm-surface-hover: #eae8e3;
+  --adm-divider: #e4e2dd;
+  --adm-text-primary: #111110;
+  --adm-text-secondary: #4a4843;
+  --adm-text-muted: #706d66;
+  --adm-text-faint: #96928a;
   --adm-input-bg: #ffffff;
-  --adm-input-border: #cfd8cf;
-  --adm-badge-bg: #e7f4ea;
-  --adm-accent: #17834b;
-  --adm-accent-subtle: #e7f4ea;
-  --adm-accent-border: #c9e5d1;
-  --adm-warning: #795719;
+  --adm-input-border: #d4d1ca;
+  --adm-badge-bg: #eceae5;
+  --adm-accent: #141414;
+  --adm-accent-fg: #ffffff;
+  --adm-accent-subtle: color-mix(in srgb, var(--adm-accent) 10%, transparent);
+  --adm-accent-border: color-mix(in srgb, var(--adm-accent) 26%, transparent);
+  --adm-warning: #8f4f0e;
 }
 
-/* Dark Mode */
+/* Dark Mode (Refined Charcoal Ledger) */
 [data-admin-theme="dark"] {
-  --adm-bg: #08283d;
-  --adm-bg-secondary: #0b2f48;
-  --adm-sidebar-bg: #0b2f48;
-  --adm-header-bg: rgba(11, 47, 72, 0.96);
-  --adm-card-bg: #102d43;
-  --adm-card-border: rgba(255, 255, 255, 0.12);
-  --adm-surface: rgba(255, 255, 255, 0.06);
-  --adm-surface-hover: rgba(255, 255, 255, 0.1);
-  --adm-divider: rgba(255, 255, 255, 0.12);
-  --adm-text-primary: #ffffff;
-  --adm-text-secondary: #d4e0e6;
-  --adm-text-muted: #adc1cd;
-  --adm-text-faint: #8aa1af;
-  --adm-input-bg: #0b2f48;
-  --adm-input-border: rgba(255, 255, 255, 0.2);
-  --adm-badge-bg: rgba(99, 210, 139, 0.14);
-  --adm-accent: #63d28b;
-  --adm-accent-subtle: rgba(99, 210, 139, 0.14);
-  --adm-accent-border: rgba(99, 210, 139, 0.35);
+  --adm-bg: #0d0f12;
+  --adm-bg-secondary: #13161b;
+  --adm-sidebar-bg: #111419;
+  --adm-header-bg: rgba(17, 20, 25, 0.94);
+  --adm-card-bg: #151921;
+  --adm-card-border: rgba(255, 255, 255, 0.09);
+  --adm-surface: rgba(255, 255, 255, 0.045);
+  --adm-surface-hover: rgba(255, 255, 255, 0.08);
+  --adm-divider: rgba(255, 255, 255, 0.09);
+  --adm-text-primary: #f4f4f5;
+  --adm-text-secondary: #c8cdd6;
+  --adm-text-muted: #8e96a4;
+  --adm-text-faint: #677080;
+  --adm-input-bg: #101318;
+  --adm-input-border: rgba(255, 255, 255, 0.14);
+  --adm-badge-bg: rgba(255, 255, 255, 0.08);
+  --adm-accent: #10b981;
+  --adm-accent-fg: #ffffff;
+  --adm-accent-subtle: color-mix(in srgb, var(--adm-accent) 16%, transparent);
+  --adm-accent-border: color-mix(in srgb, var(--adm-accent) 36%, transparent);
   --adm-warning: #f3d58c;
 }
 
@@ -152,9 +189,23 @@ body {
 .adm-shell {
   background: var(--adm-bg);
   color: var(--adm-text-primary);
-  font-family: Arial, Helvetica, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+.adm-btn-primary {
+  background-color: var(--adm-accent);
+  color: var(--adm-accent-fg, #ffffff);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.adm-btn-primary:hover {
+  opacity: 0.9;
+}
+
+.adm-btn-primary:disabled {
+  opacity: 0.5;
 }
 
 .adm-shell h1,
@@ -322,20 +373,20 @@ html[data-admin-theme="dark"] .adm-status-error {
    This overrides text-white on headings, paragraphs, divs, spans, table cells
    so they render as dark navy (#0f172a) instead of invisible white.
    Button elements are excluded so coloured buttons keep their white labels.     */
-html[data-admin-theme="light"] h1.text-white,
-html[data-admin-theme="light"] h2.text-white,
-html[data-admin-theme="light"] h3.text-white,
-html[data-admin-theme="light"] h4.text-white,
-html[data-admin-theme="light"] h5.text-white,
-html[data-admin-theme="light"] h6.text-white,
-html[data-admin-theme="light"] p.text-white,
-html[data-admin-theme="light"] div.text-white,
-html[data-admin-theme="light"] span.text-white:not([class*="bg-"]),
-html[data-admin-theme="light"] td.text-white,
-html[data-admin-theme="light"] th.text-white,
-html[data-admin-theme="light"] label.text-white,
-html[data-admin-theme="light"] strong.text-white,
-html[data-admin-theme="light"] code.text-white {
+html[data-admin-theme="light"] .adm-shell h1.text-white,
+html[data-admin-theme="light"] .adm-shell h2.text-white,
+html[data-admin-theme="light"] .adm-shell h3.text-white,
+html[data-admin-theme="light"] .adm-shell h4.text-white,
+html[data-admin-theme="light"] .adm-shell h5.text-white,
+html[data-admin-theme="light"] .adm-shell h6.text-white,
+html[data-admin-theme="light"] .adm-shell p.text-white,
+html[data-admin-theme="light"] .adm-shell div.text-white,
+html[data-admin-theme="light"] .adm-shell span.text-white:not([class*="bg-"]),
+html[data-admin-theme="light"] .adm-shell td.text-white,
+html[data-admin-theme="light"] .adm-shell th.text-white,
+html[data-admin-theme="light"] .adm-shell label.text-white,
+html[data-admin-theme="light"] .adm-shell strong.text-white,
+html[data-admin-theme="light"] .adm-shell code.text-white {
   color: var(--adm-text-primary) !important;
 }
 

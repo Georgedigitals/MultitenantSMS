@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useLanguage } from '@/components/language-provider';
 
 interface PinBatchItem {
   id: string;
@@ -71,6 +72,7 @@ export function PinsManagerClient({
   initialPinPrice?: number;
   onPriceChange?: (price: number) => void;
 }) {
+  const { localization: { currencySymbol, locale } } = useLanguage();
   const [batches, setBatches] = useState<PinBatchItem[]>([]);
   const [onlinePurchases, setOnlinePurchases] = useState<OnlinePinPurchase[]>([]);
   const [bankTransferPurchases, setBankTransferPurchases] = useState<PinBankTransfer[]>([]);
@@ -173,7 +175,7 @@ export function PinsManagerClient({
       setStats((prev) => (prev ? { ...prev, currentSellingPrice: universalPrice } : null));
       onPriceChange?.(universalPrice);
       setPriceSavedNotice(true);
-      setSuccessMsg(`Official Result PIN price updated to ₦${universalPrice.toLocaleString()}`);
+      setSuccessMsg(`Official Result PIN price updated to ${currencySymbol}${universalPrice.toLocaleString()}`);
       setTimeout(() => setPriceSavedNotice(false), 3500);
     } catch (err: any) {
       setError(err.message || 'Error saving price');
@@ -286,10 +288,10 @@ export function PinsManagerClient({
           <div className="lg:col-span-4 space-y-4">
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                Official Result PIN Sale Price (₦)
+                Official Result PIN Sale Price ({currencySymbol})
               </label>
               <div className="relative">
-                <span className="absolute left-3.5 top-2.5 text-slate-400 font-bold text-xs">₦</span>
+                <span className="absolute left-3.5 top-2.5 text-slate-400 font-bold text-xs">{currencySymbol}</span>
                 <input
                   type="number"
                   min="100"
@@ -353,15 +355,15 @@ export function PinsManagerClient({
               <div className="grid grid-cols-3 gap-2 text-center pt-2 border-t border-slate-800">
                 <div className="p-2 rounded-lg bg-slate-800/80">
                   <span className="text-[9px] text-slate-400 block uppercase">Parent Pays</span>
-                  <span className="text-xs font-bold text-white">₦{universalPrice.toLocaleString()}</span>
+                  <span className="text-xs font-bold text-white">{currencySymbol}{universalPrice.toLocaleString()}</span>
                 </div>
                 <div className="p-2 rounded-lg bg-slate-800/80">
                   <span className="text-[9px] text-slate-400 block uppercase">Platform paid upfront</span>
-                  <span className="text-xs font-bold text-cyan-400">₦{(Math.round(universalPrice * platformFeeRate * 100) / 100).toLocaleString()}</span>
+                  <span className="text-xs font-bold text-cyan-400">{currencySymbol}{(Math.round(universalPrice * platformFeeRate * 100) / 100).toLocaleString()}</span>
                 </div>
                 <div className="p-2 rounded-lg bg-emerald-950/80 border border-emerald-800">
                   <span className="text-[9px] text-emerald-300 block uppercase font-semibold">School receives</span>
-                  <span className="text-xs font-bold text-emerald-400">₦{universalPrice.toLocaleString()}</span>
+                  <span className="text-xs font-bold text-emerald-400">{currencySymbol}{universalPrice.toLocaleString()}</span>
                 </div>
               </div>
 
@@ -389,15 +391,15 @@ export function PinsManagerClient({
               <div className="grid grid-cols-3 gap-2 text-center pt-2 border-t border-slate-800">
                 <div className="p-2 rounded-lg bg-slate-800/80">
                   <span className="text-[9px] text-slate-400 block uppercase">Student Pays</span>
-                  <span className="text-xs font-bold text-white">₦{universalPrice.toLocaleString()}</span>
+                  <span className="text-xs font-bold text-white">{currencySymbol}{universalPrice.toLocaleString()}</span>
                 </div>
                 <div className="p-2 rounded-lg bg-slate-800/80">
                   <span className="text-[9px] text-slate-400 block uppercase">Platform paid at stock purchase</span>
-                  <span className="text-xs font-bold text-cyan-400">₦{(Math.round(universalPrice * platformFeeRate * 100) / 100).toLocaleString()}</span>
+                  <span className="text-xs font-bold text-cyan-400">{currencySymbol}{(Math.round(universalPrice * platformFeeRate * 100) / 100).toLocaleString()}</span>
                 </div>
                 <div className="p-2 rounded-lg bg-emerald-950/80 border border-emerald-800">
                   <span className="text-[9px] text-emerald-300 block uppercase font-semibold">School Net</span>
-                  <span className="text-xs font-bold text-emerald-400">₦{universalPrice.toLocaleString()}</span>
+                  <span className="text-xs font-bold text-emerald-400">{currencySymbol}{universalPrice.toLocaleString()}</span>
                 </div>
               </div>
 
@@ -453,7 +455,7 @@ export function PinsManagerClient({
         <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
           <span className="text-[11px] font-bold uppercase tracking-wider text-purple-600 font-mono block">Official Selling Price</span>
           <span className="text-2xl font-black text-slate-900 mt-1 block">
-            ₦{universalPrice.toLocaleString()}
+            {currencySymbol}{universalPrice.toLocaleString()}
           </span>
           <span className="text-[11px] text-purple-600 font-semibold mt-1 block">5 Uses / Single Student Bound</span>
         </div>
@@ -512,10 +514,10 @@ export function PinsManagerClient({
                       {batch.quantity} Cards
                     </td>
                     <td className="py-3.5 px-4 font-semibold text-slate-700">
-                      ₦{batch.pricePerPin.toLocaleString()}
+                      {currencySymbol}{batch.pricePerPin.toLocaleString()}
                     </td>
                     <td className="py-3.5 px-4 font-semibold text-cyan-700">
-                      ₦{batch.platformFeeTotal.toLocaleString()}
+                      {currencySymbol}{batch.platformFeeTotal.toLocaleString()}
                     </td>
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-2">
@@ -578,7 +580,7 @@ export function PinsManagerClient({
                   <td className="p-3"><strong className="block text-slate-800">{item.studentName}</strong><span className="text-slate-500">{item.termName}</span></td>
                   <td className="p-3">{item.senderName}<span className="block text-slate-500">{item.bankName}</span></td>
                   <td className="p-3 font-mono text-slate-600">{item.paymentRef || '—'}{item.proofUrl && <a className="ml-2 text-blue-700 underline" href={item.proofUrl} target="_blank" rel="noreferrer">Receipt</a>}</td>
-                  <td className="p-3 font-semibold">₦{item.amount.toLocaleString()}</td>
+                  <td className="p-3 font-semibold">{currencySymbol}{item.amount.toLocaleString()}</td>
                   <td className="p-3"><span className={`rounded-full px-2 py-1 font-semibold ${item.status === 'approved' ? 'bg-emerald-50 text-emerald-800' : item.status === 'rejected' ? 'bg-rose-50 text-rose-800' : 'bg-amber-50 text-amber-900'}`}>{item.status}</span>{item.rejectionReason && <span className="mt-1 block max-w-48 text-[10px] text-rose-700">{item.rejectionReason}</span>}</td>
                   <td className="p-3">{item.status === 'pending' ? <div className="flex gap-1"><button disabled={reviewingTransfer === item.id} onClick={() => reviewBankTransfer(item.id, 'approve')} className="rounded-md bg-emerald-700 px-2 py-1.5 font-semibold text-white disabled:opacity-50">Approve</button><button disabled={reviewingTransfer === item.id} onClick={() => reviewBankTransfer(item.id, 'reject')} className="rounded-md border border-rose-200 px-2 py-1.5 font-semibold text-rose-800 disabled:opacity-50">Reject</button></div> : <span className="text-slate-500">{item.reviewerName || 'Reviewed'}</span>}</td>
                 </tr>)}
@@ -593,10 +595,10 @@ export function PinsManagerClient({
           <h2 className="text-sm font-bold text-slate-900">Online Result PIN Payments</h2>
           <p className="text-xs text-slate-500 mt-1">Online buyers pay your school through your Paystack account. The PIN is taken from stock you already paid BMS for, so there is no second platform deduction.</p>
           <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-xs">
-            <span>Gross collected: <strong>₦{(stats?.onlinePinTotals?.gross || 0).toLocaleString()}</strong></span>
-            <span>School allocation: <strong className="text-emerald-700">₦{(stats?.onlinePinTotals?.schoolNet || 0).toLocaleString()}</strong></span>
-            <span>Paid directly to school from stock sales: <strong className="text-emerald-700">₦{(stats?.onlinePinTotals?.schoolDirectSales || 0).toLocaleString()}</strong></span>
-            <span>Platform share on older direct sales: <strong className="text-blue-700">₦{(stats?.onlinePinTotals?.platformFee || 0).toLocaleString()}</strong></span>
+            <span>Gross collected: <strong>{currencySymbol}{(stats?.onlinePinTotals?.gross || 0).toLocaleString()}</strong></span>
+            <span>School allocation: <strong className="text-emerald-700">{currencySymbol}{(stats?.onlinePinTotals?.schoolNet || 0).toLocaleString()}</strong></span>
+            <span>Paid directly to school from stock sales: <strong className="text-emerald-700">{currencySymbol}{(stats?.onlinePinTotals?.schoolDirectSales || 0).toLocaleString()}</strong></span>
+            <span>Platform share on older direct sales: <strong className="text-blue-700">{currencySymbol}{(stats?.onlinePinTotals?.platformFee || 0).toLocaleString()}</strong></span>
           </div>
         </div>
         {onlinePurchases.length === 0 ? (
@@ -613,9 +615,9 @@ export function PinsManagerClient({
                     <td className="p-3 text-slate-600">{new Date(purchase.paidAt).toLocaleDateString('en-GB')}</td>
                     <td className="p-3"><strong className="block text-slate-800">{purchase.studentName}</strong><span className="text-slate-500">{purchase.termName}</span></td>
                     <td className="p-3 font-mono text-slate-600">{purchase.paymentRef}</td>
-                    <td className="p-3 font-semibold">₦{purchase.amount.toLocaleString()}</td>
-                    <td className="p-3 font-semibold text-emerald-700">₦{purchase.schoolNet.toLocaleString()}</td>
-                    <td className="p-3 font-semibold text-blue-700">₦{purchase.platformFee.toLocaleString()}</td>
+                    <td className="p-3 font-semibold">{currencySymbol}{purchase.amount.toLocaleString()}</td>
+                    <td className="p-3 font-semibold text-emerald-700">{currencySymbol}{purchase.schoolNet.toLocaleString()}</td>
+                    <td className="p-3 font-semibold text-blue-700">{currencySymbol}{purchase.platformFee.toLocaleString()}</td>
                     <td className="p-3">{purchase.payoutStatus}</td>
                     <td className="p-3 capitalize">{purchase.status}</td>
                   </tr>
@@ -688,7 +690,7 @@ export function PinsManagerClient({
                   Price You Sell to Student (NGN)
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-2.5 text-slate-400 font-bold">₦</span>
+                  <span className="absolute left-3.5 top-2.5 text-slate-400 font-bold">{currencySymbol}</span>
                   <input
                     type="number"
                     min="100"
@@ -708,22 +710,22 @@ export function PinsManagerClient({
               <div className="p-4 rounded-2xl bg-slate-900 text-white space-y-3">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-slate-400 font-medium">Platform Fee Rate</span>
-                  <span className="font-bold text-cyan-400">{platformFeeRate * 100}% per PIN (₦{platformFeePerPin.toLocaleString()})</span>
+                  <span className="font-bold text-cyan-400">{platformFeeRate * 100}% per PIN ({currencySymbol}{platformFeePerPin.toLocaleString()})</span>
                 </div>
 
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-slate-400 font-medium">Projected School Sales ({quantity} cards)</span>
-                  <span className="font-bold text-white">₦{projectedGross.toLocaleString()}</span>
+                  <span className="font-bold text-white">{currencySymbol}{projectedGross.toLocaleString()}</span>
                 </div>
 
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-slate-400 font-medium">School Net Profit</span>
-                  <span className="font-bold text-emerald-400">₦{schoolNetProfit.toLocaleString()}</span>
+                  <span className="font-bold text-emerald-400">{currencySymbol}{schoolNetProfit.toLocaleString()}</span>
                 </div>
 
                 <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
                   <span className="text-xs font-bold text-slate-200">Amount Due Platform Today:</span>
-                  <span className="text-lg font-black text-cyan-400">₦{totalPlatformFee.toLocaleString()}</span>
+                  <span className="text-lg font-black text-cyan-400">{currencySymbol}{totalPlatformFee.toLocaleString()}</span>
                 </div>
               </div>
             </div>
@@ -740,7 +742,7 @@ export function PinsManagerClient({
                   'Connecting to Paystack...'
                 ) : (
                   <>
-                    <span>Pay ₦{totalPlatformFee.toLocaleString()} via Paystack Gateway</span>
+                    <span>Pay {currencySymbol}{totalPlatformFee.toLocaleString()} via Paystack Gateway</span>
                     <span>→</span>
                   </>
                 )}

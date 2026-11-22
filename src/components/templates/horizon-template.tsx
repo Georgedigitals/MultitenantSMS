@@ -2,246 +2,201 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { ArrowRight } from 'lucide-react';
 import { FeaturedStudent } from './featured-student';
 import { SchoolHero } from './school-hero';
 import type { PublicSiteData } from '@/lib/site-content';
-import {
-  Heart,
-  Smile,
-  Sun,
-  Shield,
-  ArrowRight,
-  Camera,
-  Star,
-  MapPin,
-  Calendar,
-  Sparkles,
-  Phone,
-  Check,
-  Quote,
-} from 'lucide-react';
 
 interface TemplateProps {
   data: PublicSiteData;
 }
 
-export function HorizonTemplate({ data }: TemplateProps) {
-  const { tenant, branding, hero, about, academics, admissions, contact, gallery } = data;
-  const primaryColor = branding.primaryColor || '#2D6A4F'; // Warm forest sage
-  const accentColor = branding.accentColor || '#E76F51'; // Terracotta warm coral
+const pillars = [
+  {
+    title: 'Active discovery',
+    body: 'Inquiry-driven lessons that build genuine enthusiasm for reading, mathematics, sciences, and practical problem solving.',
+  },
+  {
+    title: 'Personal pastoral care',
+    body: 'Dedicated form teachers who know every learner by name and stay closely connected with their academic and emotional rhythm.',
+  },
+  {
+    title: 'Clear daily routines',
+    body: 'Structured school days, attentive supervision, and transparent parent communication from morning assembly to dismissal.',
+  },
+  {
+    title: 'Creative & athletic life',
+    body: 'Music, visual arts, clubs, and sports that help students discover their voice and build teamwork beyond the classroom.',
+  },
+];
 
-  const heroImage = hero.imageUrl || (gallery[0]?.imageUrl) || null;
-  const secondaryImage = gallery[1]?.imageUrl || heroImage;
+export function HorizonTemplate({ data }: TemplateProps) {
+  const { tenant, branding, about, academics, admissions, gallery } = data;
+  const pathname = usePathname() || '';
+  const isSlugPath = pathname.startsWith(`/${tenant.slug}`);
+  const resolveHref = (path: string) => {
+    if (isSlugPath) return path === '/' ? `/${tenant.slug}` : `/${tenant.slug}${path}`;
+    return path;
+  };
+
+  const primary = branding.primaryColor || '#1e4635';
+  const textOnPrimary = branding.textOnPrimary || '#ffffff';
+  const featuredPhotos = gallery.slice(0, 3);
 
   return (
-    <div className="font-sans text-stone-800 bg-[#FCFBF7] selection:bg-amber-200 selection:text-stone-900">
-      
+    <div className="tenant-editorial text-[#152019] bg-white">
+      {/* Chapter 1: Warm Linen Hero */}
       <SchoolHero data={data} variant="horizon" />
 
-      {/* Featured Student */}
+      {/* Optional Chapter: Featured Scholar */}
       <FeaturedStudent data={data} />
 
-      {/* ── 2. FOUR PILLARS OF CHILD NURTURE & HOLISTIC CARE ── */}
-      <section className="py-20 lg:py-28 bg-white border-b border-stone-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
-          <div className="text-center max-w-2xl mx-auto mb-16 space-y-3">
-            <span className="text-xs font-bold uppercase tracking-widest text-emerald-700">
-              Our Educational Heart
-            </span>
-            <h2 className="text-3xl sm:text-4xl font-black text-stone-900 tracking-tight">
-              Care, Discovery &amp; Character
-            </h2>
-            <p className="text-sm text-stone-600">
-              We focus on building emotional resilience and creative confidence alongside academic readiness.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            
-            <div className="p-6 rounded-3xl bg-amber-50/60 border border-amber-200/60 flex flex-col justify-between hover:shadow-lg transition-all">
-              <div>
-                <div className="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center mb-4">
-                  <Sun className="w-6 h-6" />
-                </div>
-                <h3 className="text-base font-bold text-stone-900 mb-2">Holistic Joy</h3>
-                <p className="text-xs text-stone-600 leading-relaxed">
-                  Active, inquiry-driven learning that sparks genuine enthusiasm for mathematics, arts, and reading.
-                </p>
-              </div>
-            </div>
-
-            <div className="p-6 rounded-3xl bg-emerald-50/60 border border-emerald-200/60 flex flex-col justify-between hover:shadow-lg transition-all">
-              <div>
-                <div className="w-12 h-12 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center mb-4">
-                  <Heart className="w-6 h-6" />
-                </div>
-                <h3 className="text-base font-bold text-stone-900 mb-2">Pastoral Empathy</h3>
-                <p className="text-xs text-stone-600 leading-relaxed">
-                  Dedicated form teachers who know each child by name, understanding their individual learning rhythm.
-                </p>
-              </div>
-            </div>
-
-            <div className="p-6 rounded-3xl bg-blue-50/60 border border-blue-200/60 flex flex-col justify-between hover:shadow-lg transition-all">
-              <div>
-                <div className="w-12 h-12 rounded-2xl bg-blue-100 text-blue-700 flex items-center justify-center mb-4">
-                  <Shield className="w-6 h-6" />
-                </div>
-                <h3 className="text-base font-bold text-stone-900 mb-2">Safe Campus</h3>
-                <p className="text-xs text-stone-600 leading-relaxed">
-                  Clear school routines and good communication help families stay connected to their child&apos;s day.
-                </p>
-              </div>
-            </div>
-
-            <div className="p-6 rounded-3xl bg-rose-50/60 border border-rose-200/60 flex flex-col justify-between hover:shadow-lg transition-all">
-              <div>
-                <div className="w-12 h-12 rounded-2xl bg-rose-100 text-rose-700 flex items-center justify-center mb-4">
-                  <Smile className="w-6 h-6" />
-                </div>
-                <h3 className="text-base font-bold text-stone-900 mb-2">Creative Expression</h3>
-                <p className="text-xs text-stone-600 leading-relaxed">
-                  Music, dramatic play, pottery, and sports that help students find their unique voices.
-                </p>
-              </div>
-            </div>
-
-          </div>
-
-        </div>
-      </section>
-
-      {/* ── 3. PARENT VOICES & COMMUNITY STORIES (Social Proof Centerpiece) ── */}
-      <section className="py-20 lg:py-24 bg-[#F8F5EE] border-b border-stone-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
-          <div className="text-center max-w-xl mx-auto mb-16 space-y-2">
-            <span className="text-xs font-bold uppercase tracking-widest text-emerald-800">
-              Parent Community
-            </span>
-            <h2 className="text-3xl font-black text-stone-900">
-              Why Families Love {tenant.name}
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-white rounded-3xl p-8 shadow-sm border border-stone-200/80 flex flex-col justify-between space-y-6">
-              <Quote className="w-8 h-8 text-amber-500 fill-amber-100" />
-              <p className="text-sm text-stone-700 leading-relaxed italic">
-                &ldquo;Our daughter transformed from shy to confident within her first term. The teachers treat every child with extraordinary care and patience.&rdquo;
-              </p>
-              <div className="pt-4 border-t border-stone-100">
-                <p className="font-bold text-xs text-stone-900">Mrs. Adebayo</p>
-                <p className="text-[11px] text-stone-500">Primary 3 Parent</p>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-3xl p-8 shadow-sm border border-stone-200/80 flex flex-col justify-between space-y-6">
-              <Quote className="w-8 h-8 text-emerald-600 fill-emerald-100" />
-              <p className="text-sm text-stone-700 leading-relaxed italic">
-                &ldquo;The perfect blend of academic rigor and moral values. We love the weekly communication and transparency from the administration.&rdquo;
-              </p>
-              <div className="pt-4 border-t border-stone-100">
-                <p className="font-bold text-xs text-stone-900">Engr. &amp; Dr. Okon</p>
-                <p className="text-[11px] text-stone-500">Junior Secondary Parents</p>
-              </div>
-            </div>
-
-            <div className="bg-white rounded-3xl p-8 shadow-sm border border-stone-200/80 flex flex-col justify-between space-y-6">
-              <Quote className="w-8 h-8 text-rose-500 fill-rose-100" />
-              <p className="text-sm text-stone-700 leading-relaxed italic">
-                &ldquo;Safe bus transportation, caring nurses, and an active outdoor playground. As working parents, we have total peace of mind every day.&rdquo;
-              </p>
-              <div className="pt-4 border-t border-stone-100">
-                <p className="font-bold text-xs text-stone-900">Mr. &amp; Mrs. Nwosu</p>
-                <p className="text-[11px] text-stone-500">Nursery 2 Parents</p>
-              </div>
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      {/* ── 4. SOFT MASONRY CAMPUS GALLERY ── */}
-      <section className="py-20 bg-white border-b border-stone-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-12">
-            <div>
-              <span className="text-xs font-bold uppercase tracking-widest text-emerald-800 block mb-2">
-                Life on Campus
-              </span>
-              <h2 className="text-3xl font-black text-stone-900">
-                Smiles, Friendships &amp; Milestones
+      {/* Chapter 2: Four Pillars of Care (Clean White Editorial Grid) */}
+      <section className="w-full bg-white py-20 sm:py-28">
+        <div className="max-w-[1360px] mx-auto px-5 sm:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pb-14 border-b border-[#e4e2dd] items-end">
+            <div className="lg:col-span-6">
+              <h2 className="tenant-editorial-display text-[38px] sm:text-[54px] leading-[1.0] tracking-[-0.025em] text-[#152019]">
+                Care, discovery &amp; character
               </h2>
             </div>
-            <Link
-              href="/gallery"
-              className="mt-4 sm:mt-0 text-xs font-bold uppercase tracking-wider text-emerald-800 hover:text-emerald-950 flex items-center gap-1.5"
-            >
-              <span>View All Campus Photos ({gallery.length})</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
+            <div className="lg:col-span-6">
+              <p className="text-[16px] leading-[1.6] text-[#4d5950] max-w-xl">
+                {about.mission ||
+                  'We build emotional resilience, curiosity, and strong academic habits side by side.'}
+              </p>
+            </div>
           </div>
 
-          {gallery.length > 0 && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {gallery.slice(0, 3).map((img) => (
-                <div
-                  key={img.id}
-                  className="rounded-3xl overflow-hidden border border-stone-200 bg-stone-100 shadow-sm hover:shadow-md transition-all aspect-4/3 relative group"
-                >
-                  <img
-                    src={img.imageUrl}
-                    alt={img.caption || 'Campus Life'}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  {img.caption && (
-                    <div className="absolute inset-0 bg-gradient-to-t from-stone-950/70 via-transparent to-transparent flex items-end p-4">
-                      <p className="text-xs font-semibold text-white">{img.caption}</p>
-                    </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 border-b border-[#e4e2dd]">
+            {pillars.map((pillar, idx) => (
+              <div
+                key={pillar.title}
+                className={`py-10 ${idx >= 2 ? 'md:border-t md:border-[#e4e2dd]' : ''} ${
+                  idx % 2 === 1 ? 'md:pl-12 md:border-l md:border-[#e4e2dd]' : 'md:pr-12'
+                }`}
+              >
+                <h3 className="text-[20px] font-semibold tracking-[-0.015em] text-[#152019]">
+                  {pillar.title}
+                </h3>
+                <p className="mt-3 text-[15px] leading-[1.65] text-[#4d5950] max-w-[46ch]">
+                  {pillar.body}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Chapter 3: Deep Forest Vision & Principal Statement */}
+      <section className="w-full bg-[#152019] text-[#f4f3f1] py-20 sm:py-28">
+        <div className="max-w-[1360px] mx-auto px-5 sm:px-8 grid grid-cols-1 lg:grid-cols-12 gap-12 items-start">
+          <div className="lg:col-span-5 space-y-4">
+            <h2 className="tenant-editorial-display text-[38px] sm:text-[52px] leading-[1.02] text-white">
+              A school built around families
+            </h2>
+            <p className="text-[15px] text-[#aeb8b1]">
+              {tenant.name}
+            </p>
+          </div>
+          <div className="lg:col-span-7 space-y-6">
+            <blockquote className="tenant-editorial-display text-[26px] sm:text-[34px] leading-[1.25] text-white">
+              “{about.principalMessage || about.vision || 'Every child deserves a calm, demanding, and joyful place to learn.'}”
+            </blockquote>
+            <p className="text-[16px] leading-[1.65] text-[#c5cec7] max-w-2xl">
+              {academics.text ||
+                'From early years through secondary graduation, parents stay informed on attendance, assessments, and termly progress.'}
+            </p>
+            <div className="pt-2 flex flex-wrap gap-6">
+              <Link
+                href={resolveHref('/about')}
+                className="inline-flex items-center gap-2 text-[14px] font-medium text-white underline underline-offset-4 hover:opacity-80"
+              >
+                <span>About {tenant.name}</span>
+                <ArrowRight className="w-4 h-4" aria-hidden="true" />
+              </Link>
+              <Link
+                href={resolveHref('/academics')}
+                className="inline-flex items-center gap-2 text-[14px] font-medium text-[#c5cec7] underline underline-offset-4 hover:text-white"
+              >
+                <span>Explore academics</span>
+                <ArrowRight className="w-4 h-4" aria-hidden="true" />
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Chapter 4: Campus Scenes (Stone Field) */}
+      {featuredPhotos.length > 0 && (
+        <section className="w-full bg-[#f4f3f1] py-20 sm:py-28">
+          <div className="max-w-[1360px] mx-auto px-5 sm:px-8">
+            <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-10">
+              <h2 className="tenant-editorial-display text-[38px] sm:text-[52px] leading-[1.0] text-[#152019]">
+                Through the school day
+              </h2>
+              <Link
+                href={resolveHref('/gallery')}
+                className="inline-flex items-center gap-2 text-[14px] font-medium text-[#152019] underline underline-offset-4 hover:opacity-70"
+              >
+                <span>See all campus photos</span>
+                <ArrowRight className="w-4 h-4" aria-hidden="true" />
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+              {featuredPhotos.map((photo) => (
+                <figure key={photo.id} className="space-y-3">
+                  <div className="aspect-[4/3] w-full overflow-hidden bg-[#e4e2dd]">
+                    <img
+                      src={photo.imageUrl}
+                      alt={photo.caption || `${tenant.name} campus`}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                  {photo.caption && (
+                    <figcaption className="text-[14px] text-[#4d5950]">{photo.caption}</figcaption>
                   )}
-                </div>
+                </figure>
               ))}
             </div>
-          )}
+          </div>
+        </section>
+      )}
 
-        </div>
-      </section>
-
-      {/* ── 5. WARM FAMILY INVITATION BANNER ── */}
+      {/* Chapter 5: Admissions CTA (Brand Primary Field) */}
       <section
-        className="py-20 text-white relative overflow-hidden"
-        style={{ backgroundColor: primaryColor }}
+        className="w-full py-20 sm:py-28"
+        style={{ backgroundColor: primary, color: textOnPrimary }}
       >
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-6">
-          <span className="text-xs font-bold tracking-widest uppercase text-amber-300">
-            Admissions Now Open
-          </span>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight leading-tight">
-            Give Your Child The Best Start in Life
-          </h2>
-          <p className="text-sm sm:text-base text-emerald-100 max-w-xl mx-auto leading-relaxed">
-            {admissions.text || 'Our admissions process is designed to be welcoming and supportive for both students and parents. We look forward to meeting your family.'}
-          </p>
-          <div className="pt-2 flex flex-wrap justify-center gap-4">
+        <div className="max-w-[1360px] mx-auto px-5 sm:px-8 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+          <div className="lg:col-span-7 space-y-5">
+            <h2 className="tenant-editorial-display text-[42px] sm:text-[60px] leading-[0.98] tracking-[-0.025em]">
+              Visit our campus or apply online
+            </h2>
+            <p className="text-[17px] leading-[1.6] opacity-85 max-w-xl">
+              {admissions.text ||
+                'Meet our teachers, tour the classrooms, and reserve an entrance assessment date for the upcoming term.'}
+            </p>
+          </div>
+          <div className="lg:col-span-5 flex flex-wrap lg:justify-end gap-3">
             <Link
-              href="/admissions"
-              className="px-8 py-4 rounded-2xl font-bold text-xs uppercase tracking-wider bg-amber-400 hover:bg-amber-300 text-stone-950 shadow-md transition-all"
+              href={resolveHref('/admissions')}
+              className="h-12 px-6 bg-white text-[#152019] hover:bg-[#f4f3f1] text-[14px] font-medium inline-flex items-center gap-2 transition-colors"
             >
-              Start Admission Process
+              <span>Start admission inquiry</span>
+              <ArrowRight className="w-4 h-4" aria-hidden="true" />
             </Link>
             <Link
-              href="/contact"
-              className="px-7 py-4 rounded-2xl font-bold text-xs uppercase tracking-wider text-white bg-white/10 hover:bg-white/20 border border-white/20 transition-all"
+              href={resolveHref('/contact')}
+              className="h-12 px-6 border border-current/40 text-[14px] font-medium inline-flex items-center hover:bg-white/10 transition-colors"
             >
-              Contact Admissions
+              Contact the office
             </Link>
           </div>
         </div>
       </section>
-
     </div>
   );
 }

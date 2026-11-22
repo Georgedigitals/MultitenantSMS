@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { ReportCardDocument } from '@/components/report-card-document';
 import { ReportCardData } from '@/lib/report-card';
+import { useLanguage } from '@/components/language-provider';
 
 interface SubjectEntry {
   id: string;
@@ -70,6 +71,7 @@ export default function PortalResultsClient({
   studentsData,
   userEmail,
 }: PortalResultsClientProps) {
+  const { localization: { currencySymbol, locale } } = useLanguage();
   // Unlocked terms state map: key `${studentId}_${termId}` -> boolean
   const [unlockedMap, setUnlockedMap] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {};
@@ -315,14 +317,14 @@ export default function PortalResultsClient({
               const pending = Boolean(fee.pendingTransfer) || Boolean(feeTransferStatus[key]?.startsWith('Transfer submitted'));
               return <div key={key} className="rounded-xl border border-slate-200 p-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div><p className="text-sm font-semibold text-slate-900">{student.student.name} · {fee.sessionLabel} {fee.termName}</p><p className="mt-1 text-xs text-slate-600">Assigned ₦{fee.assigned.toLocaleString()} · Paid ₦{fee.paid.toLocaleString()} · Outstanding <strong>₦{fee.outstanding.toLocaleString()}</strong></p></div>
+                  <div><p className="text-sm font-semibold text-slate-900">{student.student.name} · {fee.sessionLabel} {fee.termName}</p><p className="mt-1 text-xs text-slate-600">Assigned {currencySymbol}{fee.assigned.toLocaleString()} · Paid {currencySymbol}{fee.paid.toLocaleString()} · Outstanding <strong>{currencySymbol}{fee.outstanding.toLocaleString()}</strong></p></div>
                   {pending ? <span className="rounded-full bg-amber-100 px-3 py-1 text-[11px] font-bold text-amber-900">Transfer pending review</span> : fee.outstanding > 0 ? <button type="button" onClick={() => setFeeTransferKey(feeTransferKey === key ? null : key)} className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-800 hover:bg-slate-50">{feeTransferKey === key ? 'Cancel' : 'Report a bank transfer'}</button> : <span className="rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-bold text-emerald-900">Paid in full</span>}
                 </div>
                 {feeTransferKey === key && !pending && <div className="mt-3 grid gap-2 sm:grid-cols-4">
                   <input aria-label="Fee transfer sender name" placeholder="Name on transfer" value={feeTransferFields.senderName} onChange={(event) => setFeeTransferFields({ ...feeTransferFields, senderName: event.target.value })} className="rounded-lg border border-slate-300 px-3 py-2 text-xs text-slate-900" />
                   <input aria-label="Fee transfer sending bank" placeholder="Your bank" value={feeTransferFields.bankName} onChange={(event) => setFeeTransferFields({ ...feeTransferFields, bankName: event.target.value })} className="rounded-lg border border-slate-300 px-3 py-2 text-xs text-slate-900" />
                   <input aria-label="Fee transfer transaction reference" placeholder="Bank transaction reference" value={feeTransferFields.transactionRef} onChange={(event) => setFeeTransferFields({ ...feeTransferFields, transactionRef: event.target.value })} className="rounded-lg border border-slate-300 px-3 py-2 text-xs text-slate-900" />
-                  <button type="button" disabled={loadingMap[key]} onClick={() => submitFeeTransfer(student.student.id, fee.termId, fee.outstanding)} className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">{loadingMap[key] ? 'Submitting…' : `Report ₦${fee.outstanding.toLocaleString()}`}</button>
+                  <button type="button" disabled={loadingMap[key]} onClick={() => submitFeeTransfer(student.student.id, fee.termId, fee.outstanding)} className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">{loadingMap[key] ? 'Submitting…' : `Report ${currencySymbol}${fee.outstanding.toLocaleString()}`}</button>
                 </div>}
                 {feeTransferStatus[key] && <p className="mt-2 text-xs text-slate-700">{feeTransferStatus[key]}</p>}
               </div>;
@@ -494,7 +496,7 @@ export default function PortalResultsClient({
                           <div className="pt-3 border-t border-slate-200/80 flex items-center justify-between gap-4">
                             <div>
                               <p className="text-xs font-bold text-slate-700">Don't have a PIN?</p>
-                              <p className="text-[11px] text-slate-500">Purchase a Result PIN instantly online for ₦{pinPrice.toLocaleString()}.</p>
+                              <p className="text-[11px] text-slate-500">Purchase a Result PIN instantly online for {currencySymbol}{pinPrice.toLocaleString()}.</p>
                             </div>
                             <button
                               type="button"
@@ -502,7 +504,7 @@ export default function PortalResultsClient({
                               disabled={loading}
                               className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs shadow-sm transition-all shrink-0 cursor-pointer disabled:opacity-50"
                             >
-                              Buy PIN Online (₦{pinPrice.toLocaleString()})
+                              Buy PIN Online ({currencySymbol}{pinPrice.toLocaleString()})
                             </button>
                           </div>
                         )}
@@ -511,7 +513,7 @@ export default function PortalResultsClient({
                             <div className="flex flex-wrap items-center justify-between gap-2">
                               <div>
                                 <p className="text-xs font-bold text-slate-800">Pay by bank transfer</p>
-                                <p className="text-[11px] text-slate-600">Send ₦{pinPrice.toLocaleString()} to the school account above. The school must confirm the payment before a PIN is issued.</p>
+                                <p className="text-[11px] text-slate-600">Send {currencySymbol}{pinPrice.toLocaleString()} to the school account above. The school must confirm the payment before a PIN is issued.</p>
                               </div>
                               {pinTransferMap[key] ? (
                                 <span className="rounded-full bg-amber-100 px-3 py-1 text-[11px] font-bold text-amber-900">Transfer {pinTransferMap[key].status}</span>

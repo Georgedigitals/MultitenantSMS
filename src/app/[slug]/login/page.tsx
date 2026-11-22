@@ -33,8 +33,8 @@ export default function TenantLoginPage({ params }: TenantLoginPageProps) {
     textOnPrimary?: string;
     textOnAccent?: string;
   }>({
-    primaryColor: '#1E3A8A',
-    accentColor: '#2563EB',
+    primaryColor: '#141414',
+    accentColor: '#1d5fbf',
     logoUrl: null,
     textOnPrimary: '#FFFFFF',
     textOnAccent: '#FFFFFF',
@@ -50,8 +50,8 @@ export default function TenantLoginPage({ params }: TenantLoginPageProps) {
         }
         if (data?.branding) {
           setBranding({
-            primaryColor: data.branding.primaryColor || '#1E3A8A',
-            accentColor: data.branding.accentColor || '#2563EB',
+            primaryColor: data.branding.primaryColor || '#141414',
+            accentColor: data.branding.accentColor || '#1d5fbf',
             logoUrl: data.branding.logoUrl || null,
             textOnPrimary: data.branding.textOnPrimary || '#FFFFFF',
             textOnAccent: data.branding.textOnAccent || '#FFFFFF',
@@ -122,61 +122,54 @@ export default function TenantLoginPage({ params }: TenantLoginPageProps) {
 
   return (
     <div
-      className="min-h-screen bg-slate-50 font-sans text-slate-900 flex flex-col antialiased"
+      className="min-h-screen bg-[#f4f3f1] font-sans text-[#0a0a0a] flex flex-col antialiased"
       style={{
         ['--brand-primary' as any]: branding.primaryColor,
         ['--brand-accent' as any]: branding.accentColor,
       }}
     >
-      {/* Header matching tenant home page theme */}
-      <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3 group">
+      {/* Minimal Architectural Header */}
+      <header className="sticky top-0 z-50 bg-white border-b border-[#e4e2dd]">
+        <div className="max-w-7xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between">
+          <Link href={homeHref} className="flex items-center gap-3">
             {branding.logoUrl ? (
               <img
                 src={branding.logoUrl}
                 alt={schoolName}
-                className="h-10 w-auto object-contain"
+                className="h-8 w-auto object-contain"
               />
             ) : (
               <div
-                className="w-10 h-10 rounded-xl flex items-center justify-center font-black text-xl shadow-xs shrink-0"
+                className="w-8 h-8 rounded-[6px] flex items-center justify-center font-semibold text-sm shrink-0"
                 style={{
-                  backgroundColor: branding.primaryColor,
+                  backgroundColor: branding.primaryColor || '#141414',
                   color: branding.textOnPrimary || '#FFFFFF',
                 }}
               >
                 {schoolName.charAt(0)}
               </div>
             )}
-            <span className="font-extrabold text-lg sm:text-xl tracking-tight text-slate-900 truncate max-w-[200px] sm:max-w-xs">
+            <span className="font-semibold text-[15px] tracking-[-0.01em] text-[#0a0a0a] truncate max-w-[200px] sm:max-w-xs">
               {schoolName}
             </span>
           </Link>
 
           <Link
-            href="/"
-            className="flex items-center gap-2 text-xs font-bold px-4 py-2 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 transition-all shadow-2xs"
+            href={homeHref}
+            className="h-9 px-3.5 rounded-[6px] text-[13px] font-medium border border-[#d4d1ca] bg-white text-[#0a0a0a] hover:bg-[#f4f3f1] transition-colors inline-flex items-center gap-2"
           >
-            <span className="text-slate-400">←</span>
-            <span>Back to School Website</span>
+            <span aria-hidden="true">←</span>
+            <span>School website</span>
           </Link>
         </div>
       </header>
 
-      {/* Main Content Body */}
-      <main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
-        <div className="max-w-md w-full">
-          <div className="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
-            {/* Header Banner colored with tenant branding gradient */}
-            <div
-              className="p-8 text-center text-white relative"
-              style={{
-                background: `linear-gradient(135deg, ${branding.primaryColor} 0%, ${branding.accentColor} 100%)`,
-                color: branding.textOnPrimary || '#FFFFFF',
-              }}
-            >
-              <div className="w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center font-black text-2xl mx-auto mb-4 border border-white/20 shadow-lg">
+      {/* Main Centered Ledger Sign-In */}
+      <main className="flex-1 flex items-center justify-center px-5 py-12">
+        <div className="w-full max-w-[420px]">
+          <div className="bg-white rounded-[8px] border border-[#e4e2dd] p-7 sm:p-9">
+            <div className="pb-6 border-b border-[#efede9]">
+              <div className="flex items-center gap-3 mb-4">
                 {branding.logoUrl ? (
                   <img
                     src={branding.logoUrl}
@@ -184,75 +177,83 @@ export default function TenantLoginPage({ params }: TenantLoginPageProps) {
                     className="h-10 w-auto object-contain"
                   />
                 ) : (
-                  <GraduationCap className="w-8 h-8 text-white" />
+                  <div
+                    className="w-10 h-10 rounded-[6px] flex items-center justify-center font-semibold text-base text-white"
+                    style={{
+                      backgroundColor: branding.primaryColor || '#141414',
+                      color: branding.textOnPrimary || '#FFFFFF',
+                    }}
+                  >
+                    <GraduationCap className="w-5 h-5" />
+                  </div>
                 )}
               </div>
-
-              <h1 className="text-2xl font-black tracking-tight mb-1">
-                Portal Authentication
+              <h1 className="text-[24px] font-semibold tracking-[-0.02em] text-[#0a0a0a]">
+                Sign in to {schoolName}
               </h1>
-              <p className="text-xs opacity-90 font-medium">
-                Sign in to access your {schoolName} account
+              <p className="mt-1 text-[13px] text-[#66645e]">
+                Use your staff, student, or parent portal credentials.
               </p>
             </div>
 
-            {/* Form Body */}
-            <div className="p-8 sm:p-10">
+            <div className="pt-6">
               {error && (
-                <div className="mb-6 p-4 rounded-2xl bg-red-50 border border-red-200 text-red-700 text-xs font-medium flex items-start gap-2.5">
-                  <AlertCircle className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                <div className="mb-5 p-3.5 rounded-[6px] bg-[#ffedea] border border-[#f2c6c1] text-[#831c1e] text-[13px] flex items-start gap-2.5">
+                  <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
                   <span>{error}</span>
                 </div>
               )}
 
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
-                    Username or Email Address
+                  <label htmlFor="tenant-login-username" className="block text-[13px] font-medium text-[#0a0a0a] mb-1.5">
+                    Username or email
                   </label>
                   <input
+                    id="tenant-login-username"
                     type="text"
                     value={username}
                     onChange={(e) => setUsername(e.target.value)}
-                    placeholder="Enter your school account username or email"
+                    placeholder="e.g. admission number or email"
                     required
-                    className="w-full px-4 py-3 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all shadow-inner"
+                    className="w-full h-10 px-3.5 rounded-[6px] bg-white border border-[#d4d1ca] text-[#0a0a0a] text-[14px] placeholder-[#8b8880] focus:outline-none focus:border-[#0a0a0a] transition-colors"
                   />
                 </div>
 
                 <div>
-                  <div className="flex justify-between items-center mb-2">
-                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                  <div className="flex justify-between items-center mb-1.5">
+                    <label htmlFor="tenant-login-password" className="block text-[13px] font-medium text-[#0a0a0a]">
                       Password
                     </label>
                     <Link
                       href={isPathRouted ? `/${slug}/forgot-password` : '/forgot-password'}
-                      className="text-xs font-semibold text-blue-600 hover:text-blue-800 hover:underline transition-colors"
+                      className="text-[12px] font-medium text-[#66645e] hover:text-[#0a0a0a] underline underline-offset-4 transition-colors"
                     >
                       Forgot password?
                     </Link>
                   </div>
                   <div className="relative">
                     <input
+                      id="tenant-login-password"
                       type={showPassword ? 'text' : 'password'}
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      placeholder="••••••••••••"
+                      placeholder="Enter your password"
                       required
-                      className="w-full pl-4 pr-12 py-3 rounded-xl bg-slate-50 border border-slate-300 text-slate-900 text-sm placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:bg-white transition-all shadow-inner"
+                      className="w-full h-10 pl-3.5 pr-16 rounded-[6px] bg-white border border-[#d4d1ca] text-[#0a0a0a] text-[14px] placeholder-[#8b8880] focus:outline-none focus:border-[#0a0a0a] transition-colors"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-700 text-xs font-medium p-1 transition-colors flex items-center gap-1"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-[#66645e] hover:text-[#0a0a0a] text-[12px] font-medium flex items-center gap-1 cursor-pointer"
                     >
                       {showPassword ? (
                         <>
-                          <EyeOff className="w-4 h-4" /> <span>Hide</span>
+                          <EyeOff className="w-3.5 h-3.5" /> <span>Hide</span>
                         </>
                       ) : (
                         <>
-                          <Eye className="w-4 h-4" /> <span>Show</span>
+                          <Eye className="w-3.5 h-3.5" /> <span>Show</span>
                         </>
                       )}
                     </button>
@@ -262,11 +263,7 @@ export default function TenantLoginPage({ params }: TenantLoginPageProps) {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3.5 px-4 rounded-xl text-white text-sm font-extrabold shadow-lg hover:opacity-95 transition-all disabled:opacity-50 active:scale-[0.99] flex items-center justify-center gap-2"
-                  style={{
-                    backgroundColor: branding.primaryColor,
-                    color: branding.textOnPrimary || '#FFFFFF',
-                  }}
+                  className="w-full h-10 px-4 rounded-[6px] bg-[#141414] hover:bg-[#2a2a2a] text-white text-[14px] font-medium transition-colors disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {loading ? (
                     <>
@@ -274,28 +271,27 @@ export default function TenantLoginPage({ params }: TenantLoginPageProps) {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                       </svg>
-                      <span>Authenticating...</span>
+                      <span>Signing in...</span>
                     </>
                   ) : (
-                    <span>Sign In to Account →</span>
+                    <span>Sign in</span>
                   )}
                 </button>
               </form>
 
-              {/* Bottom Navigation Link */}
-              <div className="mt-6 pt-4 border-t border-slate-100 flex items-center justify-between text-xs font-semibold text-slate-600">
+              <div className="mt-6 pt-4 border-t border-[#efede9] flex items-center justify-between text-[12px] font-medium text-[#66645e]">
                 <Link
                   href={resultsHref}
-                  className="hover:text-blue-600 transition-colors flex items-center gap-1.5"
+                  className="hover:text-[#0a0a0a] transition-colors flex items-center gap-1.5"
                 >
-                  <FileText className="w-3.5 h-3.5 text-slate-500" />
-                  <span>Online Result Checker</span>
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>Check term result</span>
                 </Link>
                 <Link
                   href={homeHref}
-                  className="hover:text-slate-900 transition-colors"
+                  className="hover:text-[#0a0a0a] transition-colors"
                 >
-                  School Home Page →
+                  Home page →
                 </Link>
               </div>
             </div>

@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "node scripts/db-supervisor.mjs",
     "next:dev": "next dev",
-    "build": "next build",
+    "build": "next build --webpack",
     "start": "next start",
     "lint": "eslint",
     "db:server": "pglite-server -d ./prisma/pgdata -p 5439 -h 127.0.0.1 -m 100",

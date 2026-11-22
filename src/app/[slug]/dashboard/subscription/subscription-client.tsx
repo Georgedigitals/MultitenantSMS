@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { useLanguage } from '@/components/language-provider';
 
 interface FeatureItem {
   key: string;
@@ -74,6 +75,7 @@ export default function SubscriptionClient({
   adminEmail,
   adminName,
 }: SubscriptionClientProps) {
+  const { localization: { currencySymbol } } = useLanguage();
   const [upgradingPlanId, setUpgradingPlanId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [pendingCheckout, setPendingCheckout] = useState<{ url: string; planName: string; amount: number; note: string } | null>(null);
@@ -183,7 +185,7 @@ export default function SubscriptionClient({
             <p className="mt-4 text-sm leading-6 text-slate-600">{pendingCheckout.note}</p>
             <div className="mt-5 flex items-baseline justify-between border-y border-slate-200 py-4">
               <span className="text-sm font-medium text-slate-600">Pay today</span>
-              <strong className="text-2xl text-slate-950">₦{pendingCheckout.amount.toLocaleString()}</strong>
+              <strong className="text-2xl text-slate-950">{currencySymbol}{pendingCheckout.amount.toLocaleString()}</strong>
             </div>
             <p className="mt-3 text-xs leading-5 text-slate-500">Paystack will collect this amount. BMS changes your plan only after payment verification.</p>
             <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
@@ -204,11 +206,11 @@ export default function SubscriptionClient({
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Current Plan Tier</span>
             <div className="flex items-baseline gap-2">
               <h2 className="text-2xl font-black tracking-tight text-white">{currentPlan.name}</h2>
-              <span className="text-xs font-bold text-blue-400">₦{contractPrice.toLocaleString()} / year</span>
+              <span className="text-xs font-bold text-blue-400">{currencySymbol}{contractPrice.toLocaleString()} / year</span>
             </div>
             {currentPlan.price !== contractPrice && (
               <p className="text-[11px] text-slate-400">
-                Active Contract Price (Next Session Renewal: ₦{currentPlan.price.toLocaleString()} / year)
+                Active Contract Price (Next Session Renewal: {currencySymbol}{currentPlan.price.toLocaleString()} / year)
               </p>
             )}
             <div className="flex items-center gap-2 pt-1">
@@ -333,12 +335,12 @@ export default function SubscriptionClient({
 
                   <div className="py-2 border-y border-slate-100">
                     <div className="flex items-baseline gap-1">
-                      <span className="text-3xl font-black text-slate-900">₦{plan.price.toLocaleString()}</span>
+                      <span className="text-3xl font-black text-slate-900">{currencySymbol}{plan.price.toLocaleString()}</span>
                       <span className="text-xs font-semibold text-slate-400">/ year</span>
                     </div>
                     {isCurrent && status === 'active' && (
                       <span className="text-[11px] font-medium text-emerald-700 block mt-0.5">
-                        Your locked contract: ₦{contractPrice.toLocaleString()} / year
+                        Your locked contract: {currencySymbol}{contractPrice.toLocaleString()} / year
                       </span>
                     )}
                     <span className="text-[11px] text-slate-500 block mt-0.5">
@@ -389,7 +391,7 @@ export default function SubscriptionClient({
                       disabled
                       className="w-full py-2.5 px-4 rounded-xl bg-slate-100 text-slate-500 font-bold text-xs cursor-default text-center"
                     >
-                      Active Contract (₦{contractPrice.toLocaleString()} / yr)
+                      Active Contract ({currencySymbol}{contractPrice.toLocaleString()} / yr)
                     </button>
                   ) : (
                     <button
@@ -411,7 +413,7 @@ export default function SubscriptionClient({
                           <span>Initializing Gateway...</span>
                         </>
                       ) : isCurrent && status === 'active' ? (
-                        `Renew for Next Session (₦${plan.price.toLocaleString()})`
+                        `Renew for Next Session (${currencySymbol}${plan.price.toLocaleString()})`
                       ) : isCurrent ? (
                         'Activate Subscription'
                       ) : (
@@ -457,7 +459,7 @@ export default function SubscriptionClient({
                       {item.details?.paymentRef || 'N/A'}
                     </td>
                     <td className="py-3 px-4 font-semibold text-slate-900">
-                      ₦{Number(item.details?.amount || 0).toLocaleString()}
+                      {currencySymbol}{Number(item.details?.amount || 0).toLocaleString()}
                     </td>
                     <td className="py-3 px-4 uppercase font-medium">
                       {item.details?.provider || 'Paystack'}

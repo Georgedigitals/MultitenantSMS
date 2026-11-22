@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import { getTenantUserFromCookies } from '@/lib/auth/tenant-auth';
 import { randomUUID } from 'node:crypto';
 import { getPublicUrl } from '@/lib/public-url';
+import { initializePlatformCheckout } from '@/lib/payments/platform-gateway';
 
 export async function POST(req: NextRequest) {
   try {
@@ -114,54 +115,44 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const paystackSecretKey = process.env.PAYSTACK_SECRET_KEY;
-    if (!paystackSecretKey) {
-      return NextResponse.json({ error: 'Payment processing is not configured. Please contact platform support.' }, { status: 503 });
+    const checkout = await initializePlatformCheckout({
+      reference,
+      email: adminEmail,
+      amount: chargeAmount,
+      productName: `${plan.name} Subscription — ${schoolName || slug || 'School'}`,
+      callbackUrl: getPublicUrl('/api/platform/paystack/callback', req).toString(),
+      cancelUrl: getPublicUrl('/pricing', req).toString(),
+      metadata: {
+        type: isUpgrade ? 'subscription' : 'registration',
+        schoolName,
+        slug,
+        tenantId: tenantId || undefined,
+        adminName,
+        adminEmail,
+        planId,
+        chargeAmount,
+        currentPlanId,
+        logoUrl: logoUrl || undefined,
+        templateId,
+      },
+    });
+
+    if (checkout.ok && checkout.authorizationUrl) {
+      return NextResponse.json({
+        success: true,
+        gateway: checkout.gateway,
+        currency: checkout.currency,
+        authorizationUrl: checkout.authorizationUrl,
+        reference,
+        amount: chargeAmount,
+        pricingNote,
+      });
     }
 
-    {
-      const response = await fetch('https://api.paystack.co/transaction/initialize', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${paystackSecretKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: adminEmail,
-          amount: Math.round(chargeAmount * 100), // Paystack expects kobo
-          reference,
-          callback_url: getPublicUrl('/api/platform/paystack/callback', req).toString(),
-          metadata: {
-            type: isUpgrade ? 'subscription' : 'registration',
-            schoolName,
-            slug,
-            tenantId: tenantId || undefined,
-            adminName,
-            adminEmail,
-            planId,
-            chargeAmount,
-            currentPlanId,
-            logoUrl: logoUrl || undefined,
-            templateId,
-          },
-        }),
-      });
-
-      const data = await response.json().catch(() => null);
-      if (response.ok && data?.status && data.data?.authorization_url && data.data.reference === reference) {
-        return NextResponse.json({
-          success: true,
-          authorizationUrl: data.data.authorization_url,
-          reference,
-          amount: chargeAmount,
-          pricingNote,
-        });
-      }
-      console.error('[Paystack initialization] Provider rejected transaction initialization', {
-        status: response.status,
-      });
-      return NextResponse.json({ error: 'Paystack could not start this payment. Please try again.' }, { status: 502 });
-    }
+    return NextResponse.json(
+      { error: checkout.error || 'Could not initialize payment checkout.' },
+      { status: checkout.statusCode || 502 }
+    );
   } catch (err: any) {
     console.error('Paystack initialization error:', err);
     return NextResponse.json(

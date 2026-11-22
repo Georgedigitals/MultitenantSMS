@@ -26,18 +26,12 @@ export default async function PortalOverviewPage({ params }: PortalPageProps) {
   const displayName = user.studentProfile?.name || user.username;
   const currentSession = tenant.currentSession;
   const currentTerm = currentSession?.currentTerm;
-  const primaryColor = tenant.branding.primaryColor || '#1E3A8A';
-  const accentColor = tenant.branding.accentColor || '#2563EB';
 
-  // ── Student data ────────────────────────────────────────────────
   let studentId = user.studentId;
   let studentName = user.studentProfile?.name || '';
   let currentClass = '';
   let resultCount = 0;
-  let feeBalance: number | null = null;
-  let attendancePct: number | null = null;
 
-  // For parent: find linked wards
   let wards: Array<{ id: string; name: string; classLevel: string }> = [];
 
   if (isParent) {
@@ -45,7 +39,6 @@ export default async function PortalOverviewPage({ params }: PortalPageProps) {
     const parentData = await getParentWardsForUser(tenant.id, user);
     wards = parentData.wards;
   } else if (studentId) {
-    // Student: get their enrollment
     const enrollment = await db.enrollment.findFirst({
       where: { studentId },
       orderBy: { createdAt: 'desc' },
@@ -79,28 +72,20 @@ export default async function PortalOverviewPage({ params }: PortalPageProps) {
     }
   }
 
-  const quickLinks = [
+  const portalDestinations = [
     {
       href: `/${slug}/portal/results`,
-      icon: (
-        <svg className="w-6 h-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-        </svg>
-      ),
-      label: 'View Results',
-      desc: 'Check term & annual report cards',
+      label: 'Results & report cards',
+      desc: 'Inspect termly subject scores and printable report cards.',
+      meta: resultCount > 0 ? `${resultCount} entries` : 'Term records',
     },
     ...(tenant.hasFeature('feature_cbt_exams')
       ? [
           {
             href: `/${slug}/portal/cbt`,
-            icon: (
-              <svg className="w-6 h-6 text-purple-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-              </svg>
-            ),
-            label: 'CBT Online Exams',
-            desc: cbtExamCount > 0 ? `${cbtExamCount} Tests Available` : 'Timed tests & assessments',
+            label: 'CBT online exams',
+            desc: 'Take timed assessments and view submitted test records.',
+            meta: cbtExamCount > 0 ? `${cbtExamCount} available` : 'Assessments',
           },
         ]
       : []),
@@ -108,162 +93,141 @@ export default async function PortalOverviewPage({ params }: PortalPageProps) {
       ? [
           {
             href: `/${slug}/portal/fees`,
-            icon: (
-              <svg className="w-6 h-6 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 00-2 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z" />
-              </svg>
-            ),
-            label: 'Fee Balance',
-            desc: 'View payments and outstanding fees',
+            label: 'Tuition & fee ledger',
+            desc: 'Review fee breakdowns, payment receipts, and balances.',
+            meta: 'Billing',
           },
         ]
       : []),
     {
       href: `/${slug}/portal/attendance`,
-      icon: (
-        <svg className="w-6 h-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-        </svg>
-      ),
-      label: 'Attendance',
-      desc: 'View attendance records',
+      label: 'Attendance register',
+      desc: 'Track daily attendance history across the current term.',
+      meta: 'Daily log',
     },
     {
       href: `/${slug}/portal/timetable`,
-      icon: (
-        <svg className="w-6 h-6 text-cyan-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-      ),
-      label: 'Class Timetable',
-      desc: 'Weekly period schedule & classes',
+      label: 'Class timetable',
+      desc: 'Weekly period schedule and subject allocations.',
+      meta: 'Schedule',
     },
     {
       href: `/${slug}/portal/profile`,
-      icon: (
-        <svg className="w-6 h-6 text-amber-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-        </svg>
-      ),
-      label: 'Change Password',
-      desc: 'Update your login credentials',
+      label: 'Account & password',
+      desc: 'Update your portal credentials and profile settings.',
+      meta: 'Security',
     },
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Welcome Banner */}
-      <div
-        className="rounded-2xl p-6 text-white relative overflow-hidden shadow-lg"
-        style={{ background: `linear-gradient(135deg, ${primaryColor} 0%, ${accentColor} 100%)` }}
-      >
-        <div className="relative z-10">
-          <p className="text-xs font-bold uppercase tracking-widest text-white/70 mb-1">
-            {isParent ? 'Parent / Guardian Portal' : 'Student Portal'}
-          </p>
-          <h1 className="text-2xl font-black tracking-tight mb-1">
-            Welcome back, {isParent ? (displayName || 'Guardian') : studentName || displayName}!
+    <div className="space-y-4">
+      {/* Page Title Row */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 pb-2">
+        <div>
+          <h1 className="text-[24px] font-semibold tracking-[-0.02em] text-[#0a0a0a]">
+            {isParent ? 'Parent portal' : 'Student portal'}
           </h1>
-          <p className="text-sm text-white/80 font-medium">
-            {currentSession ? (
-              <>
-                {currentSession.label}
-                {currentTerm ? ` • ${currentTerm.name}` : ''}
-              </>
-            ) : (
-              'No active academic session'
-            )}
+          <p className="mt-1 text-[14px] text-[#66645e]">
+            {isParent ? displayName || 'Guardian' : studentName || displayName}
+            {currentClass ? ` · ${currentClass}` : ''}
+            {currentSession ? ` · ${currentSession.label}` : ''}
+            {currentTerm ? ` (${currentTerm.name})` : ''}
           </p>
         </div>
-        {/* Decorative circles */}
-        <div className="absolute -right-8 -top-8 w-40 h-40 rounded-full bg-white/10 pointer-events-none" />
-        <div className="absolute -right-4 top-16 w-24 h-24 rounded-full bg-white/5 pointer-events-none" />
+
+        <Link
+          href={`/${slug}/portal/results`}
+          className="h-9 px-4 rounded-[6px] text-[13px] font-medium bg-[#141414] text-white hover:bg-[#2a2a2a] transition-colors inline-flex items-center shrink-0"
+        >
+          View results
+        </Link>
       </div>
 
-      {/* Parent: wards overview */}
+      {/* Unified Summary Strip */}
+      <section className="bg-white border border-[#e4e2dd] rounded-[8px] grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-[#e4e2dd]">
+        <div className="p-5">
+          <p className="text-[13px] text-[#66645e]">{isParent ? 'Registered wards' : 'Enrolled class'}</p>
+          <p className="mt-2 text-[26px] font-normal tracking-[-0.02em] text-[#0a0a0a] ws-tabular leading-tight">
+            {isParent ? wards.length : currentClass || '—'}
+          </p>
+          <p className="mt-2 text-[12px] text-[#66645e]">{tenant.name}</p>
+        </div>
+
+        <div className="p-5">
+          <p className="text-[13px] text-[#66645e]">Term results logged</p>
+          <p className="mt-2 text-[26px] font-normal tracking-[-0.02em] text-[#0a0a0a] ws-tabular leading-tight">
+            {resultCount}
+          </p>
+          <p className="mt-2 text-[12px] text-[#66645e]">{currentTerm?.name || 'Current term'}</p>
+        </div>
+
+        <div className="p-5">
+          <p className="text-[13px] text-[#66645e]">CBT exams open</p>
+          <p className="mt-2 text-[26px] font-normal tracking-[-0.02em] text-[#0a0a0a] ws-tabular leading-tight">
+            {cbtExamCount}
+          </p>
+          <p className="mt-2 text-[12px] text-[#66645e]">Published assessments</p>
+        </div>
+      </section>
+
+      {/* Parent: Wards Ledger */}
       {isParent && wards.length > 0 && (
-        <div>
-          <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">Your Registered Wards</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <section className="bg-white border border-[#e4e2dd] rounded-[8px] overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-[#efede9] flex items-center justify-between">
+            <h2 className="text-[15px] font-semibold text-[#0a0a0a]">Registered wards</h2>
+            <span className="text-[12px] text-[#66645e] ws-tabular">{wards.length} linked</span>
+          </div>
+          <div className="divide-y divide-[#efede9]">
             {wards.map((ward) => (
-              <div key={ward.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex items-center gap-4">
-                <div className="w-12 h-12 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center font-black text-lg shrink-0">
-                  {ward.name.charAt(0)}
+              <div key={ward.id} className="px-5 py-3.5 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="w-8 h-8 rounded-[6px] bg-[#eceae6] text-[#0a0a0a] flex items-center justify-center font-medium text-xs shrink-0">
+                    {ward.name.charAt(0).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[14px] font-medium text-[#0a0a0a] truncate">{ward.name}</p>
+                    <p className="text-[12px] text-[#66645e] truncate">{ward.classLevel}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="font-bold text-slate-900 text-sm">{ward.name}</p>
-                  <p className="text-xs text-slate-500 font-medium">{ward.classLevel}</p>
-                </div>
+                <Link
+                  href={`/${slug}/portal/results`}
+                  className="text-[12px] font-medium text-[#0a0a0a] underline underline-offset-4 hover:opacity-70 shrink-0"
+                >
+                  Open record
+                </Link>
               </div>
             ))}
           </div>
-        </div>
+        </section>
       )}
 
-      {/* Student info card */}
-      {!isParent && studentName && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex items-center gap-4">
-          <div
-            className="w-14 h-14 rounded-xl flex items-center justify-center font-black text-2xl text-white shrink-0"
-            style={{ backgroundColor: primaryColor }}
-          >
-            {studentName.charAt(0)}
-          </div>
-          <div className="flex-1">
-            <p className="font-black text-slate-900 text-lg">{studentName}</p>
-            {currentClass && (
-              <p className="text-xs text-slate-500 font-semibold mt-0.5">Class: {currentClass}</p>
-            )}
-          </div>
-          {resultCount > 0 && (
-            <div className="text-right">
-              <p className="text-2xl font-black text-blue-600">{resultCount}</p>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Results This Term</p>
-            </div>
-          )}
-          {cbtExamCount > 0 && (
-            <div className="text-right pl-4 border-l border-slate-100">
-              <p className="text-2xl font-black text-purple-600">{cbtExamCount}</p>
-              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">CBT Tests Ready</p>
-            </div>
-          )}
+      {/* Portal Directory Ledger */}
+      <section className="bg-white border border-[#e4e2dd] rounded-[8px] overflow-hidden">
+        <div className="px-5 py-3.5 border-b border-[#efede9] flex items-center justify-between">
+          <h2 className="text-[15px] font-semibold text-[#0a0a0a]">Academic records &amp; tools</h2>
+          <span className="text-[12px] text-[#66645e]">Select a section</span>
         </div>
-      )}
-
-      {/* Quick Action Cards */}
-      <div>
-        <h2 className="text-sm font-bold text-slate-500 uppercase tracking-wider mb-3">Quick Access</h2>
-        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {quickLinks.map((link) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 divide-[#efede9]">
+          {portalDestinations.map((item, idx) => (
             <Link
-              key={link.href}
-              href={link.href}
-              className="group bg-white rounded-2xl border border-slate-200 shadow-sm p-5 flex flex-col gap-3 hover:shadow-md hover:border-slate-300 transition-all duration-150"
+              key={item.href}
+              href={item.href}
+              className={`px-5 py-4 flex items-center justify-between gap-4 hover:bg-[#f9f8f6] transition-colors ${
+                idx >= 2 ? 'md:border-t md:border-[#efede9]' : ''
+              } ${idx % 2 === 1 ? 'md:border-l md:border-[#efede9]' : ''}`}
             >
-              <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center group-hover:scale-105 transition-transform">
-                {link.icon}
+              <div className="min-w-0">
+                <p className="text-[14px] font-medium text-[#0a0a0a]">{item.label}</p>
+                <p className="mt-0.5 text-[12px] text-[#66645e]">{item.desc}</p>
               </div>
-              <div>
-                <p className="font-bold text-slate-900 text-sm group-hover:text-blue-700 transition-colors">{link.label}</p>
-                <p className="text-[11px] text-slate-500 leading-snug mt-0.5">{link.desc}</p>
+              <div className="flex items-center gap-3 shrink-0">
+                <span className="text-[12px] text-[#66645e] hidden sm:inline">{item.meta}</span>
+                <span className="text-[#66645e]" aria-hidden="true">→</span>
               </div>
             </Link>
           ))}
         </div>
-      </div>
-
-      {/* Portal info note */}
-      <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 text-sm text-blue-800 flex items-start gap-3">
-        <svg className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-        <div>
-          <p className="font-semibold">About This Portal</p>
-          <p className="text-xs mt-0.5 text-blue-700">
-            This is your personal school portal for {tenant.name}. Results are published by the school administrator after each term. Contact the school office for any discrepancies.
-          </p>
-        </div>
-      </div>
+      </section>
     </div>
   );
 }

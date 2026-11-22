@@ -1,77 +1,190 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import {
+  DEFAULT_NAV_LINKS,
+  type CmsBrandConfig,
+} from '@/lib/public-site-cms-schema';
+import { LanguageSwitcher, useLanguage } from '@/components/language-provider';
 
-export function PublicNavbar() {
+interface PublicNavbarProps {
+  brand?: Partial<CmsBrandConfig>;
+  disableNavigation?: boolean;
+  previewViewport?: 'desktop' | 'tablet' | 'mobile';
+}
+
+const DEFAULT_BRAND: CmsBrandConfig = {
+  name: 'School Platform',
+  tagline: 'School management',
+  logoUrl: '',
+  primaryColor: '#092b45',
+  accentColor: '#17834b',
+  footerNote: '',
+  headerCtaLabel: 'Set up your school',
+  headerCtaHref: '/register',
+  showSignInLink: true,
+  navLinks: DEFAULT_NAV_LINKS,
+};
+
+export function PublicNavbar({
+  brand: initialBrand,
+  disableNavigation = false,
+  previewViewport,
+}: PublicNavbarProps) {
   const pathname = usePathname();
+  const { t, tp } = useLanguage();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [brand, setBrand] = useState<CmsBrandConfig>({
+    ...DEFAULT_BRAND,
+    ...(initialBrand || {}),
+  });
 
-  const navLinks = [
-    { label: 'Home', href: '/' },
-    { label: 'Platform', href: '/services' },
-    { label: 'Plans', href: '/pricing' },
-    { label: 'Schools', href: '/schools' },
-    { label: 'About', href: '/about' },
-  ];
+  useEffect(() => {
+    if (initialBrand) {
+      setBrand((prev) => ({ ...prev, ...initialBrand }));
+      return;
+    }
+    let active = true;
+    fetch('/api/platform/branding')
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (active && data?.name) {
+          setBrand((prev) => ({
+            ...prev,
+            ...data,
+          }));
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [initialBrand]);
+
+  const navLinks =
+    Array.isArray(brand.navLinks) && brand.navLinks.length > 0
+      ? brand.navLinks
+      : DEFAULT_NAV_LINKS;
+
+  const isForcedMobile = previewViewport === 'mobile';
+  const isForcedDesktop = previewViewport === 'desktop' || previewViewport === 'tablet';
+
+  const monogram =
+    brand.name
+      .split(/\s+/)
+      .filter(Boolean)
+      .map((w) => w[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2) || 'SP';
+
+  const handleNavClick = (e: React.MouseEvent) => {
+    if (disableNavigation) e.preventDefault();
+  };
 
   return (
-    <header className="sticky top-0 z-50 border-b border-white/10 bg-[#092b45] text-white">
-      <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-5 sm:px-8 lg:px-10">
+    <header
+      className="sticky top-0 z-40 border-b border-white/10 text-white"
+      style={{ backgroundColor: brand.primaryColor }}
+    >
+      <div className="mx-auto flex h-[72px] max-w-7xl items-center justify-between px-5 sm:px-8 lg:px-10 gap-4">
         {/* Brand */}
-        <Link href="/" className="group flex shrink-0 items-center gap-3">
-          <div className="grid h-10 w-10 place-items-center rounded-full bg-[#17834b] text-lg font-bold text-white transition-colors group-hover:bg-[#20a15d]">
-            B
-          </div>
-          <div>
-            <span className="block text-[15px] font-bold leading-tight tracking-[-.02em] text-white">BMS</span>
-            <span className="block pt-0.5 text-[9px] font-semibold uppercase tracking-[.12em] text-[#a9c0ce]">School management</span>
+        <Link href="/" onClick={handleNavClick} className="group flex shrink-0 items-center gap-3 min-w-0">
+          {brand.logoUrl ? (
+            <img src={brand.logoUrl} alt={brand.name} className="h-9 w-auto object-contain" />
+          ) : (
+            <div
+              className="grid h-10 w-10 place-items-center text-sm font-bold text-white shrink-0"
+              style={{ backgroundColor: brand.accentColor }}
+            >
+              {monogram}
+            </div>
+          )}
+          <div className="min-w-0">
+            <span className="block text-[16px] font-semibold leading-tight tracking-[-0.02em] text-white truncate">
+              {brand.name}
+            </span>
+            <span className="block pt-0.5 text-[11px] font-normal text-white/65 truncate max-w-[180px]">
+              {brand.tagline || 'School management'}
+            </span>
           </div>
         </Link>
 
         {/* Center Nav (Desktop) */}
-        <nav className="hidden items-center gap-7 md:flex">
-          {navLinks.map((link) => {
+        <nav
+          className={
+            isForcedMobile
+              ? 'hidden'
+              : isForcedDesktop
+              ? 'flex items-center gap-6'
+              : 'hidden items-center gap-7 md:flex'
+          }
+        >
+          {navLinks.map((link, i) => {
             const isActive = pathname === link.href;
             return (
               <Link
-                key={link.href}
+                key={`${link.href}-${i}`}
                 href={link.href}
-                className={`py-2 text-[13px] font-semibold transition-colors ${
-                  isActive
-                    ? 'text-[#68d28f]'
-                    : 'text-[#d1dce3] hover:text-white'
+                onClick={handleNavClick}
+                className={`py-2 text-[13px] font-semibold transition-colors whitespace-nowrap ${
+                  isActive ? 'text-white underline underline-offset-4' : 'text-white/75 hover:text-white'
                 }`}
               >
-                {link.label}
+                {tp(link.label)}
               </Link>
             );
           })}
         </nav>
 
         {/* Action CTAs (Desktop) */}
-        <div className="hidden md:flex items-center gap-3">
-          <Link
-            href="/admin/login"
-            className="px-2 py-2 text-[13px] font-semibold text-[#d1dce3] transition-colors hover:text-white"
-          >
-            Sign in
-          </Link>
-          <Link
-            href="/register"
-            className="rounded-md bg-[#17834b] px-4 py-2.5 text-[12px] font-bold text-white transition-colors hover:bg-[#126b3d]"
-          >
-            Set up your school
-          </Link>
+        <div
+          className={
+            isForcedMobile
+              ? 'hidden'
+              : isForcedDesktop
+              ? 'flex items-center gap-3 shrink-0'
+              : 'hidden md:flex items-center gap-3 shrink-0'
+          }
+        >
+          {!disableNavigation && <LanguageSwitcher variant="public" />}
+          {brand.showSignInLink !== false && (
+            <Link
+              href="/admin/login"
+              onClick={handleNavClick}
+              className="px-2 py-2 text-[13px] font-semibold text-white/80 transition-colors hover:text-white whitespace-nowrap"
+            >
+              {t('nav.signIn', 'Sign in')}
+            </Link>
+          )}
+          {brand.headerCtaLabel && (
+            <Link
+              href={brand.headerCtaHref || '/register'}
+              onClick={handleNavClick}
+              className="h-10 px-5 text-[13px] font-medium text-white transition-opacity hover:opacity-90 inline-flex items-center whitespace-nowrap"
+              style={{ backgroundColor: brand.accentColor }}
+            >
+              {tp(brand.headerCtaLabel)}
+            </Link>
+          )}
         </div>
 
         {/* Mobile Hamburger Trigger */}
-        <div className="flex md:hidden items-center gap-2">
+        <div
+          className={
+            isForcedMobile
+              ? 'flex items-center gap-2'
+              : isForcedDesktop
+              ? 'hidden'
+              : 'flex md:hidden items-center gap-2'
+          }
+        >
           <button
             type="button"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="rounded-md border border-white/35 px-3 py-2.5 text-xs font-semibold text-white hover:bg-white/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#68d28f]"
+            className="rounded-md border border-white/35 px-3 py-2 text-xs font-semibold text-white hover:bg-white/10 cursor-pointer"
             aria-label="Toggle navigation menu"
             aria-expanded={mobileMenuOpen}
           >
@@ -88,17 +201,25 @@ export function PublicNavbar() {
 
       {/* Mobile Menu Dropdown */}
       {mobileMenuOpen && (
-        <div className="space-y-4 border-t border-white/10 bg-[#092b45] px-5 pb-6 pt-3 sm:px-8 md:hidden">
+        <div
+          className={`space-y-4 border-t border-white/10 px-5 pb-6 pt-3 sm:px-8 ${
+            isForcedDesktop ? 'hidden' : isForcedMobile ? 'block' : 'md:hidden'
+          }`}
+          style={{ backgroundColor: brand.primaryColor }}
+        >
           <nav className="flex flex-col space-y-1">
-            {navLinks.map((link) => {
+            {navLinks.map((link, i) => {
               const isActive = pathname === link.href;
               return (
                 <Link
-                  key={link.href}
+                  key={`${link.href}-${i}`}
                   href={link.href}
-                  onClick={() => setMobileMenuOpen(false)}
+                  onClick={(e) => {
+                    handleNavClick(e);
+                    setMobileMenuOpen(false);
+                  }}
                   className={`rounded-md px-4 py-3 text-sm font-semibold transition-colors ${
-                    isActive ? 'bg-white/10 text-[#68d28f]' : 'text-[#d1dce3] hover:bg-white/10 hover:text-white'
+                    isActive ? 'bg-white/15 text-white' : 'text-white/80 hover:bg-white/10 hover:text-white'
                   }`}
                 >
                   {link.label}
@@ -108,27 +229,31 @@ export function PublicNavbar() {
           </nav>
 
           <div className="flex flex-col gap-2.5 border-t border-white/15 pt-3">
-            <Link
-              href="/schools"
-              onClick={() => setMobileMenuOpen(false)}
-              className="w-full rounded-md border border-white/30 px-4 py-3 text-center text-xs font-semibold text-white hover:bg-white/10"
-            >
-              Find your school portal →
-            </Link>
-            <Link
-              href="/register"
-              onClick={() => setMobileMenuOpen(false)}
-              className="w-full rounded-md bg-[#17834b] px-4 py-3 text-center text-xs font-bold text-white hover:bg-[#126b3d]"
-            >
-              Set up your school
-            </Link>
-            <Link
-              href="/admin/login"
-              onClick={() => setMobileMenuOpen(false)}
-              className="w-full rounded-md px-4 py-2.5 text-center text-xs font-medium text-[#d1dce3] hover:text-white"
-            >
-              Sign in
-            </Link>
+            {brand.headerCtaLabel && (
+              <Link
+                href={brand.headerCtaHref || '/register'}
+                onClick={(e) => {
+                  handleNavClick(e);
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full rounded-md px-4 py-3 text-center text-xs font-bold text-white"
+                style={{ backgroundColor: brand.accentColor }}
+              >
+                {brand.headerCtaLabel}
+              </Link>
+            )}
+            {brand.showSignInLink !== false && (
+              <Link
+                href="/admin/login"
+                onClick={(e) => {
+                  handleNavClick(e);
+                  setMobileMenuOpen(false);
+                }}
+                className="w-full rounded-md px-4 py-2.5 text-center text-xs font-medium text-white/80 hover:text-white"
+              >
+                Sign in
+              </Link>
+            )}
           </div>
         </div>
       )}

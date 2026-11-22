@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useLanguage } from '@/components/language-provider';
 
 interface VerificationItem {
   id: string;
@@ -23,6 +24,7 @@ interface VerificationItem {
 }
 
 export function VerificationsClient({ slug, schoolName }: { slug: string; schoolName: string }) {
+  const { localization: { currencySymbol, locale } } = useLanguage();
   const [verifications, setVerifications] = useState<VerificationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -244,7 +246,7 @@ export function VerificationsClient({ slug, schoolName }: { slug: string; school
                       {item.termName}
                     </td>
                     <td className="py-3.5 px-4 font-black text-slate-900 text-sm">
-                      ₦{item.amount.toLocaleString()}
+                      {currencySymbol}{item.amount.toLocaleString()}
                     </td>
                     <td className="py-3.5 px-4">
                       <span className="font-semibold text-slate-800 block">{item.senderName}</span>

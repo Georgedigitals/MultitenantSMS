@@ -1,6 +1,41 @@
 import prisma from '@/lib/prisma';
+import {
+  DEFAULT_LOCALIZATION,
+  type PlatformLocalizationConfig,
+} from '@/lib/i18n/currency';
+import { isSupportedLanguage } from '@/lib/i18n/dictionaries';
 
 export const DEFAULT_TRIAL_DAYS = 14;
+export const DEFAULT_PLATFORM_NAME = process.env.NEXT_PUBLIC_PLATFORM_NAME?.trim() || 'School Platform';
+export const DEFAULT_PLATFORM_TAGLINE = 'Multi-Tenant School Management Platform';
+
+export async function getPlatformName(): Promise<string> {
+  try {
+    const setting = await prisma.platformSetting.findUnique({ where: { key: 'platformName' } });
+    const value = setting?.value?.trim();
+    return value || DEFAULT_PLATFORM_NAME;
+  } catch {
+    return DEFAULT_PLATFORM_NAME;
+  }
+}
+
+export async function getPlatformBranding(): Promise<{ name: string; tagline: string }> {
+  try {
+    const [nameSetting, taglineSetting] = await Promise.all([
+      prisma.platformSetting.findUnique({ where: { key: 'platformName' } }),
+      prisma.platformSetting.findUnique({ where: { key: 'platformTagline' } }),
+    ]);
+    return {
+      name: nameSetting?.value?.trim() || DEFAULT_PLATFORM_NAME,
+      tagline: taglineSetting?.value?.trim() || DEFAULT_PLATFORM_TAGLINE,
+    };
+  } catch {
+    return {
+      name: DEFAULT_PLATFORM_NAME,
+      tagline: DEFAULT_PLATFORM_TAGLINE,
+    };
+  }
+}
 
 export async function getDefaultTrialDays(): Promise<number> {
   const setting = await prisma.platformSetting.findUnique({ where: { key: 'defaultTrialDays' } });
@@ -26,6 +61,51 @@ export async function isMaintenanceModeActive(): Promise<boolean> {
 export async function getPlatformCurrencySymbol(): Promise<string> {
   const setting = await prisma.platformSetting.findUnique({ where: { key: 'defaultCurrencySymbol' } });
   return setting?.value || '₦';
+}
+
+export async function getPlatformLocalization(): Promise<PlatformLocalizationConfig> {
+  try {
+    const keys = [
+      'defaultCurrencyCode',
+      'defaultCurrencySymbol',
+      'defaultLocale',
+      'defaultLanguage',
+      'enabledLanguages',
+      'defaultTimezone',
+    ];
+    const rows = await prisma.platformSetting.findMany({
+      where: { key: { in: keys } },
+    });
+    const map = new Map(rows.map((r) => [r.key, r.value]));
+
+    const rawLang = map.get('defaultLanguage') || DEFAULT_LOCALIZATION.defaultLanguage;
+    const defaultLanguage = isSupportedLanguage(rawLang) ? rawLang : 'en';
+
+    let enabledLanguages = DEFAULT_LOCALIZATION.enabledLanguages;
+    const rawEnabled = map.get('enabledLanguages');
+    if (rawEnabled) {
+      try {
+        const parsed = JSON.parse(rawEnabled);
+        if (Array.isArray(parsed)) {
+          const valid = parsed.filter((c) => typeof c === 'string' && isSupportedLanguage(c));
+          if (valid.length > 0) enabledLanguages = valid;
+        }
+      } catch {
+        // fallback to default
+      }
+    }
+
+    return {
+      currencyCode: map.get('defaultCurrencyCode')?.trim() || DEFAULT_LOCALIZATION.currencyCode,
+      currencySymbol: map.get('defaultCurrencySymbol')?.trim() || DEFAULT_LOCALIZATION.currencySymbol,
+      locale: map.get('defaultLocale')?.trim() || DEFAULT_LOCALIZATION.locale,
+      defaultLanguage,
+      enabledLanguages,
+      timezone: map.get('defaultTimezone')?.trim() || DEFAULT_LOCALIZATION.timezone,
+    };
+  } catch {
+    return DEFAULT_LOCALIZATION;
+  }
 }
 
 export async function getPlatformPinSettings(): Promise<{ feePercent: number; maxUses: number }> {
