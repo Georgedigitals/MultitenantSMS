@@ -8,7 +8,7 @@ import { FinanceClient } from './finance-client';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Platform Finance & Revenue | BMS Super Admin',
+  title: 'Platform Finance & Revenue | Super Admin',
   description: 'Auditing platform revenue, annual subscription contracts, and result PIN payouts.',
 };
 

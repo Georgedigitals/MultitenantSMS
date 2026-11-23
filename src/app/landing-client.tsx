@@ -273,12 +273,12 @@ function ProductPreview({ platformName, accentColor }: { platformName: string; a
                 <div>
                   <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-semibold text-emerald-700">
                     <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                    Result PIN Verified
+                    Verified Access Code
                   </span>
                   <h3 className="mt-2 text-[17px] font-semibold tracking-[-0.02em] text-[#141518]">
-                    Second Term Academic Report
+                    Academic Progress Report
                   </h3>
-                  <p className="text-[11px] text-[#717278]">JSS 3 Gold · 2025/2026 Session · Apex Academy</p>
+                  <p className="text-[11px] text-[#717278]">Grade 10 Honors · Term 2 · 2025/2026 Session</p>
                 </div>
                 <div className="rounded-xl border border-[#e6e4de] bg-white px-3.5 py-2 text-right">
                   <p className="text-[10px] font-medium uppercase tracking-wider text-[#717278]">Average</p>
@@ -289,15 +289,15 @@ function ProductPreview({ platformName, accentColor }: { platformName: string; a
               <div className="overflow-hidden rounded-xl border border-[#e6e4de] bg-white">
                 <div className="grid grid-cols-[1.4fr_.6fr_.6fr_.5fr] border-b border-[#e6e4de] bg-[#f6f5f2] px-3.5 py-2 text-[10px] font-semibold uppercase tracking-wider text-[#717278]">
                   <span>Subject</span>
-                  <span className="text-right">CA</span>
+                  <span className="text-right">Coursework</span>
                   <span className="text-right">Exam</span>
                   <span className="text-right">Grade</span>
                 </div>
                 {[
-                  { subject: 'Mathematics', ca: 38, exam: 56, grade: 'A1' },
-                  { subject: 'English Language', ca: 36, exam: 53, grade: 'A1' },
-                  { subject: 'Basic Science', ca: 35, exam: 54, grade: 'A1' },
-                  { subject: 'Civic Education', ca: 37, exam: 51, grade: 'A1' },
+                  { subject: 'Mathematics', ca: 38, exam: 56, grade: 'A+' },
+                  { subject: 'Physics', ca: 36, exam: 53, grade: 'A' },
+                  { subject: 'World Literature', ca: 35, exam: 54, grade: 'A' },
+                  { subject: 'Computer Science', ca: 37, exam: 51, grade: 'A' },
                 ].map((row) => (
                   <div
                     key={row.subject}
@@ -358,13 +358,13 @@ function ProductPreview({ platformName, accentColor }: { platformName: string; a
 
               <div className="grid grid-cols-2 gap-2.5 text-[11px]">
                 <div className="flex items-center justify-between rounded-lg border border-[#e6e4de] bg-white px-3 py-2.5">
-                  <span className="font-medium text-[#141518]">Tuition — SS 2</span>
+                  <span className="font-medium text-[#141518]">Tuition — Grade 11</span>
                   <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
                     Settled
                   </span>
                 </div>
                 <div className="flex items-center justify-between rounded-lg border border-[#e6e4de] bg-white px-3 py-2.5">
-                  <span className="font-medium text-[#141518]">Transport — Term 2</span>
+                  <span className="font-medium text-[#141518]">Campus Bus — Term 2</span>
                   <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
                     Settled
                   </span>
@@ -473,8 +473,50 @@ export function LandingClient({
   onDropNewWidget,
   onUpdateBlockData,
 }: LandingClientProps) {
-  const { formatMoney, t, tp } = useLanguage();
+  const { formatMoney, localization, t, tp } = useLanguage();
   const { brand } = cmsConfig;
+  const [estimatedStudents, setEstimatedStudents] = useState(350);
+  const [visitorCurrency, setVisitorCurrency] = useState<string>('');
+  const [visitorRates, setVisitorRates] = useState<Record<string, { symbol: string; rate: number }>>({});
+
+  const VISITOR_CURRENCIES = [
+    { code: localization.currencyCode, symbol: localization.currencySymbol, label: localization.currencyCode },
+    { code: 'USD', symbol: '$', label: 'USD' },
+    { code: 'GBP', symbol: '£', label: 'GBP' },
+    { code: 'EUR', symbol: '€', label: 'EUR' },
+    { code: 'NGN', symbol: '₦', label: 'NGN' },
+  ].filter((c, i, arr) => arr.findIndex((x) => x.code === c.code) === i);
+
+  const handleSelectVisitorCurrency = async (code: string, symbol: string) => {
+    if (code === localization.currencyCode) {
+      setVisitorCurrency('');
+      return;
+    }
+    setVisitorCurrency(code);
+    if (visitorRates[code]) return;
+    try {
+      const base = localization.baseCurrencyCode || localization.currencyCode || 'NGN';
+      const res = await fetch(`/api/platform/exchange-rates?from=${encodeURIComponent(base)}&to=${encodeURIComponent(code)}`);
+      const data = await res.json();
+      if (res.ok && typeof data.rate === 'number' && data.rate > 0) {
+        setVisitorRates((prev) => ({ ...prev, [code]: { symbol, rate: data.rate } }));
+      }
+    } catch {
+      // keep fallback
+    }
+  };
+
+  const formatPlanPrice = (baseAmount: number, decimals = 0) => {
+    if (visitorCurrency && visitorRates[visitorCurrency]) {
+      const { symbol, rate } = visitorRates[visitorCurrency];
+      const converted = baseAmount * rate;
+      return `${symbol}${converted.toLocaleString(undefined, {
+        minimumFractionDigits: decimals,
+        maximumFractionDigits: decimals,
+      })}`;
+    }
+    return formatMoney(baseAmount, decimals);
+  };
   const blocks = customBlocks ?? cmsConfig.pages?.[pageKey] ?? cmsConfig.blocks ?? [];
   const visibleBlocks = blocks.filter((b) => {
     if (!b.visible) return false;
@@ -993,94 +1035,152 @@ export function LandingClient({
               </div>
 
               {plans.length > 0 ? (
-                <div
-                  className={`mt-9 grid gap-4 ${
-                    isMobilePreview
-                      ? 'grid-cols-1'
-                      : isTabletPreview
-                      ? 'grid-cols-2'
-                      : 'md:grid-cols-2 xl:grid-cols-3'
-                  }`}
-                >
-                  {plans.slice(0, 3).map((plan, planIdx) => {
-                    const enabledFeatures = plan.features.filter((feature) => feature.enabledByDefault);
-                    const previewFeatures = enabledFeatures.slice(0, 4);
-                    const remainingFeatures = Math.max(0, enabledFeatures.length - previewFeatures.length);
-                    const isFeatured = plans.length >= 2 && planIdx === 1;
-                    return (
-                      <article
-                        key={plan.id}
-                        className={`relative flex flex-col rounded-2xl border p-6 text-[#141518] transition-all sm:p-7 ${
-                          isFeatured
-                            ? 'border-white bg-white shadow-[0_20px_50px_rgba(0,0,0,0.28)]'
-                            : 'border-white/15 bg-[#faf9f6]'
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <h3 className="text-lg font-semibold tracking-[-0.02em]">{plan.name}</h3>
-                            <p className="mt-1 text-xs text-[#66645e]">
-                              {t('common.upToStudents', 'Up to {count} students').replace('{count}', plan.studentCeiling.toLocaleString())}
-                            </p>
-                          </div>
-                          {isFeatured && (
-                            <span
-                              className="rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white"
-                              style={{ backgroundColor: brand.accentColor }}
-                            >
-                              Popular
-                            </span>
-                          )}
-                        </div>
-                        <p className="mt-5 text-3xl font-bold tracking-tight ws-tabular">
-                          {formatMoney(Number(plan.price), 0)}
-                          <span className="ml-1.5 text-xs font-normal text-[#66645e]">
-                            {t('common.perAcademicYear', 'per academic year')}
+                <>
+                  {/* Stripe-Style Interactive Student Estimator + Live Currency Switcher */}
+                  {!editorMode && (
+                    <div className="mt-8 flex flex-col gap-4 rounded-2xl border border-white/15 bg-white/[0.06] p-4 backdrop-blur-xs sm:p-5 lg:flex-row lg:items-center lg:justify-between">
+                      <div className="flex-1 max-w-md">
+                        <div className="flex items-center justify-between text-xs text-white/85">
+                          <span className="font-medium">Estimate by student enrollment</span>
+                          <span className="rounded-md bg-white/12 px-2 py-0.5 font-mono text-xs font-semibold text-white">
+                            {estimatedStudents.toLocaleString()} students
                           </span>
-                        </p>
-                        <div className="mt-5 border-t border-[#e4e2dd] pt-4 flex-1">
-                          <p className="text-[11px] font-semibold uppercase tracking-wider text-[#717278]">
-                            {t('common.includedTools', 'Included tools')}
+                        </div>
+                        <input
+                          type="range"
+                          min={50}
+                          max={Math.max(2000, ...plans.map((p) => p.studentCeiling))}
+                          step={50}
+                          value={estimatedStudents}
+                          onChange={(e) => setEstimatedStudents(Number(e.target.value))}
+                          aria-label="Estimated student count"
+                          className="mt-2.5 h-1.5 w-full cursor-pointer appearance-none rounded-full bg-white/20 accent-white"
+                        />
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <span className="mr-1 text-[11px] font-medium text-white/65">Currency:</span>
+                        {VISITOR_CURRENCIES.map((cur) => {
+                          const active = (visitorCurrency || localization.currencyCode) === cur.code;
+                          return (
+                            <button
+                              key={cur.code}
+                              type="button"
+                              onClick={() => void handleSelectVisitorCurrency(cur.code, cur.symbol)}
+                              className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-all cursor-pointer ${
+                                active
+                                  ? 'bg-white text-[#141518] shadow-xs'
+                                  : 'border border-white/15 bg-white/5 text-white/80 hover:bg-white/15'
+                              }`}
+                            >
+                              {cur.symbol} {cur.code}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  <div
+                    className={`mt-7 grid gap-4 ${
+                      isMobilePreview
+                        ? 'grid-cols-1'
+                        : isTabletPreview
+                        ? 'grid-cols-2'
+                        : 'md:grid-cols-2 xl:grid-cols-3'
+                    }`}
+                  >
+                    {plans.slice(0, 3).map((plan, planIdx) => {
+                      const enabledFeatures = plan.features.filter((feature) => feature.enabledByDefault);
+                      const previewFeatures = enabledFeatures.slice(0, 4);
+                      const remainingFeatures = Math.max(0, enabledFeatures.length - previewFeatures.length);
+                      const recommendedPlan =
+                        plans.slice(0, 3).find((p) => p.studentCeiling >= estimatedStudents) ||
+                        plans.slice(0, 3)[plans.slice(0, 3).length - 1];
+                      const isRecommended = !editorMode
+                        ? recommendedPlan?.id === plan.id
+                        : plans.length >= 2 && planIdx === 1;
+                      const perStudent = estimatedStudents > 0 ? Number(plan.price) / Math.min(estimatedStudents, plan.studentCeiling || estimatedStudents) : 0;
+                      return (
+                        <article
+                          key={plan.id}
+                          className={`relative flex flex-col rounded-2xl border p-6 text-[#141518] transition-all sm:p-7 ${
+                            isRecommended
+                              ? 'border-white bg-white shadow-[0_20px_50px_rgba(0,0,0,0.28)] ring-2 ring-white/40'
+                              : 'border-white/15 bg-[#faf9f6]'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <h3 className="text-lg font-semibold tracking-[-0.02em]">{plan.name}</h3>
+                              <p className="mt-1 text-xs text-[#66645e]">
+                                {t('common.upToStudents', 'Up to {count} students').replace('{count}', plan.studentCeiling.toLocaleString())}
+                              </p>
+                            </div>
+                            {isRecommended && (
+                              <span
+                                className="rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white"
+                                style={{ backgroundColor: brand.accentColor }}
+                              >
+                                {editorMode ? 'Popular' : 'Best fit'}
+                              </span>
+                            )}
+                          </div>
+                          <p className="mt-5 text-3xl font-bold tracking-tight ws-tabular">
+                            {formatPlanPrice(Number(plan.price), 0)}
+                            <span className="ml-1.5 text-xs font-normal text-[#66645e]">
+                              {t('common.perAcademicYear', 'per academic year')}
+                            </span>
                           </p>
-                          <ul className="mt-3 space-y-2.5">
-                            {previewFeatures.map((feature) => {
-                              const copy = getPlanFeatureCopy(
-                                feature.featureKey,
-                                feature.feature.name,
-                                feature.feature.description
-                              );
-                              return (
-                                <li key={feature.featureKey} className="flex items-start gap-2">
-                                  <span
-                                    className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full"
-                                    style={{ backgroundColor: brand.accentColor }}
-                                  />
-                                  <div>
-                                    <p className="text-xs font-semibold text-[#141518]">{copy.name}</p>
-                                    <p className="mt-0.5 text-[11px] leading-4 text-[#66645e]">{copy.description}</p>
-                                  </div>
-                                </li>
-                              );
-                            })}
-                          </ul>
-                          {remainingFeatures > 0 && (
-                            <p className="mt-3 text-[11px] font-medium text-[#66645e]">
-                              {t('common.plusMoreTools', 'Plus {count} more included tools.').replace('{count}', String(remainingFeatures))}
+                          {!editorMode && perStudent > 0 && (
+                            <p className="mt-1 font-mono text-[11px] text-[#717278]">
+                              ≈ {formatPlanPrice(perStudent, 2)} / student / year
                             </p>
                           )}
-                        </div>
-                        <Link
-                          href={`/register?planId=${encodeURIComponent(plan.id)}`}
-                          onClick={handleLinkClick}
-                          className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold text-white transition-opacity hover:opacity-90"
-                          style={{ backgroundColor: brand.accentColor }}
-                        >
-                          {t('common.choosePlan', 'Choose')} {plan.name} <span aria-hidden="true">→</span>
-                        </Link>
-                      </article>
-                    );
-                  })}
-                </div>
+                          <div className="mt-5 border-t border-[#e4e2dd] pt-4 flex-1">
+                            <p className="text-[11px] font-semibold uppercase tracking-wider text-[#717278]">
+                              {t('common.includedTools', 'Included tools')}
+                            </p>
+                            <ul className="mt-3 space-y-2.5">
+                              {previewFeatures.map((feature) => {
+                                const copy = getPlanFeatureCopy(
+                                  feature.featureKey,
+                                  feature.feature.name,
+                                  feature.feature.description
+                                );
+                                return (
+                                  <li key={feature.featureKey} className="flex items-start gap-2">
+                                    <span
+                                      className="mt-1 h-1.5 w-1.5 shrink-0 rounded-full"
+                                      style={{ backgroundColor: brand.accentColor }}
+                                    />
+                                    <div>
+                                      <p className="text-xs font-semibold text-[#141518]">{copy.name}</p>
+                                      <p className="mt-0.5 text-[11px] leading-4 text-[#66645e]">{copy.description}</p>
+                                    </div>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                            {remainingFeatures > 0 && (
+                              <p className="mt-3 text-[11px] font-medium text-[#66645e]">
+                                {t('common.plusMoreTools', 'Plus {count} more included tools.').replace('{count}', String(remainingFeatures))}
+                              </p>
+                            )}
+                          </div>
+                          <Link
+                            href={`/register?planId=${encodeURIComponent(plan.id)}`}
+                            onClick={handleLinkClick}
+                            className="mt-6 inline-flex min-h-11 items-center justify-center gap-2 rounded-lg px-4 text-xs font-semibold text-white transition-opacity hover:opacity-90"
+                            style={{ backgroundColor: brand.accentColor }}
+                          >
+                            {t('common.choosePlan', 'Choose')} {plan.name} <span aria-hidden="true">→</span>
+                          </Link>
+                        </article>
+                      );
+                    })}
+                  </div>
+                </>
               ) : (
                 <p className="mt-8 max-w-2xl border-l-4 border-white/40 bg-white/10 px-5 py-4 text-sm text-white/85">
                   Configure subscription tiers in Super Admin → Plan Tiers &amp; Features to display them here.
@@ -1474,6 +1574,57 @@ export function LandingClient({
           );
         })}
       </main>
+
+      {/* Global Security & Enterprise Infrastructure Trust Band */}
+      {!editorMode && (pageKey === 'home' || pageKey === 'pricing' || pageKey === 'services') && (
+        <section className="border-t border-white/10 bg-[#111215] text-white">
+          <div className="mx-auto max-w-7xl px-5 py-14 sm:px-8 lg:px-10">
+            <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between border-b border-white/10 pb-8">
+              <div>
+                <p className="font-mono text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-400">
+                  Global infrastructure
+                </p>
+                <h2 className="tenant-editorial-display mt-2 text-3xl font-normal tracking-[-0.02em] text-white sm:text-4xl">
+                  Built for international schools and networks.
+                </h2>
+              </div>
+              <p className="max-w-md text-xs leading-6 text-zinc-400">
+                Every school operates in its own isolated tenant boundary with encrypted payment credentials, role-based access, and instant data portability.
+              </p>
+            </div>
+            <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                {
+                  code: '01',
+                  title: 'Strict Tenant Isolation',
+                  desc: 'Every school’s records, staff, and student data are scoped strictly to its verified tenant boundary.',
+                },
+                {
+                  code: '02',
+                  title: 'Global Multi-Gateway',
+                  desc: 'Direct-to-school settlement via Stripe, Paystack, and Flutterwave with idempotent webhooks.',
+                },
+                {
+                  code: '03',
+                  title: 'Multi-Language & RTL',
+                  desc: 'Instant interface localization across English, French, Spanish, Portuguese, and Arabic (RTL).',
+                },
+                {
+                  code: '04',
+                  title: 'Audit & Snapshots',
+                  desc: 'Full administrative audit trails, automated backups, and one-click JSON/CSV data exports.',
+                },
+              ].map((pillar) => (
+                <div key={pillar.code} className="rounded-xl border border-white/10 bg-white/[0.03] p-5">
+                  <span className="font-mono text-[11px] text-zinc-500">{pillar.code}</span>
+                  <h3 className="mt-2 text-sm font-semibold text-white">{pillar.title}</h3>
+                  <p className="mt-1.5 text-xs leading-5 text-zinc-400">{pillar.desc}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       <PublicFooter brand={brand} disableNavigation={editorMode} previewViewport={previewViewport} />
     </div>

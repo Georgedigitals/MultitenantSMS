@@ -39,6 +39,8 @@ interface SubscriptionClientProps {
   slug: string;
   tenantId: string;
   tenantName: string;
+  primaryColor?: string;
+  platformName?: string;
   status: string;
   trialEndsAt: string | null;
   annualContractPrice?: number;
@@ -63,6 +65,8 @@ export default function SubscriptionClient({
   slug,
   tenantId,
   tenantName,
+  primaryColor = '#4f46e5',
+  platformName = 'School Platform',
   status,
   trialEndsAt,
   annualContractPrice,
@@ -75,7 +79,8 @@ export default function SubscriptionClient({
   adminEmail,
   adminName,
 }: SubscriptionClientProps) {
-  const { localization: { currencySymbol } } = useLanguage();
+  const { formatMoney } = useLanguage();
+  const fmtPrice = (amount: number) => formatMoney(amount, 0);
   const [upgradingPlanId, setUpgradingPlanId] = useState<string | null>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [pendingCheckout, setPendingCheckout] = useState<{ url: string; planName: string; amount: number; note: string } | null>(null);
@@ -185,43 +190,57 @@ export default function SubscriptionClient({
             <p className="mt-4 text-sm leading-6 text-slate-600">{pendingCheckout.note}</p>
             <div className="mt-5 flex items-baseline justify-between border-y border-slate-200 py-4">
               <span className="text-sm font-medium text-slate-600">Pay today</span>
-              <strong className="text-2xl text-slate-950">{currencySymbol}{pendingCheckout.amount.toLocaleString()}</strong>
+              <strong className="text-2xl text-slate-950 tabular-nums">{fmtPrice(pendingCheckout.amount)}</strong>
             </div>
-            <p className="mt-3 text-xs leading-5 text-slate-500">Paystack will collect this amount. BMS changes your plan only after payment verification.</p>
+            <p className="mt-3 text-xs leading-5 text-slate-500">
+              Your payment gateway will collect this amount. {platformName} activates your upgraded plan immediately after verification.
+            </p>
             <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <button type="button" onClick={() => setPendingCheckout(null)} className="rounded-lg border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Cancel</button>
-              <button type="button" onClick={() => window.location.assign(pendingCheckout.url)} className="rounded-lg bg-[#176b45] px-4 py-3 text-sm font-semibold text-white hover:bg-[#125a3a]">Continue to Paystack</button>
+              <button type="button" onClick={() => setPendingCheckout(null)} className="rounded-lg border border-slate-300 px-4 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer">Cancel</button>
+              <button
+                type="button"
+                onClick={() => window.location.assign(pendingCheckout.url)}
+                className="rounded-lg px-4 py-3 text-sm font-semibold text-white hover:opacity-90 cursor-pointer"
+                style={{ backgroundColor: primaryColor }}
+              >
+                Continue to Checkout
+              </button>
             </div>
           </section>
         </div>
       )}
 
-      {/* Current Status Overview Card */}
-      <div className="rounded-3xl bg-slate-900 text-white p-6 sm:p-8 shadow-xl relative overflow-hidden border border-slate-800">
-        <div className="absolute right-0 top-0 w-96 h-96 bg-blue-600/10 rounded-full blur-3xl pointer-events-none" />
+      {/* Current Status Overview Card (School-Branded) */}
+      <div
+        className="rounded-2xl text-white p-6 sm:p-8 shadow-md relative overflow-hidden"
+        style={{
+          background: `linear-gradient(135deg, ${primaryColor} 0%, color-mix(in srgb, ${primaryColor} 68%, #0f172a) 100%)`,
+        }}
+      >
+        <div className="absolute right-0 top-0 w-96 h-96 bg-white/10 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-6 divide-y md:divide-y-0 md:divide-x divide-slate-800">
+        <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-6 divide-y md:divide-y-0 md:divide-x divide-white/15">
           {/* Col 1: Current Tier */}
           <div className="space-y-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Current Plan Tier</span>
-            <div className="flex items-baseline gap-2">
-              <h2 className="text-2xl font-black tracking-tight text-white">{currentPlan.name}</h2>
-              <span className="text-xs font-bold text-blue-400">{currencySymbol}{contractPrice.toLocaleString()} / year</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-white/70">Current Plan Tier</span>
+            <div className="flex items-baseline gap-2.5 flex-wrap">
+              <h2 className="text-2xl font-bold tracking-tight text-white">{currentPlan.name}</h2>
+              <span className="text-sm font-semibold text-white/90 tabular-nums">{fmtPrice(contractPrice)} / year</span>
             </div>
             {currentPlan.price !== contractPrice && (
-              <p className="text-[11px] text-slate-400">
-                Active Contract Price (Next Session Renewal: {currencySymbol}{currentPlan.price.toLocaleString()} / year)
+              <p className="text-[11px] text-white/75">
+                Active Contract Price (Next Session Renewal: {fmtPrice(currentPlan.price)} / year)
               </p>
             )}
             <div className="flex items-center gap-2 pt-1">
               <span
-                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wider ${status === 'active'
+                className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold uppercase tracking-wider ${status === 'active'
                     ? isContractExpired
-                      ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
-                      : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                      ? 'bg-amber-400/20 text-amber-200 border border-amber-300/30'
+                      : 'bg-emerald-400/20 text-emerald-200 border border-emerald-300/30'
                     : isTrialExpired
-                      ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30'
-                      : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                      ? 'bg-rose-400/20 text-rose-200 border border-rose-300/30'
+                      : 'bg-amber-400/20 text-amber-200 border border-amber-300/30'
                   }`}
               >
                 {status === 'active'
@@ -237,22 +256,22 @@ export default function SubscriptionClient({
 
           {/* Col 2: Trial or Renewal Status */}
           <div className="pt-4 md:pt-0 md:px-6 space-y-2">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Subscription Status</span>
+            <span className="text-[11px] font-bold uppercase tracking-wider text-white/70">Subscription Status</span>
             {isTrial ? (
               <div>
-                <div className="text-xl font-black text-amber-300">
+                <div className="text-xl font-bold text-amber-200">
                   {daysRemaining} Day{daysRemaining === 1 ? '' : 's'} Remaining
                 </div>
-                <p className="text-xs text-slate-400 mt-1">
+                <p className="text-xs text-white/75 mt-1">
                   {trialEnd ? `Trial expires on ${trialEnd.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}` : 'Free trial active'}
                 </p>
               </div>
             ) : (
               <div>
-                <div className={`text-xl font-black ${isContractExpired ? 'text-amber-300' : 'text-emerald-400'}`}>
+                <div className={`text-xl font-bold ${isContractExpired ? 'text-amber-200' : 'text-emerald-200'}`}>
                   {contractDaysRemaining !== null ? `${contractDaysRemaining} Day${contractDaysRemaining === 1 ? '' : 's'} Remaining` : 'Annual Term Active'}
                 </div>
-                <p className="text-xs text-slate-400 mt-1">
+                <p className="text-xs text-white/75 mt-1">
                   {contractExpiry
                     ? `Contract active until ${contractExpiry.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}`
                     : 'Full institutional features enabled with priority support.'}
@@ -264,19 +283,19 @@ export default function SubscriptionClient({
           {/* Col 3: Student Capacity */}
           <div className="pt-4 md:pt-0 md:pl-6 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Student Capacity</span>
-              <span className="text-xs font-bold text-white">
-                {studentCount} / {currentPlan.studentCeiling > 0 ? currentPlan.studentCeiling : '∞'}
+              <span className="text-[11px] font-bold uppercase tracking-wider text-white/70">Student Capacity</span>
+              <span className="text-xs font-bold text-white tabular-nums">
+                {studentCount.toLocaleString()} / {currentPlan.studentCeiling > 0 ? currentPlan.studentCeiling.toLocaleString() : '∞'}
               </span>
             </div>
-            <div className="w-full bg-slate-800 rounded-full h-2.5 overflow-hidden">
+            <div className="w-full bg-white/20 rounded-full h-2.5 overflow-hidden">
               <div
-                className={`h-full rounded-full transition-all duration-500 ${capacityPercent > 90 ? 'bg-rose-500' : capacityPercent > 70 ? 'bg-amber-400' : 'bg-blue-500'
+                className={`h-full rounded-full transition-all duration-500 ${capacityPercent > 90 ? 'bg-rose-400' : capacityPercent > 70 ? 'bg-amber-300' : 'bg-white'
                   }`}
-                style={{ width: `${capacityPercent}%` }}
+                style={{ width: `${Math.max(capacityPercent, studentCount > 0 ? 3 : 0)}%` }}
               />
             </div>
-            <p className="text-[11px] text-slate-400">
+            <p className="text-[11px] text-white/75">
               {capacityPercent}% of maximum student limit enrolled.
             </p>
           </div>
@@ -335,16 +354,16 @@ export default function SubscriptionClient({
 
                   <div className="py-2 border-y border-slate-100">
                     <div className="flex items-baseline gap-1">
-                      <span className="text-3xl font-black text-slate-900">{currencySymbol}{plan.price.toLocaleString()}</span>
+                      <span className="text-3xl font-black text-slate-900 tabular-nums">{fmtPrice(plan.price)}</span>
                       <span className="text-xs font-semibold text-slate-400">/ year</span>
                     </div>
                     {isCurrent && status === 'active' && (
                       <span className="text-[11px] font-medium text-emerald-700 block mt-0.5">
-                        Your locked contract: {currencySymbol}{contractPrice.toLocaleString()} / year
+                        Your locked contract: {fmtPrice(contractPrice)} / year
                       </span>
                     )}
                     <span className="text-[11px] text-slate-500 block mt-0.5">
-                      Platform Fee: {plan.platformFeePercent}% per scratch card PIN
+                      Platform Fee: {plan.platformFeePercent}% per result PIN
                     </span>
                   </div>
 
@@ -391,18 +410,24 @@ export default function SubscriptionClient({
                       disabled
                       className="w-full py-2.5 px-4 rounded-xl bg-slate-100 text-slate-500 font-bold text-xs cursor-default text-center"
                     >
-                      Active Contract ({currencySymbol}{contractPrice.toLocaleString()} / yr)
+                      Active Contract ({fmtPrice(contractPrice)} / yr)
+                    </button>
+                  ) : !canRenew && isLowerPlan ? (
+                    <button
+                      disabled
+                      className="w-full py-2.5 px-4 rounded-xl bg-slate-100 border border-slate-200 text-slate-400 font-semibold text-xs cursor-not-allowed text-center"
+                    >
+                      Lower plan unavailable
                     </button>
                   ) : (
                     <button
                       onClick={() => handleUpgrade(plan)}
-                      disabled={upgradingPlanId === plan.id || (!canRenew && isLowerPlan)}
-                      className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-2 ${isCurrent
+                      disabled={upgradingPlanId === plan.id}
+                      className={`w-full py-2.5 px-4 rounded-xl font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer ${isCurrent
                           ? 'bg-amber-500 hover:bg-amber-400 text-slate-950'
-                          : isEnterprise
-                            ? 'bg-slate-900 hover:bg-slate-800 text-white'
-                            : 'bg-blue-600 hover:bg-blue-500 text-white'
+                          : 'text-white hover:opacity-90'
                         }`}
+                      style={!isCurrent ? { backgroundColor: primaryColor } : undefined}
                     >
                       {upgradingPlanId === plan.id ? (
                         <>
@@ -413,11 +438,11 @@ export default function SubscriptionClient({
                           <span>Initializing Gateway...</span>
                         </>
                       ) : isCurrent && status === 'active' ? (
-                        `Renew for Next Session (${currencySymbol}${plan.price.toLocaleString()})`
+                        `Renew for Next Session (${fmtPrice(plan.price)})`
                       ) : isCurrent ? (
                         'Activate Subscription'
                       ) : (
-                        isLowerPlan ? 'Lower plan unavailable' : `Upgrade to ${plan.name}`
+                        `Upgrade to ${plan.name}`
                       )}
                     </button>
                   )}
@@ -458,8 +483,8 @@ export default function SubscriptionClient({
                     <td className="py-3 px-4 font-mono text-slate-600">
                       {item.details?.paymentRef || 'N/A'}
                     </td>
-                    <td className="py-3 px-4 font-semibold text-slate-900">
-                      {currencySymbol}{Number(item.details?.amount || 0).toLocaleString()}
+                    <td className="py-3 px-4 font-semibold text-slate-900 tabular-nums">
+                      {fmtPrice(Number(item.details?.amount || 0))}
                     </td>
                     <td className="py-3 px-4 uppercase font-medium">
                       {item.details?.provider || 'Paystack'}

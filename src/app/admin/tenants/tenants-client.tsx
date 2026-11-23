@@ -53,6 +53,7 @@ export function TenantsClient({ initialTenants, availablePlans }: TenantsClientP
 
   // Domain Modal State
   const [domainModalTenant, setDomainModalTenant] = useState<TenantItem | null>(null);
+  const [inspectTenant, setInspectTenant] = useState<TenantItem | null>(null);
   const [newCustomDomain, setNewCustomDomain] = useState('');
   const [addingDomain, setAddingDomain] = useState(false);
 
@@ -417,13 +418,16 @@ export function TenantsClient({ initialTenants, availablePlans }: TenantsClientP
     reader.readAsText(file);
   };
 
-  // Handle Impersonation
+  // Handle Impersonation (opens in a new tab so Super Admin stays in Control Plane)
   async function handleStartImpersonation(e: React.FormEvent) {
     e.preventDefault();
     if (!impersonateTarget || !impersonateReason.trim()) return;
 
     setImpersonating(true);
     setImpersonateError('');
+
+    // Open blank tab synchronously inside user gesture so browser popup blockers allow it
+    const newTab = window.open('about:blank', '_blank');
 
     try {
       const res = await fetch('/api/admin/impersonate/start', {
@@ -438,8 +442,17 @@ export function TenantsClient({ initialTenants, availablePlans }: TenantsClientP
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to start impersonation');
 
-      window.location.href = data.redirectUrl || data.targetUrl || getTenantUrl(impersonateTarget.slug, '/dashboard');
+      const targetUrl = data.redirectUrl || data.targetUrl || getTenantUrl(impersonateTarget.slug, '/dashboard');
+      if (newTab && !newTab.closed) {
+        newTab.location.href = targetUrl;
+      } else {
+        window.open(targetUrl, '_blank', 'noopener,noreferrer');
+      }
+
+      setImpersonateTarget(null);
+      setImpersonateReason('');
     } catch (err: any) {
+      if (newTab && !newTab.closed) newTab.close();
       setImpersonateError(err.message);
     } finally {
       setImpersonating(false);
@@ -660,8 +673,14 @@ export function TenantsClient({ initialTenants, availablePlans }: TenantsClientP
 
                     {/* School Name & Subdomain */}
                     <td className="py-4 px-4">
-                      <div className="font-extrabold adm-text-primary text-sm hover:text-blue-400 transition-colors">
-                        <Link href={`/admin/tenants/${tenant.id}`}>{tenant.name}</Link>
+                      <div className="font-semibold adm-text-primary text-sm flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setInspectTenant(tenant)}
+                          className="text-left hover:underline cursor-pointer"
+                        >
+                          {tenant.name}
+                        </button>
                       </div>
                       <div className="flex items-center gap-2 mt-1">
                         <span className="text-blue-400 font-mono text-[11px] adm-surface px-2 py-0.5 rounded-lg border adm-divider truncate max-w-[160px]">
@@ -991,9 +1010,9 @@ export function TenantsClient({ initialTenants, availablePlans }: TenantsClientP
                 <button
                   type="submit"
                   disabled={creating}
-                  className="px-5 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl shadow-lg shadow-blue-600/30 transition cursor-pointer disabled:opacity-50"
+                  className="adm-btn-primary px-5 py-2 font-semibold rounded-lg transition cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5"
                 >
-                  {creating ? 'Provisioning...' : 'Provision Tenant <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 inline-block mr-1"><path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.381z" clipRule="evenodd" /></svg>'}
+                  {creating ? 'Provisioning...' : 'Provision School'}
                 </button>
               </div>
             </form>
@@ -1008,7 +1027,7 @@ export function TenantsClient({ initialTenants, availablePlans }: TenantsClientP
             <div className="flex justify-between items-center border-b adm-divider pb-3">
               <div>
                 <h2 className="text-lg font-bold"><svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 inline-block mr-1"><path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" /></svg> Import School Snapshot (JSON)</h2>
-                <p className="text-xs adm-text-muted">Restore or import NDPR compliance JSON data archives</p>
+                <p className="text-xs adm-text-muted">Restore or import full school JSON backup archives</p>
               </div>
               <button onClick={() => setShowImportModal(false)} className="adm-text-muted hover:text-[var(--adm-text-primary)] font-bold cursor-pointer">
                 ×
@@ -1077,9 +1096,9 @@ export function TenantsClient({ initialTenants, availablePlans }: TenantsClientP
                 <button
                   type="submit"
                   disabled={importing || !importJsonText.trim()}
-                  className="px-5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl shadow-lg shadow-blue-600/30 transition cursor-pointer disabled:opacity-50"
+                  className="adm-btn-primary px-5 py-2 font-semibold rounded-lg transition cursor-pointer disabled:opacity-50 inline-flex items-center gap-1.5"
                 >
-                  {importing ? 'Importing Snapshot...' : 'Import & Restore School <svg viewBox="0 0 20 20" fill="currentColor" className="w-3.5 h-3.5 inline-block mr-1"><path fillRule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.381z" clipRule="evenodd" /></svg>'}
+                  {importing ? 'Importing Snapshot...' : 'Import & Restore School'}
                 </button>
               </div>
             </form>
@@ -1335,6 +1354,148 @@ export function TenantsClient({ initialTenants, availablePlans }: TenantsClientP
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* Slide-Over School Inspector Drawer */}
+      {inspectTenant && (
+        <div className="fixed inset-0 z-50 flex justify-end">
+          <div
+            className="fixed inset-0 bg-black/50 backdrop-blur-xs"
+            onClick={() => setInspectTenant(null)}
+          />
+          <aside className="relative z-10 flex h-full w-full max-w-md flex-col justify-between adm-card border-l adm-divider shadow-2xl overflow-y-auto">
+            <div className="p-6 space-y-6">
+              <div className="flex items-start justify-between gap-3 border-b adm-divider pb-4">
+                <div className="min-w-0">
+                  <p className="text-[10.5px] font-semibold uppercase tracking-[0.14em] adm-text-muted">
+                    School Inspector
+                  </p>
+                  <h2 className="mt-1 truncate text-lg font-semibold adm-text-primary">
+                    {inspectTenant.name}
+                  </h2>
+                  <p className="mt-0.5 font-mono text-xs adm-text-muted">/{inspectTenant.slug}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setInspectTenant(null)}
+                  className="rounded-lg border adm-divider adm-surface adm-surface-hover px-2.5 py-1 text-xs font-semibold adm-text-secondary cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2.5">
+                <div className="rounded-xl border adm-divider adm-surface p-3">
+                  <p className="text-[10px] adm-text-muted">Students</p>
+                  <p className="mt-1 text-lg font-semibold tabular-nums adm-text-primary">
+                    {inspectTenant._count.students.toLocaleString()}
+                  </p>
+                </div>
+                <div className="rounded-xl border adm-divider adm-surface p-3">
+                  <p className="text-[10px] adm-text-muted">Staff</p>
+                  <p className="mt-1 text-lg font-semibold tabular-nums adm-text-primary">
+                    {inspectTenant._count.staff.toLocaleString()}
+                  </p>
+                </div>
+                <div className="rounded-xl border adm-divider adm-surface p-3">
+                  <p className="text-[10px] adm-text-muted">Sessions</p>
+                  <p className="mt-1 text-lg font-semibold tabular-nums adm-text-primary">
+                    {inspectTenant._count.sessions.toLocaleString()}
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-xl border adm-divider adm-surface p-4 space-y-2.5 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="adm-text-muted">Status</span>
+                  <span className="rounded-full px-2.5 py-0.5 text-[11px] font-semibold capitalize adm-badge">
+                    {inspectTenant.status}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between border-t adm-divider pt-2.5">
+                  <span className="adm-text-muted">Plan tier</span>
+                  <span className="font-semibold adm-text-primary">
+                    {inspectTenant.plan?.name} ({formatMoney(Number(inspectTenant.plan?.price || 0), 0)}/yr)
+                  </span>
+                </div>
+                <div className="flex items-center justify-between border-t adm-divider pt-2.5">
+                  <span className="adm-text-muted">Primary admin</span>
+                  <span className="font-mono text-[11px] adm-text-primary truncate max-w-[200px]">
+                    {inspectTenant.adminEmail || `admin@${inspectTenant.slug}.edu`}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between border-t adm-divider pt-2.5">
+                  <span className="adm-text-muted">Custom domains</span>
+                  <span className="font-semibold adm-text-primary">
+                    {inspectTenant.domainAliases?.length || 0}
+                  </span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <p className="text-[10.5px] font-semibold uppercase tracking-[0.14em] adm-text-muted">
+                  Quick actions
+                </p>
+                <div className="grid grid-cols-2 gap-2">
+                  <Link
+                    href={`/admin/tenants/${inspectTenant.id}`}
+                    className="adm-btn-primary inline-flex h-10 items-center justify-center rounded-lg px-3 text-xs font-semibold"
+                  >
+                    Open Full Profile →
+                  </Link>
+                  <a
+                    href={getTenantUrl(inspectTenant.slug, '/')}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex h-10 items-center justify-center rounded-lg border adm-divider adm-surface adm-surface-hover px-3 text-xs font-semibold adm-text-primary"
+                  >
+                    Visit Live Site ↗
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const target = inspectTenant;
+                      setInspectTenant(null);
+                      setImpersonateTarget(target);
+                    }}
+                    className="inline-flex h-10 items-center justify-center rounded-lg border adm-divider adm-surface adm-surface-hover px-3 text-xs font-medium adm-text-secondary cursor-pointer"
+                  >
+                    Impersonate Admin
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const target = inspectTenant;
+                      setInspectTenant(null);
+                      handleOpenEditAdmin(target);
+                    }}
+                    className="inline-flex h-10 items-center justify-center rounded-lg border adm-divider adm-surface adm-surface-hover px-3 text-xs font-medium adm-text-secondary cursor-pointer"
+                  >
+                    Edit Credentials
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const target = inspectTenant;
+                      setInspectTenant(null);
+                      setDomainModalTenant(target);
+                    }}
+                    className="inline-flex h-10 items-center justify-center rounded-lg border adm-divider adm-surface adm-surface-hover px-3 text-xs font-medium adm-text-secondary cursor-pointer"
+                  >
+                    Manage Domains
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleExportTenantData(inspectTenant.id, inspectTenant.slug)}
+                    className="inline-flex h-10 items-center justify-center rounded-lg border adm-divider adm-surface adm-surface-hover px-3 text-xs font-medium adm-text-secondary cursor-pointer"
+                  >
+                    Export Snapshot
+                  </button>
+                </div>
+              </div>
+            </div>
+          </aside>
         </div>
       )}
     </div>

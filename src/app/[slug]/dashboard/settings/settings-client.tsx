@@ -876,7 +876,7 @@ export default function SettingsClient({
                 School Fee Payment Options
               </span>
               <p className="text-xs text-slate-500 mt-0.5">
-                School fees either use this school’s own Paystack account or direct bank transfer. These payments do not go through the BMS platform account.
+                School fees either use this school’s own payment gateway account or direct bank transfer. These payments do not go through the platform account.
               </p>
             </div>
 

@@ -98,6 +98,9 @@ export function SettingsClient({ superAdmin }: SettingsClientProps) {
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [defaultPinFeePercent, setDefaultPinFeePercent] = useState(5.0);
   const [defaultPinMaxUses, setDefaultPinMaxUses] = useState(5);
+  const [defaultPinBasePrice, setDefaultPinBasePrice] = useState(1000);
+  const [minPinPrice, setMinPinPrice] = useState(100);
+  const [allowTenantPinPricing, setAllowTenantPinPricing] = useState(true);
   const [activePaymentGateway, setActivePaymentGateway] = useState<'paystack' | 'flutterwave' | 'stripe'>('paystack');
   const [paystackPublicKey, setPaystackPublicKey] = useState('');
   const [paystackSecretKey, setPaystackSecretKey] = useState('');
@@ -143,6 +146,9 @@ export function SettingsClient({ superAdmin }: SettingsClientProps) {
         if (data.defaultTimezone) setDefaultTimezone(data.defaultTimezone);
         if (typeof data.defaultPinFeePercent === 'number') setDefaultPinFeePercent(data.defaultPinFeePercent);
         if (typeof data.defaultPinMaxUses === 'number') setDefaultPinMaxUses(data.defaultPinMaxUses);
+        if (typeof data.defaultPinBasePrice === 'number') setDefaultPinBasePrice(data.defaultPinBasePrice);
+        if (typeof data.minPinPrice === 'number') setMinPinPrice(data.minPinPrice);
+        if (data.allowTenantPinPricing !== undefined) setAllowTenantPinPricing(Boolean(data.allowTenantPinPricing));
         if (data.activePaymentGateway) setActivePaymentGateway(data.activePaymentGateway);
         if (data.paystackPublicKey) setPaystackPublicKey(data.paystackPublicKey);
         if (data.paystackSecretKey) setPaystackSecretKey(data.paystackSecretKey);
@@ -195,6 +201,9 @@ export function SettingsClient({ superAdmin }: SettingsClientProps) {
           maintenanceMode,
           defaultPinFeePercent,
           defaultPinMaxUses,
+          defaultPinBasePrice,
+          minPinPrice,
+          allowTenantPinPricing,
           activePaymentGateway,
           paystackPublicKey,
           paystackSecretKey,
@@ -581,6 +590,57 @@ export function SettingsClient({ superAdmin }: SettingsClientProps) {
                 <input type="number" min="1" max="20" value={defaultPinMaxUses} onChange={(e) => setDefaultPinMaxUses(Number(e.target.value))} className={`${inputClass} text-sky-500`} />
                 <p className="text-[10px] text-sky-500 font-mono">Prevents PIN sharing while ensuring fair usage.</p>
               </SettingField>
+              <SettingField
+                label={`Base Result PIN Price (${baseCurrencyCode})`}
+                hint="Default starting PIN price for all schools (stored in base currency and auto-converted to display currency)."
+              >
+                <input
+                  type="number"
+                  min="0"
+                  max="1000000"
+                  step="50"
+                  value={defaultPinBasePrice}
+                  onChange={(e) => setDefaultPinBasePrice(Number(e.target.value))}
+                  className={inputClass}
+                />
+                {autoConvertCurrency && defaultCurrencyCode !== baseCurrencyCode && (
+                  <p className="text-[10px] adm-text-muted font-mono">
+                    Displays as: <strong>{defaultCurrencySymbol}{(defaultPinBasePrice * currencyExchangeRate).toLocaleString(undefined, { maximumFractionDigits: 2 })}</strong> ({defaultCurrencyCode})
+                  </p>
+                )}
+              </SettingField>
+              <SettingField
+                label={`Minimum Allowed PIN Price Floor (${baseCurrencyCode})`}
+                hint="Lowest price any school is permitted to set for a Result PIN (protects platform revenue share)."
+              >
+                <input
+                  type="number"
+                  min="0"
+                  max="1000000"
+                  step="50"
+                  value={minPinPrice}
+                  onChange={(e) => setMinPinPrice(Number(e.target.value))}
+                  className={inputClass}
+                />
+                {autoConvertCurrency && defaultCurrencyCode !== baseCurrencyCode && (
+                  <p className="text-[10px] adm-text-muted font-mono">
+                    Floor displays as: <strong>{defaultCurrencySymbol}{(minPinPrice * currencyExchangeRate).toLocaleString(undefined, { maximumFractionDigits: 2 })}</strong> ({defaultCurrencyCode})
+                  </p>
+                )}
+              </SettingField>
+              <div className="md:col-span-2">
+                <ToggleField
+                  label="Allow Schools to Customize PIN Price"
+                  hint="When enabled, schools can set their own PIN price at or above your minimum floor. When disabled, all schools use your exact Base Result PIN Price."
+                  checked={allowTenantPinPricing}
+                  onChange={setAllowTenantPinPricing}
+                  benefitText={
+                    allowTenantPinPricing
+                      ? 'Flexible mode: schools can price above your minimum floor.'
+                      : 'Standardized mode: every school is locked to your exact Base Result PIN Price.'
+                  }
+                />
+              </div>
               <SettingField label="Active Platform Payment Gateway" colSpan hint="Automatically routes school subscription checkouts with idempotent settlement and minor-unit conversion for any currency.">
                 <div className="space-y-3">
                   <select

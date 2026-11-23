@@ -65,14 +65,24 @@ export function PinsManagerClient({
   slug,
   schoolName,
   initialPinPrice,
+  basePinPrice = 1000,
+  minPinPrice = 100,
+  allowTenantPinPricing = true,
+  maxUsesPerPin = 5,
   onPriceChange,
 }: {
   slug: string;
   schoolName: string;
   initialPinPrice?: number;
+  basePinPrice?: number;
+  minPinPrice?: number;
+  allowTenantPinPricing?: boolean;
+  maxUsesPerPin?: number;
   onPriceChange?: (price: number) => void;
 }) {
-  const { localization: { currencySymbol, locale } } = useLanguage();
+  const { formatMoney, localization } = useLanguage();
+  const { currencySymbol, baseCurrencyCode, currencyCode, locale } = localization;
+  const fmt = (amount: number, decimals = 2) => formatMoney(amount, decimals);
   const [batches, setBatches] = useState<PinBatchItem[]>([]);
   const [onlinePurchases, setOnlinePurchases] = useState<OnlinePinPurchase[]>([]);
   const [bankTransferPurchases, setBankTransferPurchases] = useState<PinBankTransfer[]>([]);
@@ -82,15 +92,16 @@ export function PinsManagerClient({
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  // Universal Single Pricing State (Governs both Online and Physical Scratch Cards)
-  const [universalPrice, setUniversalPrice] = useState<number>(initialPinPrice || 1000);
+  // Universal Single Pricing State (stored in platform base currency, converted on display via formatMoney)
+  const effectiveDefault = allowTenantPinPricing ? (initialPinPrice ?? basePinPrice) : basePinPrice;
+  const [universalPrice, setUniversalPrice] = useState<number>(effectiveDefault);
   const [savingPrice, setSavingPrice] = useState(false);
   const [priceSavedNotice, setPriceSavedNotice] = useState(false);
 
   // Order Batch Modal State
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [quantity, setQuantity] = useState<number>(100);
-  const [pricePerPin, setPricePerPin] = useState<number>(initialPinPrice || 1000);
+  const [pricePerPin, setPricePerPin] = useState<number>(effectiveDefault);
   const [ordering, setOrdering] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
 
@@ -287,48 +298,66 @@ export function PinsManagerClient({
           {/* Universal Price Input */}
           <div className="lg:col-span-4 space-y-4">
             <div>
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                Official Result PIN Sale Price ({currencySymbol})
-              </label>
+              <div className="flex items-center justify-between gap-2 mb-1.5">
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                  Official Result PIN Price ({baseCurrencyCode})
+                </label>
+                {currencyCode !== baseCurrencyCode && (
+                  <span className="rounded-md bg-blue-50 px-2 py-0.5 font-mono text-[11px] font-semibold text-blue-700">
+                    = {fmt(universalPrice, 2)}
+                  </span>
+                )}
+              </div>
               <div className="relative">
-                <span className="absolute left-3.5 top-2.5 text-slate-400 font-bold text-xs">{currencySymbol}</span>
+                <span className="absolute left-3.5 top-2.5 text-slate-400 font-bold text-[11px] font-mono">
+                  {baseCurrencyCode}
+                </span>
                 <input
                   type="number"
-                  min="100"
+                  min={minPinPrice}
                   step="50"
+                  disabled={!allowTenantPinPricing}
                   value={universalPrice}
                   onChange={(e) => {
                     const val = Number(e.target.value);
                     setUniversalPrice(val);
                     setPricePerPin(val);
                   }}
-                  className="w-full pl-8 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full pl-14 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-slate-100 disabled:text-slate-500 disabled:cursor-not-allowed"
                 />
               </div>
-              <p className="text-[11px] text-slate-400 mt-1.5 leading-relaxed">
-                Applies to parent online purchases on the result checker portal and pre-fills the face value for physical scratch card batches.
+              <p className="text-[11px] text-slate-500 mt-1.5 leading-relaxed">
+                {allowTenantPinPricing
+                  ? `Minimum allowed by platform: ${fmt(minPinPrice, 2)} (${minPinPrice.toLocaleString()} ${baseCurrencyCode}). Applies to online purchases and physical PIN batches.`
+                  : `Standardized at ${fmt(basePinPrice, 2)} by the platform administrator.`}
               </p>
             </div>
 
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={handleSaveUniversalPrice}
-                disabled={savingPrice || (stats?.currentSellingPrice !== undefined && universalPrice === stats.currentSellingPrice)}
-                className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:bg-slate-200 disabled:text-slate-400 text-white text-xs font-bold transition-all cursor-pointer disabled:cursor-not-allowed"
-              >
-                {savingPrice ? 'Saving...' : 'Update Official Price'}
-              </button>
-              {priceSavedNotice && (
-                <span className="text-[11px] font-semibold text-emerald-600">✓ Price Saved</span>
-              )}
-            </div>
+            {allowTenantPinPricing ? (
+              <div className="flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={handleSaveUniversalPrice}
+                  disabled={savingPrice || universalPrice < minPinPrice || (stats?.currentSellingPrice !== undefined && universalPrice === stats.currentSellingPrice)}
+                  className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:bg-slate-200 disabled:text-slate-400 text-white text-xs font-bold transition-all cursor-pointer disabled:cursor-not-allowed"
+                >
+                  {savingPrice ? 'Saving...' : 'Update Official Price'}
+                </button>
+                {priceSavedNotice && (
+                  <span className="text-[11px] font-semibold text-emerald-600">✓ Price Saved</span>
+                )}
+              </div>
+            ) : (
+              <div className="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-[11px] font-medium text-slate-600">
+                Managed by platform base pricing
+              </div>
+            )}
 
             <div className="pt-2">
               <div className="p-3 rounded-xl bg-slate-50 border border-slate-200/80 flex items-center justify-between text-xs text-slate-600">
                 <span className="font-semibold text-slate-700">Anti-Sharing Usage Limit</span>
                 <span className="px-2 py-0.5 rounded-md bg-white border border-slate-200 font-mono text-[10px] font-bold text-slate-800">
-                  5 Uses / Student
+                  {maxUsesPerPin} Uses / Student
                 </span>
               </div>
             </div>
@@ -355,20 +384,20 @@ export function PinsManagerClient({
               <div className="grid grid-cols-3 gap-2 text-center pt-2 border-t border-slate-800">
                 <div className="p-2 rounded-lg bg-slate-800/80">
                   <span className="text-[9px] text-slate-400 block uppercase">Parent Pays</span>
-                  <span className="text-xs font-bold text-white">{currencySymbol}{universalPrice.toLocaleString()}</span>
+                  <span className="text-xs font-bold text-white tabular-nums">{fmt(universalPrice, 2)}</span>
                 </div>
                 <div className="p-2 rounded-lg bg-slate-800/80">
                   <span className="text-[9px] text-slate-400 block uppercase">Platform paid upfront</span>
-                  <span className="text-xs font-bold text-cyan-400">{currencySymbol}{(Math.round(universalPrice * platformFeeRate * 100) / 100).toLocaleString()}</span>
+                  <span className="text-xs font-bold text-cyan-400 tabular-nums">{fmt(Math.round(universalPrice * platformFeeRate * 100) / 100, 2)}</span>
                 </div>
                 <div className="p-2 rounded-lg bg-emerald-950/80 border border-emerald-800">
                   <span className="text-[9px] text-emerald-300 block uppercase font-semibold">School receives</span>
-                  <span className="text-xs font-bold text-emerald-400">{currencySymbol}{universalPrice.toLocaleString()}</span>
+                  <span className="text-xs font-bold text-emerald-400 tabular-nums">{fmt(universalPrice, 2)}</span>
                 </div>
               </div>
 
               <p className="text-[10px] text-slate-400 leading-tight">
-                The platform payout status below is updated after BMS records a bank payout to the school.
+                The platform payout status below is updated after the platform records a bank payout to the school.
               </p>
             </div>
 
@@ -391,20 +420,20 @@ export function PinsManagerClient({
               <div className="grid grid-cols-3 gap-2 text-center pt-2 border-t border-slate-800">
                 <div className="p-2 rounded-lg bg-slate-800/80">
                   <span className="text-[9px] text-slate-400 block uppercase">Student Pays</span>
-                  <span className="text-xs font-bold text-white">{currencySymbol}{universalPrice.toLocaleString()}</span>
+                  <span className="text-xs font-bold text-white tabular-nums">{fmt(universalPrice, 2)}</span>
                 </div>
                 <div className="p-2 rounded-lg bg-slate-800/80">
                   <span className="text-[9px] text-slate-400 block uppercase">Platform paid at stock purchase</span>
-                  <span className="text-xs font-bold text-cyan-400">{currencySymbol}{(Math.round(universalPrice * platformFeeRate * 100) / 100).toLocaleString()}</span>
+                  <span className="text-xs font-bold text-cyan-400 tabular-nums">{fmt(Math.round(universalPrice * platformFeeRate * 100) / 100, 2)}</span>
                 </div>
                 <div className="p-2 rounded-lg bg-emerald-950/80 border border-emerald-800">
                   <span className="text-[9px] text-emerald-300 block uppercase font-semibold">School Net</span>
-                  <span className="text-xs font-bold text-emerald-400">{currencySymbol}{universalPrice.toLocaleString()}</span>
+                  <span className="text-xs font-bold text-emerald-400 tabular-nums">{fmt(universalPrice, 2)}</span>
                 </div>
               </div>
 
               <p className="text-[10px] text-slate-400 leading-tight">
-                The school pays BMS&apos;s percentage when buying this PIN stock. Sale proceeds then belong to the school.
+                The school pays the platform&apos;s percentage when buying this PIN stock. Sale proceeds then belong to the school.
               </p>
             </div>
           </div>
@@ -454,10 +483,10 @@ export function PinsManagerClient({
 
         <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-xs">
           <span className="text-[11px] font-bold uppercase tracking-wider text-purple-600 font-mono block">Official Selling Price</span>
-          <span className="text-2xl font-black text-slate-900 mt-1 block">
-            {currencySymbol}{universalPrice.toLocaleString()}
+          <span className="text-2xl font-black text-slate-900 mt-1 block tabular-nums">
+            {fmt(universalPrice, 2)}
           </span>
-          <span className="text-[11px] text-purple-600 font-semibold mt-1 block">5 Uses / Single Student Bound</span>
+          <span className="text-[11px] text-purple-600 font-semibold mt-1 block">{maxUsesPerPin} Uses / Single Student Bound</span>
         </div>
       </div>
 
@@ -513,11 +542,11 @@ export function PinsManagerClient({
                     <td className="py-3.5 px-4 font-bold text-slate-900">
                       {batch.quantity} Cards
                     </td>
-                    <td className="py-3.5 px-4 font-semibold text-slate-700">
-                      {currencySymbol}{batch.pricePerPin.toLocaleString()}
+                    <td className="py-3.5 px-4 font-semibold text-slate-700 tabular-nums">
+                      {fmt(batch.pricePerPin, 2)}
                     </td>
-                    <td className="py-3.5 px-4 font-semibold text-cyan-700">
-                      {currencySymbol}{batch.platformFeeTotal.toLocaleString()}
+                    <td className="py-3.5 px-4 font-semibold text-cyan-700 tabular-nums">
+                      {fmt(batch.platformFeeTotal, 2)}
                     </td>
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-2">
@@ -580,7 +609,7 @@ export function PinsManagerClient({
                   <td className="p-3"><strong className="block text-slate-800">{item.studentName}</strong><span className="text-slate-500">{item.termName}</span></td>
                   <td className="p-3">{item.senderName}<span className="block text-slate-500">{item.bankName}</span></td>
                   <td className="p-3 font-mono text-slate-600">{item.paymentRef || '—'}{item.proofUrl && <a className="ml-2 text-blue-700 underline" href={item.proofUrl} target="_blank" rel="noreferrer">Receipt</a>}</td>
-                  <td className="p-3 font-semibold">{currencySymbol}{item.amount.toLocaleString()}</td>
+                  <td className="p-3 font-semibold tabular-nums">{fmt(item.amount, 2)}</td>
                   <td className="p-3"><span className={`rounded-full px-2 py-1 font-semibold ${item.status === 'approved' ? 'bg-emerald-50 text-emerald-800' : item.status === 'rejected' ? 'bg-rose-50 text-rose-800' : 'bg-amber-50 text-amber-900'}`}>{item.status}</span>{item.rejectionReason && <span className="mt-1 block max-w-48 text-[10px] text-rose-700">{item.rejectionReason}</span>}</td>
                   <td className="p-3">{item.status === 'pending' ? <div className="flex gap-1"><button disabled={reviewingTransfer === item.id} onClick={() => reviewBankTransfer(item.id, 'approve')} className="rounded-md bg-emerald-700 px-2 py-1.5 font-semibold text-white disabled:opacity-50">Approve</button><button disabled={reviewingTransfer === item.id} onClick={() => reviewBankTransfer(item.id, 'reject')} className="rounded-md border border-rose-200 px-2 py-1.5 font-semibold text-rose-800 disabled:opacity-50">Reject</button></div> : <span className="text-slate-500">{item.reviewerName || 'Reviewed'}</span>}</td>
                 </tr>)}
@@ -593,12 +622,12 @@ export function PinsManagerClient({
       <section className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
         <div className="p-5 border-b border-slate-100">
           <h2 className="text-sm font-bold text-slate-900">Online Result PIN Payments</h2>
-          <p className="text-xs text-slate-500 mt-1">Online buyers pay your school through your Paystack account. The PIN is taken from stock you already paid BMS for, so there is no second platform deduction.</p>
+          <p className="text-xs text-slate-500 mt-1">Online buyers pay your school through your connected payment gateway. The PIN is taken from stock you already paid the platform fee for, so there is no second deduction.</p>
           <div className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-xs">
-            <span>Gross collected: <strong>{currencySymbol}{(stats?.onlinePinTotals?.gross || 0).toLocaleString()}</strong></span>
-            <span>School allocation: <strong className="text-emerald-700">{currencySymbol}{(stats?.onlinePinTotals?.schoolNet || 0).toLocaleString()}</strong></span>
-            <span>Paid directly to school from stock sales: <strong className="text-emerald-700">{currencySymbol}{(stats?.onlinePinTotals?.schoolDirectSales || 0).toLocaleString()}</strong></span>
-            <span>Platform share on older direct sales: <strong className="text-blue-700">{currencySymbol}{(stats?.onlinePinTotals?.platformFee || 0).toLocaleString()}</strong></span>
+            <span>Gross collected: <strong className="tabular-nums">{fmt(stats?.onlinePinTotals?.gross || 0, 2)}</strong></span>
+            <span>School allocation: <strong className="text-emerald-700 tabular-nums">{fmt(stats?.onlinePinTotals?.schoolNet || 0, 2)}</strong></span>
+            <span>Paid directly to school from stock sales: <strong className="text-emerald-700 tabular-nums">{fmt(stats?.onlinePinTotals?.schoolDirectSales || 0, 2)}</strong></span>
+            <span>Platform share on older direct sales: <strong className="text-blue-700 tabular-nums">{fmt(stats?.onlinePinTotals?.platformFee || 0, 2)}</strong></span>
           </div>
         </div>
         {onlinePurchases.length === 0 ? (
@@ -615,9 +644,9 @@ export function PinsManagerClient({
                     <td className="p-3 text-slate-600">{new Date(purchase.paidAt).toLocaleDateString('en-GB')}</td>
                     <td className="p-3"><strong className="block text-slate-800">{purchase.studentName}</strong><span className="text-slate-500">{purchase.termName}</span></td>
                     <td className="p-3 font-mono text-slate-600">{purchase.paymentRef}</td>
-                    <td className="p-3 font-semibold">{currencySymbol}{purchase.amount.toLocaleString()}</td>
-                    <td className="p-3 font-semibold text-emerald-700">{currencySymbol}{purchase.schoolNet.toLocaleString()}</td>
-                    <td className="p-3 font-semibold text-blue-700">{currencySymbol}{purchase.platformFee.toLocaleString()}</td>
+                    <td className="p-3 font-semibold tabular-nums">{fmt(purchase.amount, 2)}</td>
+                    <td className="p-3 font-semibold text-emerald-700 tabular-nums">{fmt(purchase.schoolNet, 2)}</td>
+                    <td className="p-3 font-semibold text-blue-700 tabular-nums">{fmt(purchase.platformFee, 2)}</td>
                     <td className="p-3">{purchase.payoutStatus}</td>
                     <td className="p-3 capitalize">{purchase.status}</td>
                   </tr>
@@ -686,18 +715,26 @@ export function PinsManagerClient({
 
               {/* Resale Price */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                  Price You Sell to Student (NGN)
-                </label>
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                    Price You Sell to Student ({baseCurrencyCode})
+                  </label>
+                  {currencyCode !== baseCurrencyCode && (
+                    <span className="font-mono text-[11px] font-semibold text-blue-700">
+                      = {fmt(pricePerPin, 2)}
+                    </span>
+                  )}
+                </div>
                 <div className="relative">
-                  <span className="absolute left-3.5 top-2.5 text-slate-400 font-bold">{currencySymbol}</span>
+                  <span className="absolute left-3.5 top-2.5 text-slate-400 font-bold text-xs font-mono">{baseCurrencyCode}</span>
                   <input
                     type="number"
-                    min="100"
-                    step="100"
+                    min={minPinPrice}
+                    step="50"
+                    disabled={!allowTenantPinPricing}
                     value={pricePerPin}
-                    onChange={(e) => setPricePerPin(Math.max(100, parseFloat(e.target.value) || 0))}
-                    className="w-full pl-8 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onChange={(e) => setPricePerPin(Math.max(minPinPrice, parseFloat(e.target.value) || 0))}
+                    className="w-full pl-14 pr-3.5 py-2.5 rounded-xl border border-slate-300 text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:bg-slate-100 disabled:text-slate-500"
                     placeholder="e.g. 1500"
                   />
                 </div>
@@ -710,22 +747,22 @@ export function PinsManagerClient({
               <div className="p-4 rounded-2xl bg-slate-900 text-white space-y-3">
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-slate-400 font-medium">Platform Fee Rate</span>
-                  <span className="font-bold text-cyan-400">{platformFeeRate * 100}% per PIN ({currencySymbol}{platformFeePerPin.toLocaleString()})</span>
+                  <span className="font-bold text-cyan-400 tabular-nums">{platformFeeRate * 100}% per PIN ({fmt(platformFeePerPin, 2)})</span>
                 </div>
 
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-slate-400 font-medium">Projected School Sales ({quantity} cards)</span>
-                  <span className="font-bold text-white">{currencySymbol}{projectedGross.toLocaleString()}</span>
+                  <span className="font-bold text-white tabular-nums">{fmt(projectedGross, 2)}</span>
                 </div>
 
                 <div className="flex items-center justify-between text-xs">
                   <span className="text-slate-400 font-medium">School Net Profit</span>
-                  <span className="font-bold text-emerald-400">{currencySymbol}{schoolNetProfit.toLocaleString()}</span>
+                  <span className="font-bold text-emerald-400 tabular-nums">{fmt(schoolNetProfit, 2)}</span>
                 </div>
 
                 <div className="pt-2 border-t border-slate-800 flex items-center justify-between">
                   <span className="text-xs font-bold text-slate-200">Amount Due Platform Today:</span>
-                  <span className="text-lg font-black text-cyan-400">{currencySymbol}{totalPlatformFee.toLocaleString()}</span>
+                  <span className="text-lg font-black text-cyan-400 tabular-nums">{fmt(totalPlatformFee, 2)}</span>
                 </div>
               </div>
             </div>
@@ -739,10 +776,10 @@ export function PinsManagerClient({
                 className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50"
               >
                 {ordering ? (
-                  'Connecting to Paystack...'
+                  'Connecting to Gateway...'
                 ) : (
                   <>
-                    <span>Pay {currencySymbol}{totalPlatformFee.toLocaleString()} via Paystack Gateway</span>
+                    <span>Pay {fmt(totalPlatformFee, 2)} via Payment Gateway</span>
                     <span>→</span>
                   </>
                 )}

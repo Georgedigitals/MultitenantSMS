@@ -7,6 +7,7 @@ interface AddSessionModalProps {
   onSessionCreated?: (newSession: { id: string; label: string; isCurrent: boolean }) => void;
   triggerButtonText?: string;
   className?: string;
+  style?: React.CSSProperties;
 }
 
 export function AddSessionModal({
@@ -14,6 +15,7 @@ export function AddSessionModal({
   onSessionCreated,
   triggerButtonText = '+ Add Academic Session',
   className,
+  style,
 }: AddSessionModalProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -66,6 +68,7 @@ export function AddSessionModal({
       <button
         type="button"
         onClick={() => setIsOpen(true)}
+        style={style}
         className={
           className ||
           'inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-blue-600 bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-semibold shadow-2xs transition-colors cursor-pointer'

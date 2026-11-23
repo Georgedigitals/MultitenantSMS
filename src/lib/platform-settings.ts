@@ -120,17 +120,50 @@ export async function getPlatformLocalization(): Promise<PlatformLocalizationCon
   }
 }
 
-export async function getPlatformPinSettings(): Promise<{ feePercent: number; maxUses: number }> {
-  const [feeSetting, maxUsesSetting] = await Promise.all([
-    prisma.platformSetting.findUnique({ where: { key: 'defaultPinFeePercent' } }),
-    prisma.platformSetting.findUnique({ where: { key: 'defaultPinMaxUses' } }),
-  ]);
-  const feePercent = feeSetting ? Number(feeSetting.value) : 5.0;
-  const maxUses = maxUsesSetting ? Number(maxUsesSetting.value) : 5;
-  return {
-    feePercent: !isNaN(feePercent) ? feePercent : 5.0,
-    maxUses: Number.isInteger(maxUses) ? maxUses : 5,
-  };
+export async function getPlatformPinSettings(): Promise<{
+  feePercent: number;
+  maxUses: number;
+  basePinPrice: number;
+  minPinPrice: number;
+  allowTenantPinPricing: boolean;
+}> {
+  try {
+    const keys = [
+      'defaultPinFeePercent',
+      'defaultPinMaxUses',
+      'defaultPinBasePrice',
+      'minPinPrice',
+      'allowTenantPinPricing',
+    ];
+    const rows = await prisma.platformSetting.findMany({
+      where: { key: { in: keys } },
+    });
+    const map = new Map(rows.map((r) => [r.key, r.value]));
+
+    const feePercent = map.has('defaultPinFeePercent') ? Number(map.get('defaultPinFeePercent')) : 5.0;
+    const maxUses = map.has('defaultPinMaxUses') ? Number(map.get('defaultPinMaxUses')) : 5;
+    const basePinPrice = map.has('defaultPinBasePrice') ? Number(map.get('defaultPinBasePrice')) : 1000;
+    const minPinPrice = map.has('minPinPrice') ? Number(map.get('minPinPrice')) : 100;
+    const allowTenantPinPricing = map.has('allowTenantPinPricing')
+      ? map.get('allowTenantPinPricing') === 'true'
+      : true;
+
+    return {
+      feePercent: Number.isFinite(feePercent) && feePercent >= 0 ? feePercent : 5.0,
+      maxUses: Number.isInteger(maxUses) && maxUses >= 1 ? maxUses : 5,
+      basePinPrice: Number.isFinite(basePinPrice) && basePinPrice >= 0 ? basePinPrice : 1000,
+      minPinPrice: Number.isFinite(minPinPrice) && minPinPrice >= 0 ? minPinPrice : 100,
+      allowTenantPinPricing,
+    };
+  } catch {
+    return {
+      feePercent: 5.0,
+      maxUses: 5,
+      basePinPrice: 1000,
+      minPinPrice: 100,
+      allowTenantPinPricing: true,
+    };
+  }
 }
 
 export async function getPlansForDisplay() {

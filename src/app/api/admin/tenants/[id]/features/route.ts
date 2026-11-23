@@ -54,7 +54,7 @@ export async function PATCH(
           { status: 400 }
         );
       }
-      if (!isBuiltInFeatureKey(featureKey)) return NextResponse.json({ error: 'This is not a supported BMS module.' }, { status: 400 });
+      if (!isBuiltInFeatureKey(featureKey)) return NextResponse.json({ error: 'This is not a supported platform module.' }, { status: 400 });
       const feature = await prisma.feature.findUnique({ where: { key: featureKey }, select: { key: true } });
       if (!feature) return NextResponse.json({ error: 'Feature not found.' }, { status: 404 });
       if (typeof paymentReference === 'string' && paymentReference.trim().length > 120) {
@@ -91,7 +91,7 @@ export async function PATCH(
       if (typeof featureKey !== 'string' || !featureKey) {
         return NextResponse.json({ error: 'featureKey is required' }, { status: 400 });
       }
-      if (!isBuiltInFeatureKey(featureKey)) return NextResponse.json({ error: 'This is not a supported BMS module.' }, { status: 400 });
+      if (!isBuiltInFeatureKey(featureKey)) return NextResponse.json({ error: 'This is not a supported platform module.' }, { status: 400 });
       const admin = auth.superAdmin;
       await prisma.$transaction(async (tx) => {
         const removed = await tx.tenantFeatureOverride.deleteMany({ where: { tenantId, featureKey } });

@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Feature key must start with a letter and contain only lowercase letters, numbers, and underscores (2–64 characters).' }, { status: 400 });
     }
     if (!isBuiltInFeatureKey(cleanKey)) {
-      return NextResponse.json({ error: 'Choose an existing BMS module from the feature catalogue. New custom modules must be implemented and connected in code first.' }, { status: 400 });
+      return NextResponse.json({ error: 'Choose an existing platform module from the feature catalogue. New custom modules must be implemented and connected in code first.' }, { status: 400 });
     }
 
     const feature = await prisma.feature.upsert({

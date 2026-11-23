@@ -7,7 +7,7 @@ import { BatchPrintClient } from './print-client';
 export const dynamic = 'force-dynamic';
 
 export const metadata = {
-  title: 'Print WAEC-Style Scratch Cards | School BMS',
+  title: 'Print Result Checker Cards | School Portal',
 };
 
 export default async function BatchPrintPage({

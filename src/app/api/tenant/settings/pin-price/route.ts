@@ -3,6 +3,8 @@ import { getTenantContext } from '@/lib/tenant';
 import { prisma } from '@/lib/prisma';
 import { calculatePinFees } from '@/lib/pin';
 import { getTenantUserFromCookies } from '@/lib/auth/tenant-auth';
+import { getPlatformLocalization, getPlatformPinSettings } from '@/lib/platform-settings';
+import { formatMoney } from '@/lib/i18n/currency';
 
 export async function GET(req: NextRequest) {
   try {
@@ -37,13 +39,28 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized: Only school administrators can update PIN price' }, { status: 403 });
     }
 
+    const [pinSettings, localization] = await Promise.all([
+      getPlatformPinSettings(),
+      getPlatformLocalization(),
+    ]);
+
+    if (!pinSettings.allowTenantPinPricing) {
+      return NextResponse.json(
+        { error: 'Result PIN pricing is standardized by the platform administrator and cannot be modified per school.' },
+        { status: 403 }
+      );
+    }
+
     const body = await req.json();
     const { pinPrice } = body;
 
+    const minAllowed = Math.max(0, pinSettings.minPinPrice);
     const parsedPrice = Number(pinPrice);
-    if (pinPrice === undefined || !Number.isFinite(parsedPrice) || parsedPrice < 100 || parsedPrice > 1_000_000) {
+    if (pinPrice === undefined || !Number.isFinite(parsedPrice) || parsedPrice < minAllowed || parsedPrice > 1_000_000) {
       return NextResponse.json(
-        { error: 'Result PIN price must be between ₦100 and ₦1,000,000.' },
+        {
+          error: `Result PIN price must be between ${formatMoney(minAllowed, localization)} and ${formatMoney(1_000_000, localization)} (base ${localization.baseCurrencyCode}: ${minAllowed.toLocaleString()} – 1,000,000).`,
+        },
         { status: 400 }
       );
     }

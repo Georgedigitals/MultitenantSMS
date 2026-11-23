@@ -1141,16 +1141,34 @@ export default function TenantSidebar({
                     <Link
                       key={item.href}
                       href={targetHref}
-                      className={`flex items-center gap-2.5 px-2.5 h-8 rounded-[6px] text-[13px] transition-colors ${
+                      className={`relative flex items-center gap-2.5 px-2.5 h-8 rounded-lg text-[13px] transition-colors ${
                         isActive
-                          ? 'bg-[#e7e5e0] text-[#0a0a0a] font-medium'
+                          ? 'font-semibold'
                           : isLocked
                           ? 'text-[#8b8880] hover:text-[#0a0a0a] hover:bg-[#eceae6]/70'
                           : 'text-[#4f4d48] hover:text-[#0a0a0a] hover:bg-[#eceae6]'
                       } ${collapsed ? 'justify-center px-0' : ''}`}
+                      style={
+                        isActive
+                          ? {
+                              backgroundColor: `color-mix(in srgb, ${primaryColor} 12%, transparent)`,
+                              color: primaryColor,
+                            }
+                          : undefined
+                      }
                       title={collapsed ? (isLocked ? `${item.label} (Upgrade required)` : item.label) : undefined}
                     >
-                      <span className={`shrink-0 relative ${isActive ? 'text-[#0a0a0a]' : isLocked ? 'text-[#9b9890]' : 'text-[#66645e]'}`}>
+                      {isActive && !collapsed && (
+                        <span
+                          aria-hidden="true"
+                          className="absolute left-0 top-1.5 bottom-1.5 w-[3px] rounded-full"
+                          style={{ backgroundColor: primaryColor }}
+                        />
+                      )}
+                      <span
+                        className={`shrink-0 relative ${isActive ? '' : isLocked ? 'text-[#9b9890]' : 'text-[#66645e]'}`}
+                        style={isActive ? { color: primaryColor } : undefined}
+                      >
                         {item.icon}
                         {collapsed && isLocked && (
                           <span className="absolute -top-1.5 -right-1.5">
@@ -1542,15 +1560,26 @@ export default function TenantSidebar({
                           key={item.href}
                           href={targetHref}
                           onClick={() => setMobileOpen(false)}
-                          className={`flex items-center gap-2.5 px-2.5 h-9 rounded-[6px] text-[13px] transition-colors ${
+                          className={`relative flex items-center gap-2.5 px-2.5 h-9 rounded-lg text-[13px] transition-colors ${
                             isActive
-                              ? 'bg-[#e7e5e0] text-[#0a0a0a] font-medium'
+                              ? 'font-semibold'
                               : isLocked
                               ? 'text-[#8b8880] hover:text-[#0a0a0a] hover:bg-[#eceae6]/70'
                               : 'text-[#4f4d48] hover:text-[#0a0a0a] hover:bg-[#eceae6]'
                           }`}
+                          style={
+                            isActive
+                              ? {
+                                  backgroundColor: `color-mix(in srgb, ${primaryColor} 12%, transparent)`,
+                                  color: primaryColor,
+                                }
+                              : undefined
+                          }
                         >
-                          <span className={`shrink-0 ${isActive ? 'text-[#0a0a0a]' : isLocked ? 'text-[#9b9890]' : 'text-[#66645e]'}`}>
+                          <span
+                            className={`shrink-0 ${isActive ? '' : isLocked ? 'text-[#9b9890]' : 'text-[#66645e]'}`}
+                            style={isActive ? { color: primaryColor } : undefined}
+                          >
                             {item.icon}
                           </span>
                           <span className="flex-1 truncate flex items-center justify-between gap-1.5">

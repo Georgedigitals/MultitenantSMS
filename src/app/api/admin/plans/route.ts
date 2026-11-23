@@ -63,7 +63,7 @@ export async function POST(req: NextRequest) {
     }
     const normalizedFeatureKeys = [...new Set(featureKeys.map((key: string) => key.trim()))];
     if (normalizedFeatureKeys.some((key) => !isBuiltInFeatureKey(key))) {
-      return NextResponse.json({ error: 'Plans can only enable capabilities registered in the built-in BMS feature catalogue.' }, { status: 400 });
+      return NextResponse.json({ error: 'Plans can only enable capabilities registered in the built-in platform feature catalogue.' }, { status: 400 });
     }
     const knownFeatures = await prisma.feature.findMany({
       where: { key: { in: normalizedFeatureKeys } },

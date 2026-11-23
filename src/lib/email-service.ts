@@ -843,13 +843,13 @@ export async function sendSuperAdminPasswordResetEmail(options: {
         <div class="card">
           <div class="header">
             <div class="badge">Platform Security Advisory</div>
-            <h1>BMS Platform Administration</h1>
+            <h1>Platform Administration</h1>
             <p>Super Admin Password Reset Request</p>
           </div>
           <div class="body">
             <div class="greeting">Hello, ${adminName || 'Super Admin'}</div>
             <div class="text">
-              We received a request to reset the password for your BMS Platform Super Admin account (<strong>${recipientEmail}</strong>).
+              We received a request to reset the password for your Platform Super Admin account (<strong>${recipientEmail}</strong>).
             </div>
 
             <div class="alert-box">
@@ -866,7 +866,7 @@ export async function sendSuperAdminPasswordResetEmail(options: {
             </div>
           </div>
           <div class="footer">
-            &copy; ${new Date().getFullYear()} BMS Platform Administration • Dedicated School Infrastructure
+            &copy; ${new Date().getFullYear()} Platform Administration • Dedicated School Infrastructure
           </div>
         </div>
       </body>
@@ -875,9 +875,9 @@ export async function sendSuperAdminPasswordResetEmail(options: {
 
   const result = await dispatchEmail({
     to: recipientEmail,
-    subject: 'Action Required: Reset Your BMS Super Admin Password',
+    subject: 'Action Required: Reset Your Super Admin Password',
     html,
-    fromName: 'BMS Platform Administration',
+    fromName: 'Platform Administration',
   });
 
   return { success: result.success, simulated: result.simulated };
@@ -915,12 +915,12 @@ export async function sendSuperAdminPasswordChangedAlert(options: {
       <body>
         <div class="card">
           <div class="header">
-            <h1>BMS Platform Security</h1>
+            <h1>Platform Security</h1>
           </div>
           <div class="body">
             <div class="greeting">Hello, ${adminName || 'Super Admin'}</div>
             <div class="alert-success">
-              <strong>Confirmation:</strong> The password for your BMS Super Admin account (<strong>${recipientEmail}</strong>) was successfully updated.
+              <strong>Confirmation:</strong> The password for your Super Admin account (<strong>${recipientEmail}</strong>) was successfully updated.
             </div>
             <div class="text">
               All previous active login sessions have been terminated as a security precaution. If you performed this change, you may sign in normally using your new password.
@@ -930,7 +930,7 @@ export async function sendSuperAdminPasswordChangedAlert(options: {
             </div>
           </div>
           <div class="footer">
-            &copy; ${new Date().getFullYear()} BMS Platform Administration
+            &copy; ${new Date().getFullYear()} Platform Administration
           </div>
         </div>
       </body>
@@ -939,9 +939,9 @@ export async function sendSuperAdminPasswordChangedAlert(options: {
 
   const result = await dispatchEmail({
     to: recipientEmail,
-    subject: 'Security Alert: Your BMS Super Admin Password Was Changed',
+    subject: 'Security Alert: Your Super Admin Password Was Changed',
     html,
-    fromName: 'BMS Platform Security',
+    fromName: 'Platform Security',
   });
 
   return { success: result.success, simulated: result.simulated };

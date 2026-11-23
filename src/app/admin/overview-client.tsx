@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Building2, CreditCard, ExternalLink, ShieldCheck, UsersRound, Wallet } from 'lucide-react';
 import { PlatformFinancialOverview } from '@/lib/super-admin';
@@ -30,6 +31,7 @@ interface OverviewClientProps {
     type: 'capacity' | 'trial' | 'suspended';
     message: string;
   }>;
+  growthSeries?: Array<{ label: string; schools: number }>;
   impersonationLogs: Array<{
     id: string;
     reason: string;
@@ -65,10 +67,31 @@ export function OverviewClient({
   staffCount,
   recentTenants,
   healthAlerts = [],
+  growthSeries = [],
   impersonationLogs,
 }: OverviewClientProps) {
   const { formatMoney, t } = useLanguage();
+  const [logs, setLogs] = useState(impersonationLogs);
+  const [endingLogId, setEndingLogId] = useState<string | null>(null);
   const fmtCurrency = (amount: number) => formatMoney(amount, 2);
+
+  const handleEndSession = async (logId: string) => {
+    setEndingLogId(logId);
+    try {
+      const res = await fetch('/api/admin/impersonate/end', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ logId }),
+      });
+      if (res.ok) {
+        setLogs((prev) =>
+          prev.map((item) => (item.id === logId ? { ...item, endedAt: new Date().toISOString() } : item))
+        );
+      }
+    } finally {
+      setEndingLogId(null);
+    }
+  };
   const { platformRevenue } = financials;
 
   const keyCounts = [
@@ -234,6 +257,48 @@ export function OverviewClient({
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /> Live
             </span>
           </div>
+
+          {/* Real 6-Month Cumulative School Growth SVG Curve */}
+          {growthSeries.length > 1 && (() => {
+            const maxVal = Math.max(1, ...growthSeries.map((p) => p.schools));
+            const width = 320;
+            const height = 72;
+            const padX = 10;
+            const padY = 8;
+            const coords = growthSeries.map((pt, idx) => {
+              const x = padX + (idx / (growthSeries.length - 1)) * (width - padX * 2);
+              const y = height - padY - (pt.schools / maxVal) * (height - padY * 2);
+              return { x, y, ...pt };
+            });
+            const linePath = coords.map((c, i) => `${i === 0 ? 'M' : 'L'} ${c.x.toFixed(1)} ${c.y.toFixed(1)}`).join(' ');
+            const areaPath = `${linePath} L ${coords[coords.length - 1].x.toFixed(1)} ${height} L ${coords[0].x.toFixed(1)} ${height} Z`;
+            return (
+              <div className="rounded-lg border adm-divider adm-surface px-3 pt-3 pb-2">
+                <div className="flex items-center justify-between text-[10.5px] adm-text-muted mb-1">
+                  <span>6-month school growth</span>
+                  <span className="font-mono font-semibold adm-text-primary">{tenantCount} total</span>
+                </div>
+                <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-[64px] overflow-visible" role="img" aria-label="6-month school growth trend">
+                  <defs>
+                    <linearGradient id="admGrowthFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="var(--adm-accent)" stopOpacity="0.22" />
+                      <stop offset="100%" stopColor="var(--adm-accent)" stopOpacity="0" />
+                    </linearGradient>
+                  </defs>
+                  <path d={areaPath} fill="url(#admGrowthFill)" />
+                  <path d={linePath} fill="none" stroke="var(--adm-accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  {coords.map((c) => (
+                    <circle key={c.label} cx={c.x} cy={c.y} r="3" fill="var(--adm-card-bg)" stroke="var(--adm-accent)" strokeWidth="1.75" />
+                  ))}
+                </svg>
+                <div className="mt-1 flex items-center justify-between font-mono text-[9.5px] adm-text-faint">
+                  {growthSeries.map((pt) => (
+                    <span key={pt.label}>{pt.label}</span>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
 
           <div className="grid grid-cols-3 gap-2.5">
             <div className="rounded-lg border adm-divider adm-surface p-3">
@@ -416,22 +481,34 @@ export function OverviewClient({
             </Link>
           </div>
           <div className="max-h-[460px] divide-y adm-divider overflow-y-auto">
-            {impersonationLogs.length === 0 ? (
+            {logs.length === 0 ? (
               <div className="px-5 py-10 text-center">
                 <p className="text-[13px] font-medium adm-text-primary">No admin activity recorded yet.</p>
                 <p className="mt-1 text-[12px] adm-text-muted">Tenant access sessions will be listed here.</p>
               </div>
             ) : (
-              impersonationLogs.map((log) => (
+              logs.map((log) => (
                 <article key={log.id} className="space-y-2 border-b adm-divider px-5 py-4 last:border-b-0">
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="truncate text-[13px] font-medium adm-text-primary">{log.tenant.name}</p>
                       <p className="mt-0.5 truncate text-[11px] adm-text-muted">Accessed by {log.superAdmin.name}</p>
                     </div>
-                    <span className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium ${log.endedAt ? 'adm-status-neutral' : 'adm-status-active'}`}>
-                      {log.endedAt ? 'Ended' : 'Active'}
-                    </span>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <span className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${log.endedAt ? 'adm-status-neutral' : 'adm-status-active'}`}>
+                        {log.endedAt ? 'Ended' : 'Active'}
+                      </span>
+                      {!log.endedAt && (
+                        <button
+                          type="button"
+                          onClick={() => void handleEndSession(log.id)}
+                          disabled={endingLogId === log.id}
+                          className="rounded-md border adm-divider adm-surface adm-surface-hover px-2 py-0.5 text-[10px] font-semibold adm-text-secondary hover:text-rose-500 cursor-pointer disabled:opacity-50"
+                        >
+                          {endingLogId === log.id ? 'Ending…' : 'End'}
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <p className="text-[12px] leading-5 adm-text-secondary">{log.reason}</p>
                   <time dateTime={log.startedAt} className="block text-[11px] adm-text-faint">

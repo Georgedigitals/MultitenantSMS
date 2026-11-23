@@ -3,6 +3,8 @@ import { notFound, redirect } from 'next/navigation';
 import prisma from '@/lib/prisma';
 import { getTenantContext } from '@/lib/tenant';
 import { getTenantUserFromCookies } from '@/lib/auth/tenant-auth';
+import { getPlatformName } from '@/lib/platform-settings';
+import { FeatureLockedCard } from '@/components/feature-locked-card';
 import DashboardNav from '@/components/dashboard-nav';
 import IdCardsClient, { type IdCardRecord } from './id-cards-client';
 
@@ -19,11 +21,22 @@ export default async function IdCardsPage({ params }: IdCardsPageProps) {
   if (!auth) redirect(`/${slug}/login`);
   if (auth.user.role !== 'school_admin') redirect(`/${slug}/dashboard`);
   if (!tenant.hasFeature('id_cards')) {
+    const platformName = await getPlatformName();
     return (
-      <main className="mx-auto max-w-2xl px-6 py-16 text-center">
-        <h1 className="text-2xl font-semibold text-slate-900">ID cards aren’t included in this plan</h1>
-        <p className="mt-3 text-slate-600">Contact your school administrator or BMS support to request access.</p>
-      </main>
+      <FeatureLockedCard
+        slug={slug}
+        featureTitle="Digital & Printable ID Cards"
+        description="Generate branded student and staff identity cards with school crests, QR verification codes, and batch print layouts."
+        highlights={[
+          'Custom school-branded ID layouts',
+          'Student & staff batch card printing',
+          'Built-in verification QR codes',
+          'Instant PDF export for printers',
+        ]}
+        primaryColor={tenant.branding.primaryColor || '#4f46e5'}
+        platformName={platformName}
+        currentPlanName={tenant.plan.name}
+      />
     );
   }
 

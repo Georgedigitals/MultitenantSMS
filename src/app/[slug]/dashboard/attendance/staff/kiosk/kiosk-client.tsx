@@ -569,7 +569,7 @@ export default function KioskClient({
             </div>
 
             <p className="text-xs text-slate-300 leading-relaxed">
-              Enter your School Admin PIN or Password to unlock and return to the BMS Admin Dashboard.
+              Enter your School Admin PIN or Password to unlock and return to the School Admin Dashboard.
             </p>
 
             <form onSubmit={handleVerifyAdminExit} className="space-y-3">

@@ -32,7 +32,7 @@ function RegistrationPaymentReturn() {
   return (
     <main className="min-h-screen bg-[#f7f8f6] px-5 py-20 text-[#17332a]">
       <section className="mx-auto max-w-lg rounded-2xl border border-[#dce5df] bg-white p-8 shadow-sm">
-        <p className="text-sm font-semibold uppercase tracking-[0.14em] text-[#28704e]">BMS · Secure payment return</p>
+        <p className="text-sm font-semibold uppercase tracking-[0.14em] text-[#28704e]">Secure payment return</p>
         <h1 className="mt-4 text-2xl font-bold">{message}</h1>
         <p className="mt-3 text-sm leading-6 text-[#52645a]">
           Your school account is created only after our server confirms the Paystack transaction and checks its amount and currency.

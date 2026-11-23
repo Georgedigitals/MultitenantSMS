@@ -2,6 +2,7 @@ import React from 'react';
 import { notFound, redirect } from 'next/navigation';
 import { getTenantContext } from '@/lib/tenant';
 import { getTenantUserFromCookies } from '@/lib/auth/tenant-auth';
+import { getPlatformName } from '@/lib/platform-settings';
 import prisma from '@/lib/prisma';
 import SubscriptionClient from './subscription-client';
 
@@ -110,11 +111,15 @@ export default async function SubscriptionPage({ params }: SubscriptionPageProps
     })),
   };
 
+  const platformName = await getPlatformName();
+
   return (
     <SubscriptionClient
       slug={slug}
       tenantId={tenant.id}
       tenantName={tenant.name}
+      primaryColor={tenant.branding.primaryColor || '#4f46e5'}
+      platformName={platformName}
       status={tenantDetails.status}
       trialEndsAt={tenantDetails.trialEndsAt ? tenantDetails.trialEndsAt.toISOString() : null}
       annualContractPrice={tenantDetails.annualContractPrice ? Number(tenantDetails.annualContractPrice) : Number(tenantDetails.plan.price)}
@@ -124,7 +129,7 @@ export default async function SubscriptionPage({ params }: SubscriptionPageProps
       studentCount={studentCount}
       allPlans={allPlans}
       paymentHistory={paymentHistory}
-      adminEmail={auth.user.username.includes('@') ? auth.user.username : `${slug}-admin@bms.local`}
+      adminEmail={auth.user.username.includes('@') ? auth.user.username : `${slug}-admin@school.local`}
       adminName={auth.user.staffProfile?.name || 'School Administrator'}
     />
   );

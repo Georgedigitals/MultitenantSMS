@@ -5,6 +5,8 @@ import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { extractColorsFromImage } from '@/lib/color-extractor';
 import { useLanguage } from '@/components/language-provider';
+import { PublicNavbar } from '@/components/public-navbar';
+import { PublicFooter } from '@/components/public-footer';
 import { Sparkles, Palette, Shield, Rocket, Heart, ChevronLeft, ChevronRight, Check } from 'lucide-react';
 
 function RegisterFormContent() {
@@ -44,6 +46,7 @@ function RegisterFormContent() {
   const [galleryImages, setGalleryImages] = useState<Array<{ title: string; url: string }>>([]);
   const [showLivePreviewModal, setShowLivePreviewModal] = useState(false);
   const [previewSlideIndex, setPreviewSlideIndex] = useState(0);
+  const [livePreviewTab, setLivePreviewTab] = useState<'website' | 'portal'>('website');
 
   useEffect(() => {
     const pId = searchParams.get('planId');
@@ -332,7 +335,9 @@ function RegisterFormContent() {
   };
 
   return (
-    <div className="register-content max-w-4xl w-full mx-auto my-10 px-4 sm:px-6 z-10">
+    <div className="register-content max-w-7xl w-full mx-auto my-8 px-4 sm:px-6 lg:px-8 z-10">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(360px,0.85fr)] lg:items-start">
+      <div className="min-w-0">
       {/* Wizard Step Progress (5 Steps) */}
       <div className="register-progress mb-6">
         <div className="grid grid-cols-5 gap-2 sm:gap-4 max-w-3xl mx-auto mb-4">
@@ -1538,54 +1543,193 @@ function RegisterFormContent() {
                   <span>Gallery</span>
                   <span>Contact</span>
                 </div>
-                © {new Date().getFullYear()} {schoolName || 'Bright Stars Academy'}. Powered by BMS Platform.
+                © {new Date().getFullYear()} {schoolName || 'Your School'}. All rights reserved.
               </footer>
             </div>
           </div>
         </div>
       )}
+      </div>
+
+      {/* Tesla-Style Sticky Live School Configurator Preview */}
+      <aside className="hidden lg:block sticky top-24">
+        <div className="overflow-hidden rounded-2xl border border-[#e6e4de] bg-white text-[#141518] shadow-[0_12px_40px_rgba(17,17,16,0.08)]">
+          <div className="flex items-center justify-between gap-2 border-b border-[#e6e4de] bg-[#f6f5f2] px-4 py-3">
+            <div className="min-w-0">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#717278]">
+                Live School Configurator
+              </p>
+              <p className="truncate font-mono text-[11px] text-[#141518]">
+                {rootDomain}/{slug || 'your-school'}
+              </p>
+            </div>
+            <div className="flex items-center gap-1 rounded-lg bg-[#e6e4de]/70 p-0.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => setLivePreviewTab('website')}
+                className={`rounded-md px-2.5 py-1 text-[10px] font-semibold transition-all cursor-pointer ${
+                  livePreviewTab === 'website' ? 'bg-white text-[#141518] shadow-xs' : 'text-[#5a5b60]'
+                }`}
+              >
+                Website
+              </button>
+              <button
+                type="button"
+                onClick={() => setLivePreviewTab('portal')}
+                className={`rounded-md px-2.5 py-1 text-[10px] font-semibold transition-all cursor-pointer ${
+                  livePreviewTab === 'portal' ? 'bg-white text-[#141518] shadow-xs' : 'text-[#5a5b60]'
+                }`}
+              >
+                Portal
+              </button>
+            </div>
+          </div>
+
+          {livePreviewTab === 'website' ? (
+            <div>
+              {/* Mini School Navbar */}
+              <div
+                className="flex items-center justify-between px-5 py-3 text-white"
+                style={{ backgroundColor: primaryColor }}
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  {logoUrl ? (
+                    <img src={logoUrl} alt="Logo" className="h-7 w-7 rounded-md bg-white object-contain p-0.5 shrink-0" />
+                  ) : (
+                    <span
+                      className="grid h-7 w-7 place-items-center rounded-md text-xs font-bold text-white shrink-0"
+                      style={{ backgroundColor: accentColor }}
+                    >
+                      {(schoolName || 'S').charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                  <span className="truncate text-xs font-semibold">{schoolName || 'Your School Name'}</span>
+                </div>
+                <span
+                  className="rounded-md px-2.5 py-1 text-[10px] font-semibold text-white shrink-0"
+                  style={{ backgroundColor: accentColor }}
+                >
+                  Portal
+                </span>
+              </div>
+
+              {/* Mini Hero */}
+              <div className="relative overflow-hidden bg-[#faf9f6] p-6">
+                {heroImageUrl && (
+                  <div className="mb-4 aspect-[16/9] w-full overflow-hidden rounded-xl border border-[#e6e4de]">
+                    <img src={heroImageUrl} alt="Campus" className="h-full w-full object-cover" />
+                  </div>
+                )}
+                <span
+                  className="inline-block rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-white"
+                  style={{ backgroundColor: accentColor }}
+                >
+                  {templateId} template
+                </span>
+                <h3
+                  className="mt-3 text-2xl font-normal leading-tight tracking-[-0.02em] text-[#141518]"
+                  style={{ fontFamily: 'var(--font-serif, Georgia, serif)' }}
+                >
+                  {schoolName || 'Your School Name'}
+                </h3>
+                <p className="mt-1 text-[11px] font-semibold text-[#5a5b60]">
+                  {motto || 'Excellence, Integrity, and Knowledge'}
+                </p>
+                <p className="mt-2.5 text-xs leading-5 text-[#717278] line-clamp-3">
+                  {heroSubheading}
+                </p>
+                <div className="mt-4 flex items-center gap-2">
+                  <span
+                    className="inline-flex h-8 items-center rounded-lg px-3.5 text-[11px] font-semibold text-white"
+                    style={{ backgroundColor: accentColor }}
+                  >
+                    Apply for Admission →
+                  </span>
+                  <span className="inline-flex h-8 items-center rounded-lg border border-[#d5d2ca] bg-white px-3 text-[11px] font-medium text-[#141518]">
+                    Check Results
+                  </span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="p-5 bg-[#faf9f6] space-y-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2.5 min-w-0">
+                  {logoUrl ? (
+                    <img src={logoUrl} alt="Logo" className="h-8 w-8 rounded-lg border border-[#e6e4de] bg-white object-contain p-0.5" />
+                  ) : (
+                    <span
+                      className="grid h-8 w-8 place-items-center rounded-lg text-xs font-bold text-white"
+                      style={{ backgroundColor: primaryColor }}
+                    >
+                      {(schoolName || 'S').charAt(0).toUpperCase()}
+                    </span>
+                  )}
+                  <div className="min-w-0">
+                    <p className="truncate text-xs font-semibold text-[#141518]">{schoolName || 'Your School'}</p>
+                    <p className="text-[10px] text-[#717278]">{lowestLevelName} – {highestLevelName}</p>
+                  </div>
+                </div>
+                <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-700">
+                  Live Workspace
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <div className="rounded-xl border border-[#e6e4de] bg-white p-3">
+                  <p className="text-[10px] text-[#717278]">Admin Account</p>
+                  <p className="mt-1 truncate text-xs font-semibold text-[#141518]">{adminName || 'Principal'}</p>
+                  <p className="truncate font-mono text-[10px] text-[#717278]">{adminEmail || 'admin@school.edu'}</p>
+                </div>
+                <div className="rounded-xl border border-[#e6e4de] bg-white p-3">
+                  <p className="text-[10px] text-[#717278]">Selected Plan</p>
+                  <p className="mt-1 truncate text-xs font-semibold text-[#141518]">
+                    {planOptions.find((p) => p.id === planId)?.name || 'Growth'}
+                  </p>
+                  <p className="font-mono text-[10px] text-emerald-700">
+                    {trialDays}-day free trial
+                  </p>
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-[#e6e4de] bg-white p-3.5 space-y-2 text-[11px]">
+                <div className="flex items-center justify-between">
+                  <span className="text-[#5a5b60]">Custom School Website</span>
+                  <span className="font-semibold text-emerald-700">Included</span>
+                </div>
+                <div className="flex items-center justify-between border-t border-[#efede9] pt-2">
+                  <span className="text-[#5a5b60]">Direct-to-School Payments</span>
+                  <span className="font-semibold text-emerald-700">Ready</span>
+                </div>
+                <div className="flex items-center justify-between border-t border-[#efede9] pt-2">
+                  <span className="text-[#5a5b60]">Tenant Data Isolation</span>
+                  <span className="font-semibold text-[#141518]">Verified</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="border-t border-[#e6e4de] bg-white px-4 py-2.5 flex items-center justify-between text-[11px] text-[#717278]">
+            <span>Updates live as you type</span>
+            <span className="font-mono font-semibold text-[#141518]">Step {step} of 5</span>
+          </div>
+        </div>
+      </aside>
+      </div>
     </div>
   );
 }
 
 export default function RegisterSchoolPage() {
   return (
-    <div className="register-page min-h-screen bg-[#0A2E47] text-white flex flex-col justify-between font-sans selection:bg-[#17834b] selection:text-white relative">
+    <div className="register-page min-h-screen bg-[#faf9f6] text-[#141518] flex flex-col justify-between font-sans relative">
+      <PublicNavbar />
 
-      {/* Header */}
-      <header className="border-b border-white/10 bg-[#0A2E47] sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-[#17834b] flex items-center justify-center font-black text-white text-xl">B</div>
-            <div>
-              <span className="font-extrabold text-lg tracking-tight text-white block">
-                BMS
-              </span>
-              <span className="text-xs text-[#17834b] font-semibold block">
-                School management for Nigerian schools
-              </span>
-            </div>
-          </Link>
-
-          <div className="flex items-center gap-4">
-            <Link
-              href="/"
-              className="text-sm font-semibold text-white/75 hover:text-white transition-colors"
-            >
-              ← Back to Home
-            </Link>
-          </div>
-        </div>
-      </header>
-
-      <Suspense fallback={<div className="text-center py-20 text-[#5d6d78] text-sm">Loading registration form…</div>}>
+      <Suspense fallback={<div className="text-center py-20 text-[#5d6d78] text-sm">Loading school configurator…</div>}>
         <RegisterFormContent />
       </Suspense>
 
-      {/* Footer */}
-      <footer className="text-center py-5 text-xs text-white/65 z-10 border-t border-white/10 bg-[#0A2E47]">
-        © {new Date().getFullYear()} BMS · School management for Nigerian schools
-      </footer>
+      <PublicFooter />
     </div>
   );
 }

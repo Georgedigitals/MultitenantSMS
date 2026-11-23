@@ -163,6 +163,7 @@ body {
 
 /* Dark Mode (Precision Obsidian + Top-Lit Graphite) */
 [data-admin-theme="dark"] {
+  color-scheme: dark;
   --adm-bg: #0a0b0e;
   --adm-bg-secondary: #111318;
   --adm-sidebar-bg: #0e1015;
@@ -308,6 +309,13 @@ body {
   caret-color: var(--adm-text-primary);
   box-shadow: 0 0 0 1000px var(--adm-input-bg) inset;
   transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Ensure native <select> dropdown options stay legible in both light & dark admin themes */
+.adm-shell select option,
+.adm-shell select optgroup {
+  background-color: var(--adm-card-bg);
+  color: var(--adm-text-primary);
 }
 
 .adm-badge {

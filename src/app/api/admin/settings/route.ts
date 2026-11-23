@@ -74,6 +74,20 @@ export async function GET() {
     ? rawPinMaxUses
     : 5;
 
+  const rawPinBasePrice = Number(map.get('defaultPinBasePrice'));
+  const defaultPinBasePrice = Number.isFinite(rawPinBasePrice) && rawPinBasePrice >= 0 && rawPinBasePrice <= 1_000_000
+    ? rawPinBasePrice
+    : 1000;
+
+  const rawMinPinPrice = Number(map.get('minPinPrice'));
+  const minPinPrice = Number.isFinite(rawMinPinPrice) && rawMinPinPrice >= 0 && rawMinPinPrice <= 1_000_000
+    ? rawMinPinPrice
+    : 100;
+
+  const allowTenantPinPricing = map.has('allowTenantPinPricing')
+    ? map.get('allowTenantPinPricing') === 'true'
+    : true;
+
   const activePaymentGateway = map.get('activePaymentGateway') || 'paystack';
   const paystackPublicKey = map.get('paystackPublicKey') || process.env.NEXT_PUBLIC_PAYSTACK_KEY || '';
   const paystackSecretKey = map.get('paystackSecretKey') || process.env.PAYSTACK_SECRET_KEY || '';
@@ -110,6 +124,9 @@ export async function GET() {
     defaultTimezone,
     defaultPinFeePercent,
     defaultPinMaxUses,
+    defaultPinBasePrice,
+    minPinPrice,
+    allowTenantPinPricing,
     activePaymentGateway,
     paystackPublicKey,
     paystackSecretKey,
@@ -165,6 +182,9 @@ export async function POST(req: Request) {
       defaultTimezone,
       defaultPinFeePercent,
       defaultPinMaxUses,
+      defaultPinBasePrice,
+      minPinPrice,
+      allowTenantPinPricing,
     } = body;
 
     const operations: ((tx: any) => Promise<any>)[] = [];
@@ -231,6 +251,45 @@ export async function POST(req: Request) {
           where: { key: 'defaultTrialDays' },
           create: { key: 'defaultTrialDays', value: String(days) },
           update: { value: String(days) },
+        })
+      );
+    }
+
+    if (defaultPinBasePrice !== undefined) {
+      const val = Number(defaultPinBasePrice);
+      if (!Number.isFinite(val) || val < 0 || val > 1_000_000) {
+        return NextResponse.json({ error: 'Base PIN price must be between 0 and 1,000,000' }, { status: 400 });
+      }
+      operations.push((tx) =>
+        tx.platformSetting.upsert({
+          where: { key: 'defaultPinBasePrice' },
+          create: { key: 'defaultPinBasePrice', value: String(val) },
+          update: { value: String(val) },
+        })
+      );
+    }
+
+    if (minPinPrice !== undefined) {
+      const val = Number(minPinPrice);
+      if (!Number.isFinite(val) || val < 0 || val > 1_000_000) {
+        return NextResponse.json({ error: 'Minimum PIN price must be between 0 and 1,000,000' }, { status: 400 });
+      }
+      operations.push((tx) =>
+        tx.platformSetting.upsert({
+          where: { key: 'minPinPrice' },
+          create: { key: 'minPinPrice', value: String(val) },
+          update: { value: String(val) },
+        })
+      );
+    }
+
+    if (allowTenantPinPricing !== undefined) {
+      const val = String(Boolean(allowTenantPinPricing));
+      operations.push((tx) =>
+        tx.platformSetting.upsert({
+          where: { key: 'allowTenantPinPricing' },
+          create: { key: 'allowTenantPinPricing', value: val },
+          update: { value: val },
         })
       );
     }

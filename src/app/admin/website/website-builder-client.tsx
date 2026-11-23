@@ -854,8 +854,8 @@ export function WebsiteBuilderClient({
                           {uploadingField === `hero-${block.id}`
                             ? 'Uploading...'
                             : d.heroImageUrl
-                            ? 'Replace Image'
-                            : 'Upload Hero Image'}
+                              ? 'Replace Image'
+                              : 'Upload Hero Image'}
                         </span>
                         <input
                           type="file"
@@ -1668,11 +1668,10 @@ export function WebsiteBuilderClient({
                   key={opt.id}
                   type="button"
                   onClick={() => updateBlockStyle(block.id, { textAlign: opt.id })}
-                  className={`h-8 rounded-md border flex items-center justify-center gap-1 text-xs cursor-pointer ${
-                    active
+                  className={`h-8 rounded-md border flex items-center justify-center gap-1 text-xs cursor-pointer ${active
                       ? 'bg-[#17834b] border-[#17834b] text-white'
                       : 'bg-[#242830] border-white/15 text-white/70 hover:text-white'
-                  }`}
+                    }`}
                 >
                   <Icon className="w-3.5 h-3.5" />
                 </button>
@@ -2058,9 +2057,8 @@ export function WebsiteBuilderClient({
                 type="button"
                 onClick={() => setViewport(vp.id)}
                 title={vp.label}
-                className={`p-1.5 rounded cursor-pointer ${
-                  viewport === vp.id ? 'bg-[#17834b] text-white' : 'text-white/60 hover:text-white'
-                }`}
+                className={`p-1.5 rounded cursor-pointer ${viewport === vp.id ? 'bg-[#17834b] text-white' : 'text-white/60 hover:text-white'
+                  }`}
               >
                 <Icon className="w-3.5 h-3.5" />
               </button>
@@ -2072,11 +2070,10 @@ export function WebsiteBuilderClient({
         <div className="flex items-center gap-2 shrink-0">
           {status && (
             <span
-              className={`hidden xl:inline-block text-[11px] font-semibold px-2.5 py-1 rounded ${
-                status.type === 'success'
+              className={`hidden xl:inline-block text-[11px] font-semibold px-2.5 py-1 rounded ${status.type === 'success'
                   ? 'bg-emerald-500/20 text-emerald-300'
                   : 'bg-rose-500/20 text-rose-300'
-              }`}
+                }`}
             >
               {status.text}
             </span>
@@ -2144,11 +2141,10 @@ export function WebsiteBuilderClient({
                     key={tab.id}
                     type="button"
                     onClick={() => setSidebarView(tab.id)}
-                    className={`py-2.5 px-1 text-[11px] font-semibold flex flex-col items-center gap-1 border-b-2 transition-colors cursor-pointer ${
-                      active
+                    className={`py-2.5 px-1 text-[11px] font-semibold flex flex-col items-center gap-1 border-b-2 transition-colors cursor-pointer ${active
                         ? 'border-[#17834b] text-white bg-white/5'
                         : 'border-transparent text-white/55 hover:text-white'
-                    }`}
+                      }`}
                   >
                     <Icon className="w-3.5 h-3.5" />
                     <span>{tab.label}</span>
@@ -2242,11 +2238,10 @@ export function WebsiteBuilderClient({
                             key={sub.id}
                             type="button"
                             onClick={() => setInspectorTab(sub.id)}
-                            className={`py-2.5 text-[11px] font-semibold flex items-center justify-center gap-1 border-b-2 transition-colors cursor-pointer ${
-                              active
+                            className={`py-2.5 text-[11px] font-semibold flex items-center justify-center gap-1 border-b-2 transition-colors cursor-pointer ${active
                                 ? 'border-[#17834b] text-white bg-white/5'
                                 : 'border-transparent text-white/55 hover:text-white'
-                            }`}
+                              }`}
                           >
                             <Icon className="w-3 h-3" />
                             <span>{sub.label}</span>
@@ -2288,11 +2283,10 @@ export function WebsiteBuilderClient({
                   return (
                     <div
                       key={block.id}
-                      className={`rounded-md border p-2 flex items-center justify-between gap-2 ${
-                        isSelected
+                      className={`rounded-md border p-2 flex items-center justify-between gap-2 ${isSelected
                           ? 'border-[#17834b] bg-[#17834b]/15'
                           : 'border-white/10 bg-[#242830]'
-                      }`}
+                        }`}
                     >
                       <button
                         type="button"
@@ -2376,11 +2370,10 @@ export function WebsiteBuilderClient({
                       key={sub.id}
                       type="button"
                       onClick={() => setSiteSubTab(sub.id)}
-                      className={`py-2.5 text-[10px] font-semibold border-b-2 transition-colors cursor-pointer ${
-                        siteSubTab === sub.id
+                      className={`py-2.5 text-[10px] font-semibold border-b-2 transition-colors cursor-pointer ${siteSubTab === sub.id
                           ? 'border-[#17834b] text-white bg-white/5'
                           : 'border-transparent text-white/55 hover:text-white'
-                      }`}
+                        }`}
                     >
                       {sub.label}
                     </button>
@@ -2433,8 +2426,8 @@ export function WebsiteBuilderClient({
                                 {uploadingField === 'brand-logo'
                                   ? 'Uploading...'
                                   : config.brand.logoUrl
-                                  ? 'Replace Logo'
-                                  : 'Upload Logo'}
+                                    ? 'Replace Logo'
+                                    : 'Upload Logo'}
                               </span>
                               <input
                                 type="file"

@@ -1,9 +1,12 @@
 import React from 'react';
+import Link from 'next/link';
 import { redirect, notFound } from 'next/navigation';
+import { ArrowLeft, ArrowRight, Award, Calendar, CheckCircle2, CircleDashed, Layers } from 'lucide-react';
 import prisma from '@/lib/prisma';
 import { getTenantContext } from '@/lib/tenant';
 import { getTenantUserFromCookies } from '@/lib/auth/tenant-auth';
 import DashboardNav from '@/components/dashboard-nav';
+import { AddSessionModal } from '@/components/add-session-modal';
 import { generateStudentReportCard, ReportCardData } from '@/lib/report-card';
 import ReportCardsClient from './report-cards-client';
 
@@ -67,17 +70,141 @@ export default async function ReportCardsDirectoryPage({
   }));
 
   if (tenantClasses.length === 0 || terms.length === 0) {
+    const primaryColor = tenant.branding.primaryColor || '#4f46e5';
+    const hasSessions = tenantSessions.length > 0;
+    const hasTerms = terms.length > 0;
+    const hasClasses = tenantClasses.length > 0;
+
+    const checklist = [
+      {
+        label: 'Academic session',
+        detail: hasSessions
+          ? `${tenantSessions.length} session${tenantSessions.length === 1 ? '' : 's'} configured`
+          : 'Create your first academic year (e.g. 2025/2026) with active terms.',
+        ready: hasSessions,
+        icon: <Calendar className="w-4 h-4" />,
+      },
+      {
+        label: 'Academic terms',
+        detail: hasTerms
+          ? `${terms.length} term${terms.length === 1 ? '' : 's'} ready for grading`
+          : 'Terms are automatically created when you add an academic session.',
+        ready: hasTerms,
+        icon: <Award className="w-4 h-4" />,
+      },
+      {
+        label: 'Class levels',
+        detail: hasClasses
+          ? `${tenantClasses.length} class level${tenantClasses.length === 1 ? '' : 's'} active`
+          : 'Set your school’s class range (e.g. Grade 1 – Grade 12) in Settings.',
+        ready: hasClasses,
+        icon: <Layers className="w-4 h-4" />,
+      },
+    ];
+
     return (
-      <div className="min-h-screen bg-slate-50">
-        <DashboardNav slug={slug} role={auth.user.role} />
-        <main className="max-w-4xl mx-auto py-12 px-4">
-          <div className="bg-white p-8 rounded-xl border border-slate-200 text-center">
-            <h2 className="text-lg font-bold text-slate-800">Setup Required</h2>
-            <p className="text-sm text-slate-500 mt-2">
-              Please ensure academic sessions, terms, and classes are configured first.
-            </p>
+      <div className="mx-auto max-w-3xl py-6 sm:py-10">
+        <section className="overflow-hidden rounded-2xl border border-[#e6e4de] bg-white shadow-[0_8px_30px_rgba(17,17,16,0.06)]">
+          {/* School-Branded Header */}
+          <div
+            className="relative overflow-hidden px-6 py-7 text-white sm:px-8"
+            style={{
+              background: `linear-gradient(135deg, ${primaryColor} 0%, color-mix(in srgb, ${primaryColor} 68%, #0f172a) 100%)`,
+            }}
+          >
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute -right-12 -top-12 h-44 w-44 rounded-full bg-white/15 blur-2xl"
+            />
+            <div className="relative z-10 flex items-start gap-4">
+              <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/15 border border-white/25 backdrop-blur-xs">
+                <Award className="w-5 h-5 text-white" />
+              </span>
+              <div>
+                <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-0.5 text-[11px] font-semibold text-white/95">
+                  Report Cards Setup
+                </span>
+                <h1 className="mt-2 text-xl sm:text-2xl font-semibold tracking-[-0.02em] text-white">
+                  Finish academic setup to generate report cards
+                </h1>
+                <p className="mt-1 text-xs sm:text-sm text-white/80">
+                  Report cards need at least one active academic session, term, and class level before results can be compiled.
+                </p>
+              </div>
+            </div>
           </div>
-        </main>
+
+          {/* Live Setup Readiness Checklist */}
+          <div className="p-6 sm:p-8 space-y-6">
+            <div className="divide-y divide-[#efede9] rounded-xl border border-[#e6e4de] bg-[#faf9f6] overflow-hidden">
+              {checklist.map((item) => (
+                <div key={item.label} className="flex items-center justify-between gap-4 px-4 py-3.5">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <span
+                      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border ${
+                        item.ready
+                          ? 'bg-emerald-50 text-emerald-600 border-emerald-200'
+                          : 'bg-amber-50 text-amber-600 border-amber-200'
+                      }`}
+                    >
+                      {item.icon}
+                    </span>
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-[#141518]">{item.label}</p>
+                      <p className="text-xs text-[#5a5b60]">{item.detail}</p>
+                    </div>
+                  </div>
+                  <span
+                    className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-semibold ${
+                      item.ready
+                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                        : 'bg-amber-50 text-amber-800 border border-amber-200'
+                    }`}
+                  >
+                    {item.ready ? (
+                      <>
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Ready
+                      </>
+                    ) : (
+                      <>
+                        <CircleDashed className="w-3.5 h-3.5" /> Needed
+                      </>
+                    )}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-wrap items-center gap-3 pt-1">
+              {auth.user.role === 'school_admin' && (!hasSessions || !hasTerms) && (
+                <AddSessionModal
+                  slug={slug}
+                  triggerButtonText="Create Academic Session"
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg px-5 text-sm font-semibold text-white shadow-xs transition-opacity hover:opacity-90 cursor-pointer"
+                  style={{ backgroundColor: primaryColor }}
+                />
+              )}
+              {!hasClasses && (
+                <Link
+                  href={`/${slug}/dashboard/classes`}
+                  className="inline-flex h-10 items-center justify-center gap-2 rounded-lg px-5 text-sm font-semibold text-white shadow-xs transition-opacity hover:opacity-90"
+                  style={{ backgroundColor: primaryColor }}
+                >
+                  <span>Configure Classes</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              )}
+              <Link
+                href={`/${slug}/dashboard`}
+                className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg border border-[#d5d2ca] bg-white px-4 text-sm font-medium text-[#141518] hover:bg-[#f2f0eb] transition-colors"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Back to Overview</span>
+              </Link>
+            </div>
+          </div>
+        </section>
       </div>
     );
   }
@@ -145,12 +272,12 @@ export default async function ReportCardsDirectoryPage({
   }
 
   return (
-    <div className="min-h-screen bg-slate-100 print:bg-white print:min-h-0">
+    <div className="print:bg-white">
       <div className="print:hidden">
         <DashboardNav slug={slug} role={auth.user.role} />
       </div>
 
-      <main className="max-w-6xl mx-auto py-8 px-4 sm:px-6 print:p-0 print:m-0 print:max-w-none">
+      <main className="max-w-6xl mx-auto py-4 print:p-0 print:m-0 print:max-w-none">
         <ReportCardsClient
           slug={slug}
           classLevels={tenantClasses.map((c: any) => ({ id: c.id, name: c.name }))}

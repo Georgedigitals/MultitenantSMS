@@ -568,7 +568,7 @@ export function PlansClient({ initialPlans, initialFeatures, initialAvailableCap
  <button
  type="submit"
  disabled={saving}
- className="px-5 py-2 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-500 text-white shadow-md disabled:opacity-50"
+ className="adm-btn-primary px-5 py-2 rounded-lg text-xs font-semibold disabled:opacity-50 cursor-pointer"
  >
  {saving ? 'Saving...' : 'Save Plan Settings'}
  </button>
@@ -640,7 +640,7 @@ export function PlansClient({ initialPlans, initialFeatures, initialAvailableCap
  <button
  type="submit"
  disabled={saving}
- className="px-5 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white shadow-md disabled:opacity-50"
+ className="adm-btn-primary px-5 py-2 rounded-lg text-xs font-semibold disabled:opacity-50 cursor-pointer"
  >
  {saving ? 'Creating...' : 'Create Plan Tier'}
  </button>
@@ -655,11 +655,11 @@ export function PlansClient({ initialPlans, initialFeatures, initialAvailableCap
  <div className="fixed inset-0 z-[100000] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
  <div className="adm-card border adm-divider rounded-2xl p-6 max-w-md w-full shadow-2xl space-y-5">
  <div className="flex justify-between items-center pb-3 border-b adm-divider">
- <h3 className="text-lg font-bold adm-text-primary">Connect an Existing BMS Module</h3>
+ <h3 className="text-lg font-bold adm-text-primary">Connect an Existing Platform Module</h3>
  <button
  type="button"
  onClick={() => setShowAddFeature(false)}
- className="adm-text-muted hover:text-[var(--adm-text-primary)] font-bold text-sm"
+ className="adm-text-muted hover:text-[var(--adm-text-primary)] font-bold text-sm cursor-pointer"
  >
  ×
  </button>
@@ -667,7 +667,7 @@ export function PlansClient({ initialPlans, initialFeatures, initialAvailableCap
 
  <form onSubmit={handleCreateFeature} className="space-y-4">
  <div>
- <label className="block text-xs font-mono uppercase adm-text-muted mb-1">Existing BMS module to connect</label>
+ <label className="block text-xs font-mono uppercase adm-text-muted mb-1">Existing platform module to connect</label>
  <select
  value={newFeatureKey}
  onChange={(e) => {
@@ -677,12 +677,12 @@ export function PlansClient({ initialPlans, initialFeatures, initialAvailableCap
    setNewFeatureDesc(capability?.description || '');
  }}
  required
- className="w-full adm-surface border adm-divider rounded-xl px-4 py-2.5 adm-text-primary text-sm focus:outline-none focus:border-cyan-500"
+ className="adm-input w-full border rounded-xl px-4 py-2.5 text-sm"
  >
  <option value="">Choose an existing module</option>
  {availableCapabilities.map((capability) => <option key={capability.key} value={capability.key}>{capability.name}</option>)}
  </select>
- <p className="mt-1.5 text-[11px] adm-text-muted">This connects plan access to a module already built in BMS. It does not create new functionality.</p>
+ <p className="mt-1.5 text-[11px] adm-text-muted">This connects plan access to a built-in platform module. It does not create new functionality.</p>
  {availableCapabilities.length === 0 && <p className="mt-2 text-xs text-amber-600">All supported modules are already in the feature registry.</p>}
  </div>
 
@@ -720,7 +720,7 @@ export function PlansClient({ initialPlans, initialFeatures, initialAvailableCap
  <button
  type="submit"
  disabled={saving || availableCapabilities.length === 0}
- className="px-5 py-2 rounded-xl text-xs font-bold bg-cyan-600 hover:bg-cyan-500 text-white shadow-md disabled:opacity-50"
+ className="adm-btn-primary px-5 py-2 rounded-lg text-xs font-semibold disabled:opacity-50 cursor-pointer"
  >
  {saving ? 'Connecting...' : 'Connect Module'}
  </button>
@@ -789,7 +789,7 @@ export function PlansClient({ initialPlans, initialFeatures, initialAvailableCap
  <button
  type="submit"
  disabled={saving}
- className="px-5 py-2 rounded-xl text-xs font-bold bg-cyan-600 hover:bg-cyan-500 text-white shadow-md disabled:opacity-50"
+ className="adm-btn-primary px-5 py-2 rounded-lg text-xs font-semibold disabled:opacity-50 cursor-pointer"
  >
  {saving ? 'Saving...' : 'Update Feature'}
  </button>

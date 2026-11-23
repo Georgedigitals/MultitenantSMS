@@ -55,25 +55,32 @@ export function ImpersonationBanner({ currentTenantSlug }: ImpersonationBannerPr
 
   const handleExit = async () => {
     setEnding(true);
+    let redirectUrl = '';
     try {
-      // Clear cookies on client side immediately
+      // Call server FIRST while cookies are still attached so the server can read logId and mark endedAt
+      const res = await fetch('/api/admin/impersonate/end', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ logId: session.logId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (data.redirectUrl) {
+        redirectUrl = data.redirectUrl;
+      }
+    } catch (err) {
+      console.error('Failed to end impersonation', err);
+    } finally {
+      // Clear client-accessible cookies AFTER the server has recorded endedAt
       document.cookie = 'bms_impersonate_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
       document.cookie = 'bms_tenant_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
 
-      const res = await fetch('/api/admin/impersonate/end', { method: 'POST' });
-      const data = await res.json();
-      if (data.redirectUrl) {
-        window.location.href = data.redirectUrl;
+      if (redirectUrl) {
+        window.location.href = redirectUrl;
       } else {
         const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost:3000';
         const protocol = window.location.protocol;
         window.location.href = `${protocol}//${rootDomain}/admin/tenants`;
       }
-    } catch (err) {
-      console.error('Failed to end impersonation', err);
-      const rootDomain = process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost:3000';
-      const protocol = window.location.protocol;
-      window.location.href = `${protocol}//${rootDomain}/admin/tenants`;
     }
   };
 

@@ -33,6 +33,7 @@ export default async function SuperAdminDashboard() {
     type: 'capacity' | 'trial' | 'suspended';
     message: string;
   }> = [];
+  let growthSeries: Array<{ label: string; schools: number }> = [];
 
   try {
     tenantCount = await prisma.tenant.count();
@@ -91,6 +92,23 @@ export default async function SuperAdminDashboard() {
     }
     healthAlerts = healthAlerts.slice(0, 8);
 
+    // Build real 6-month cumulative tenant growth series from actual DB createdAt dates
+    const nowDate = new Date();
+    const months: Array<{ label: string; endTs: number }> = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(nowDate.getFullYear(), nowDate.getMonth() - i + 1, 0, 23, 59, 59, 999);
+      const labelDate = new Date(nowDate.getFullYear(), nowDate.getMonth() - i, 1);
+      months.push({
+        label: labelDate.toLocaleDateString('en-US', { month: 'short' }),
+        endTs: d.getTime(),
+      });
+    }
+    const allCreatedDates = await prisma.tenant.findMany({ select: { createdAt: true } });
+    growthSeries = months.map((m) => ({
+      label: m.label,
+      schools: allCreatedDates.filter((row) => row.createdAt.getTime() <= m.endTs).length,
+    }));
+
     impersonationLogs = await prisma.impersonationLog.findMany({
       include: {
         superAdmin: { select: { name: true, email: true } },
@@ -133,6 +151,7 @@ export default async function SuperAdminDashboard() {
       recentTenants={formattedTenants}
       impersonationLogs={formattedLogs}
       healthAlerts={healthAlerts}
+      growthSeries={growthSeries}
     />
   );
 }
