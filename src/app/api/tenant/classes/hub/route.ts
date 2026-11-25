@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import { getTenantUserFromCookies } from '@/lib/auth/tenant-auth';
 import { findTenantBySlugOrDomain } from '@/lib/tenant';
 import { getTenantCurriculum, saveTenantCurriculum } from '@/lib/curriculum';
+import { getTenantClassLevels } from '@/lib/class-levels';
 
 export async function GET(req: NextRequest) {
   try {
@@ -37,17 +38,8 @@ export async function GET(req: NextRequest) {
       select: { id: true, label: true, isCurrent: true },
     });
 
-    // 2. Fetch tenant enabled class levels
-    const [lowest, highest, allClassLevels] = await Promise.all([
-      tenant.lowestClassLevelId ? prisma.classLevel.findUnique({ where: { id: tenant.lowestClassLevelId } }) : null,
-      tenant.highestClassLevelId ? prisma.classLevel.findUnique({ where: { id: tenant.highestClassLevelId } }) : null,
-      prisma.classLevel.findMany({ orderBy: { orderIndex: 'asc' } }),
-    ]);
-
-    const activeLevels = allClassLevels.filter((lvl) => {
-      if (!lowest || !highest) return true;
-      return lvl.orderIndex >= lowest.orderIndex && lvl.orderIndex <= highest.orderIndex;
-    });
+    // 2. Fetch tenant enabled class levels (tenant-owned custom classes or legacy global fallback)
+    const activeLevels = await getTenantClassLevels(tenant.id, { filterLegacyByRange: true });
 
     // 3. Fetch all staff and subjects
     const [staffList, allSubjects, curriculum] = await Promise.all([

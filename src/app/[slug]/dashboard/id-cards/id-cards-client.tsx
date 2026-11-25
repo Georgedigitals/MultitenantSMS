@@ -12,7 +12,10 @@ import {
   QrCode,
   RotateCcw,
   Check,
+  Pencil,
+  X,
 } from 'lucide-react';
+import ImageUploadInput from '@/components/image-upload-input';
 
 export interface IdCardRecord {
   id: string;
@@ -45,11 +48,76 @@ export default function IdCardsClient({
   primaryColor,
   accentColor,
   sessionLabel,
-  cards,
+  cards: initialCards,
 }: IdCardsClientProps) {
+  const [cards, setCards] = useState<IdCardRecord[]>(initialCards);
   const [type, setType] = useState<'all' | 'student' | 'staff'>('all');
   const [query, setQuery] = useState('');
   const [cardSide, setCardSide] = useState<'both' | 'front' | 'back'>('both');
+
+  // Inline Edit ID Card Modal state
+  const [editingCard, setEditingCard] = useState<IdCardRecord | null>(null);
+  const [editPhoto, setEditPhoto] = useState('');
+  const [editPhone, setEditPhone] = useState('');
+  const [editBloodGroup, setEditBloodGroup] = useState('');
+  const [editDob, setEditDob] = useState('');
+  const [editEmail, setEditEmail] = useState('');
+  const [savingEdit, setSavingEdit] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+
+  const openEditModal = (card: IdCardRecord) => {
+    setEditingCard(card);
+    setEditPhoto(card.photoUrl || '');
+    setEditPhone(card.phone || '');
+    setEditBloodGroup(card.bloodGroup || '');
+    setEditDob(card.dob || '');
+    setEditEmail(card.email || '');
+    setEditError(null);
+  };
+
+  const handleSaveCardEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingCard) return;
+    setSavingEdit(true);
+    setEditError(null);
+    try {
+      const res = await fetch('/api/tenant/id-cards', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          kind: editingCard.kind,
+          id: editingCard.id,
+          photoUrl: editPhoto || null,
+          phone: editPhone || null,
+          bloodGroup: editBloodGroup || null,
+          dob: editDob || null,
+          email: editEmail || null,
+        }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || 'Could not update ID card.');
+
+      setCards((prev) =>
+        prev.map((c) =>
+          c.id === editingCard.id && c.kind === editingCard.kind
+            ? {
+                ...c,
+                photoUrl: editPhoto || null,
+                phone: editPhone || null,
+                bloodGroup: editBloodGroup || null,
+                dob: editDob || null,
+                email: editEmail || null,
+              }
+            : c
+        )
+      );
+      setEditingCard(null);
+    } catch (err: any) {
+      setEditError(err?.message || 'Failed to save changes.');
+    } finally {
+      setSavingEdit(false);
+    }
+  };
 
   const visibleCards = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
@@ -237,6 +305,14 @@ export default function IdCardsClient({
                             </p>
                           </div>
                         </div>
+                        <button
+                          type="button"
+                          onClick={() => openEditModal(card)}
+                          className="id-cards-screen-only h-6 w-6 rounded-full bg-white/20 hover:bg-white/35 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0"
+                          title="Edit photo & ID details"
+                        >
+                          <Pencil className="w-3 h-3" />
+                        </button>
                       </div>
                     </div>
 
@@ -396,6 +472,109 @@ export default function IdCardsClient({
             );
           })}
         </section>
+      )}
+      {/* Inline Edit Photo & ID Details Modal */}
+      {editingCard && (
+        <div className="id-cards-screen-only fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl w-full max-w-md overflow-hidden">
+            <div className="px-5 py-4 border-b border-slate-100 flex items-center justify-between gap-3">
+              <div>
+                <h2 className="text-sm font-bold text-slate-900">Edit ID Card Details</h2>
+                <p className="text-xs text-slate-500">
+                  {editingCard.name} · {editingCard.identifier}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingCard(null)}
+                className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveCardEdit} className="p-5 space-y-4">
+              {editError && (
+                <p className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-medium">
+                  {editError}
+                </p>
+              )}
+
+              <ImageUploadInput
+                label="Passport Photo"
+                value={editPhoto}
+                onChange={setEditPhoto}
+                endpoint="/api/tenant/upload"
+                folder="avatars"
+                previewShape="square"
+              />
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">Blood Group</label>
+                  <select
+                    value={editBloodGroup}
+                    onChange={(e) => setEditBloodGroup(e.target.value)}
+                    className="w-full h-9 px-3 rounded-lg border border-slate-300 text-xs text-slate-900 bg-white"
+                  >
+                    {['', 'A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((bg) => (
+                      <option key={bg} value={bg}>
+                        {bg || 'Not specified'}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">Date of Birth</label>
+                  <input
+                    type="date"
+                    value={editDob}
+                    onChange={(e) => setEditDob(e.target.value)}
+                    className="w-full h-9 px-3 rounded-lg border border-slate-300 text-xs text-slate-900"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">Phone</label>
+                  <input
+                    type="tel"
+                    value={editPhone}
+                    onChange={(e) => setEditPhone(e.target.value)}
+                    placeholder="+234..."
+                    className="w-full h-9 px-3 rounded-lg border border-slate-300 text-xs text-slate-900"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-semibold text-slate-700 mb-1">Email</label>
+                  <input
+                    type="email"
+                    value={editEmail}
+                    onChange={(e) => setEditEmail(e.target.value)}
+                    placeholder="name@school.edu"
+                    className="w-full h-9 px-3 rounded-lg border border-slate-300 text-xs text-slate-900"
+                  />
+                </div>
+              </div>
+
+              <div className="pt-2 flex justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingCard(null)}
+                  className="h-9 px-4 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-50 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingEdit}
+                  className="h-9 px-4 rounded-lg text-xs font-semibold text-white hover:opacity-90 disabled:opacity-50 cursor-pointer"
+                  style={{ backgroundColor: primaryColor }}
+                >
+                  {savingEdit ? 'Saving...' : 'Save ID Card'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
     </main>
   );

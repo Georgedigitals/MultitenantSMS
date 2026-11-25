@@ -95,7 +95,7 @@ export default function GradingClient({
     setComponents(components.filter((_, i) => i !== index));
   };
 
-  const applyComponentPreset = (preset: '30_70' | '40_60' | '20_20_60') => {
+  const applyComponentPreset = (preset: '30_70' | '40_60' | '20_20_60' | 'homework_ca_exam') => {
     if (isLocked) return;
     if (preset === '30_70') {
       setComponents([
@@ -113,10 +113,16 @@ export default function GradingClient({
         { name: '2nd CA', maxScore: 20, weightPercent: 20, orderIndex: 2 },
         { name: 'Examination', maxScore: 60, weightPercent: 60, orderIndex: 3 },
       ]);
+    } else if (preset === 'homework_ca_exam') {
+      setComponents([
+        { name: 'Assignments / Homework', maxScore: 10, weightPercent: 10, orderIndex: 1 },
+        { name: 'Tests / Quizzes', maxScore: 30, weightPercent: 30, orderIndex: 2 },
+        { name: 'Final Exam', maxScore: 60, weightPercent: 60, orderIndex: 3 },
+      ]);
     }
   };
 
-  const applyScalePreset = (preset: 'waec' | 'primary_letters') => {
+  const applyScalePreset = (preset: 'waec' | 'primary_letters' | 'us_gpa' | 'uk_gcse' | 'ib_diploma') => {
     const lowestId = classLevels[0]?.id || '';
     const highestId = classLevels[classLevels.length - 1]?.id || '';
 
@@ -139,6 +145,39 @@ export default function GradingClient({
         { lowestClassLevelId: lowestId, highestClassLevelId: highestId, minScore: 50, maxScore: 59, grade: 'C', remark: 'Merit' },
         { lowestClassLevelId: lowestId, highestClassLevelId: highestId, minScore: 40, maxScore: 49, grade: 'D', remark: 'Pass' },
         { lowestClassLevelId: lowestId, highestClassLevelId: highestId, minScore: 0, maxScore: 39, grade: 'F', remark: 'Fail' },
+      ]);
+    } else if (preset === 'us_gpa') {
+      setScales([
+        { lowestClassLevelId: lowestId, highestClassLevelId: highestId, minScore: 93, maxScore: 100, grade: 'A', remark: 'Outstanding (4.0)' },
+        { lowestClassLevelId: lowestId, highestClassLevelId: highestId, minScore: 90, maxScore: 92, grade: 'A-', remark: 'Excellent (3.7)' },
+        { lowestClassLevelId: lowestId, highestClassLevelId: highestId, minScore: 87, maxScore: 89, grade: 'B+', remark: 'Very Good (3.3)' },
+        { lowestClassLevelId: lowestId, highestClassLevelId: highestId, minScore: 83, maxScore: 86, grade: 'B', remark: 'Good (3.0)' },
+        { lowestClassLevelId: lowestId, highestClassLevelId: highestId, minScore: 80, maxScore: 82, grade: 'B-', remark: 'Above Average (2.7)' },
+        { lowestClassLevelId: lowestId, highestClassLevelId: highestId, minScore: 73, maxScore: 79, grade: 'C', remark: 'Satisfactory (2.0)' },
+        { lowestClassLevelId: lowestId, highestClassLevelId: highestId, minScore: 60, maxScore: 72, grade: 'D', remark: 'Passing (1.0)' },
+        { lowestClassLevelId: lowestId, highestClassLevelId: highestId, minScore: 0, maxScore: 59, grade: 'F', remark: 'Failing (0.0)' },
+      ]);
+    } else if (preset === 'uk_gcse') {
+      setScales([
+        { lowestClassLevelId: lowestId, highestClassLevelId: highestId, minScore: 90, maxScore: 100, grade: '9', remark: 'Exceptional' },
+        { lowestClassLevelId: lowestId, highestClassLevelId: highestId, minScore: 80, maxScore: 89, grade: '8', remark: 'Outstanding' },
+        { lowestClassLevelId: lowestId, highestClassLevelId: highestId, minScore: 70, maxScore: 79, grade: '7', remark: 'Very Good' },
+        { lowestClassLevelId: lowestId, highestClassLevelId: highestId, minScore: 60, maxScore: 69, grade: '6', remark: 'Good' },
+        { lowestClassLevelId: lowestId, highestClassLevelId: highestId, minScore: 50, maxScore: 59, grade: '5', remark: 'Strong Pass' },
+        { lowestClassLevelId: lowestId, highestClassLevelId: highestId, minScore: 40, maxScore: 49, grade: '4', remark: 'Standard Pass' },
+        { lowestClassLevelId: lowestId, highestClassLevelId: highestId, minScore: 30, maxScore: 39, grade: '3', remark: 'Developing' },
+        { lowestClassLevelId: lowestId, highestClassLevelId: highestId, minScore: 20, maxScore: 29, grade: '2', remark: 'Emerging' },
+        { lowestClassLevelId: lowestId, highestClassLevelId: highestId, minScore: 0, maxScore: 19, grade: '1', remark: 'Foundation' },
+      ]);
+    } else if (preset === 'ib_diploma') {
+      setScales([
+        { lowestClassLevelId: lowestId, highestClassLevelId: highestId, minScore: 85, maxScore: 100, grade: '7', remark: 'Excellent' },
+        { lowestClassLevelId: lowestId, highestClassLevelId: highestId, minScore: 75, maxScore: 84, grade: '6', remark: 'Very Good' },
+        { lowestClassLevelId: lowestId, highestClassLevelId: highestId, minScore: 65, maxScore: 74, grade: '5', remark: 'Good' },
+        { lowestClassLevelId: lowestId, highestClassLevelId: highestId, minScore: 55, maxScore: 64, grade: '4', remark: 'Satisfactory' },
+        { lowestClassLevelId: lowestId, highestClassLevelId: highestId, minScore: 45, maxScore: 54, grade: '3', remark: 'Mediocre' },
+        { lowestClassLevelId: lowestId, highestClassLevelId: highestId, minScore: 30, maxScore: 44, grade: '2', remark: 'Poor' },
+        { lowestClassLevelId: lowestId, highestClassLevelId: highestId, minScore: 0, maxScore: 29, grade: '1', remark: 'Very Poor' },
       ]);
     }
   };
@@ -316,6 +355,13 @@ export default function GradingClient({
               >
                 20 / 20 / 60 (2 CAs + Exam)
               </button>
+              <button
+                type="button"
+                onClick={() => applyComponentPreset('homework_ca_exam')}
+                className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
+              >
+                10% Homework + 30% Test + 60% Exam
+              </button>
             </div>
           )}
         </div>
@@ -461,7 +507,28 @@ export default function GradingClient({
               onClick={() => applyScalePreset('primary_letters')}
               className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
             >
-              Primary (A – F)
+              Simple (A – F)
+            </button>
+            <button
+              type="button"
+              onClick={() => applyScalePreset('us_gpa')}
+              className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
+            >
+              US GPA (A – F / 4.0)
+            </button>
+            <button
+              type="button"
+              onClick={() => applyScalePreset('uk_gcse')}
+              className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
+            >
+              UK GCSE (9 – 1)
+            </button>
+            <button
+              type="button"
+              onClick={() => applyScalePreset('ib_diploma')}
+              className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition cursor-pointer"
+            >
+              IB (7 – 1)
             </button>
           </div>
         </div>

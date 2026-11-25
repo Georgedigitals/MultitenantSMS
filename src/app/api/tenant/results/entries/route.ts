@@ -4,6 +4,8 @@ import { getTenantContext } from '@/lib/tenant';
 import { getTenantUserFromCookies } from '@/lib/auth/tenant-auth';
 import { saveSubjectScores } from '@/lib/results';
 import { computeTotal, previewGrade } from '@/lib/grading';
+import { recordAuditLog } from '@/lib/audit';
+import { getClientIp } from '@/lib/rate-limiter';
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
@@ -237,6 +239,233 @@ export async function POST(req: NextRequest) {
     return NextResponse.json(
       { error: err.message || 'Failed to save scores' },
       { status: isLockedError ? 423 : 400 }
+    );
+  }
+}
+
+export async function DELETE(req: NextRequest) {
+  try {
+    const { searchParams } = new URL(req.url);
+    const slug = searchParams.get('slug');
+    const termId = searchParams.get('termId');
+    const subjectId = searchParams.get('subjectId');
+    const studentId = searchParams.get('studentId');
+    const classLevelId = searchParams.get('classLevelId');
+    const clearAll = searchParams.get('clearAll') === 'true';
+    const removeFromClass = searchParams.get('removeFromClass') === 'true';
+
+    if (!slug || !termId || !subjectId) {
+      return NextResponse.json(
+        { error: 'slug, termId, and subjectId are required' },
+        { status: 400 }
+      );
+    }
+
+    const tenant = await getTenantContext({ slug });
+    if (!tenant) return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
+
+    const auth = await getTenantUserFromCookies(tenant.id);
+    if (!auth || auth.user.role !== 'school_admin') {
+      return NextResponse.json(
+        { error: 'Forbidden: Only school administrators can delete result entries' },
+        { status: 403 }
+      );
+    }
+
+    const [term, subject] = await Promise.all([
+      prisma.term.findUnique({ where: { id: termId }, include: { session: true } }),
+      prisma.subject.findFirst({ where: { id: subjectId, tenantId: tenant.id } }),
+    ]);
+
+    if (!term || term.session.tenantId !== tenant.id || !subject) {
+      return NextResponse.json({ error: 'Term or subject not found for this school' }, { status: 404 });
+    }
+
+    // Mode 1: Clear all subject scores for a class in this term (and optionally unassign subject from ONLY this class)
+    if ((clearAll || removeFromClass) && classLevelId) {
+      const targetClass = await prisma.classLevel.findFirst({
+        where: { id: classLevelId, OR: [{ tenantId: tenant.id }, { tenantId: null }] },
+        select: { id: true, name: true },
+      });
+      if (!targetClass) {
+        return NextResponse.json({ error: 'Class level not found for this school' }, { status: 404 });
+      }
+
+      const enrollments = await prisma.enrollment.findMany({
+        where: {
+          classLevelId,
+          sessionId: term.sessionId,
+          student: { tenantId: tenant.id },
+        },
+        select: { studentId: true },
+      });
+      const classStudentIds = enrollments.map((e) => e.studentId);
+
+      if (classStudentIds.length > 0) {
+        const publishedCount = await prisma.resultEntry.count({
+          where: {
+            termId,
+            subjectId,
+            studentId: { in: classStudentIds },
+            status: 'published',
+          },
+        });
+        if (publishedCount > 0) {
+          return NextResponse.json(
+            { error: 'Cannot delete or remove published results. Reopen the class results first.' },
+            { status: 409 }
+          );
+        }
+      }
+
+      const { getTenantCurriculum } = await import('@/lib/curriculum');
+      const currentCurriculum = removeFromClass ? await getTenantCurriculum(tenant.id) : null;
+
+      const { deletedScoresCount, removedAssignmentsCount } = await prisma.$transaction(async (tx) => {
+        const deleted =
+          classStudentIds.length > 0
+            ? await tx.resultEntry.deleteMany({
+                where: {
+                  termId,
+                  subjectId,
+                  studentId: { in: classStudentIds },
+                },
+              })
+            : { count: 0 };
+
+        let removedAllocations = 0;
+        if (removeFromClass) {
+          const delAssign = await tx.teachingAssignment.deleteMany({
+            where: {
+              classLevelId,
+              subjectId,
+              sessionId: term.sessionId,
+              staff: { tenantId: tenant.id },
+            },
+          });
+          removedAllocations = delAssign.count;
+
+          if (currentCurriculum && Array.isArray(currentCurriculum.classes?.[classLevelId])) {
+            const nextOfferings = currentCurriculum.classes[classLevelId].filter(
+              (item: any) => item.subjectId !== subjectId
+            );
+            if (nextOfferings.length !== currentCurriculum.classes[classLevelId].length) {
+              const nextConfig = {
+                ...currentCurriculum,
+                classes: {
+                  ...currentCurriculum.classes,
+                  [classLevelId]: nextOfferings,
+                },
+              };
+              await tx.siteContent.upsert({
+                where: { tenantId_page: { tenantId: tenant.id, page: 'curriculum' } },
+                create: { tenantId: tenant.id, page: 'curriculum', content: nextConfig as any },
+                update: { content: nextConfig as any },
+              });
+            }
+          }
+        }
+
+        return {
+          deletedScoresCount: deleted.count,
+          removedAssignmentsCount: removedAllocations,
+        };
+      });
+
+      await recordAuditLog({
+        tenantId: tenant.id,
+        actorId: auth.user.id,
+        actorName: auth.user.staffProfile?.name || auth.user.username,
+        actorRole: auth.user.role,
+        action: removeFromClass ? 'SUBJECT_REMOVED_FROM_CLASS' : 'SUBJECT_RESULTS_CLEARED',
+        entityType: 'ResultEntry',
+        entityId: `${classLevelId}:${subjectId}:${termId}`,
+        details: {
+          className: targetClass.name,
+          subjectName: subject.name,
+          termName: term.name,
+          classLevelId,
+          deletedScoresCount,
+          removedAssignmentsCount,
+          removeFromClass,
+        },
+        ipAddress: getClientIp(req),
+      });
+
+      return NextResponse.json({
+        success: true,
+        deletedCount: deletedScoresCount,
+        removedFromClass: removeFromClass,
+        message: removeFromClass
+          ? `Removed ${subject.name} from ${targetClass.name} (and cleared ${deletedScoresCount} saved score${deletedScoresCount === 1 ? '' : 's'}). Other classes taking ${subject.name} are unaffected.`
+          : `Cleared ${deletedScoresCount} result entr${deletedScoresCount === 1 ? 'y' : 'ies'} for ${subject.name} in ${targetClass.name}.`,
+      });
+    }
+
+    // Mode 2: Delete a single student's result entry
+    if (!studentId) {
+      return NextResponse.json(
+        { error: 'Provide studentId or clearAll=true with classLevelId' },
+        { status: 400 }
+      );
+    }
+
+    const student = await prisma.student.findFirst({
+      where: { id: studentId, tenantId: tenant.id },
+      select: { id: true, name: true },
+    });
+    if (!student) {
+      return NextResponse.json({ error: 'Student not found for this school' }, { status: 404 });
+    }
+
+    const existingEntry = await prisma.resultEntry.findUnique({
+      where: {
+        studentId_subjectId_termId: {
+          studentId: student.id,
+          subjectId,
+          termId,
+        },
+      },
+    });
+    if (!existingEntry) {
+      return NextResponse.json({ error: 'No saved result entry found for this student' }, { status: 404 });
+    }
+    if (existingEntry.status === 'published') {
+      return NextResponse.json(
+        { error: 'Cannot delete a published result entry. Reopen the class results first.' },
+        { status: 409 }
+      );
+    }
+
+    await prisma.resultEntry.delete({ where: { id: existingEntry.id } });
+
+    await recordAuditLog({
+      tenantId: tenant.id,
+      actorId: auth.user.id,
+      actorName: auth.user.staffProfile?.name || auth.user.username,
+      actorRole: auth.user.role,
+      action: 'RESULT_ENTRY_DELETED',
+      entityType: 'ResultEntry',
+      entityId: existingEntry.id,
+      details: {
+        studentId: student.id,
+        studentName: student.name,
+        subjectName: subject.name,
+        termName: term.name,
+        previousScores: existingEntry.scoreData,
+      },
+      ipAddress: getClientIp(req),
+    });
+
+    return NextResponse.json({
+      success: true,
+      message: `Deleted ${subject.name} result entry for ${student.name}.`,
+    });
+  } catch (error: any) {
+    console.error('[DELETE /api/tenant/results/entries]', error);
+    return NextResponse.json(
+      { error: error?.message || 'Failed to delete result entry' },
+      { status: 500 }
     );
   }
 }

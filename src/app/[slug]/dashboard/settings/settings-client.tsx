@@ -16,6 +16,7 @@ interface Term {
   name: string;
   isCurrent: boolean;
   totalSchoolDays: number | null;
+  nextTermStartsAt?: string;
 }
 
 interface AcademicSession {
@@ -39,6 +40,15 @@ interface TenantSettingsData {
     logoUrl?: string | null;
     fontHeading?: string;
     fontBody?: string;
+    principalName?: string;
+    principalSignatureUrl?: string | null;
+    address?: string;
+    phone?: string;
+    email?: string;
+    currency?: string;
+    timezone?: string;
+    showClassRank?: boolean;
+    showDomains?: boolean;
   };
   pinPrice: number;
   admissionNumberPrefix: string | null;
@@ -86,6 +96,15 @@ export default function SettingsClient({
 
   // Form State
   const [name, setName] = useState(tenant.name);
+  const [principalName, setPrincipalName] = useState(tenant.branding.principalName || '');
+  const [principalSignatureUrl, setPrincipalSignatureUrl] = useState(tenant.branding.principalSignatureUrl || '');
+  const [schoolAddress, setSchoolAddress] = useState(tenant.branding.address || '');
+  const [schoolPhone, setSchoolPhone] = useState(tenant.branding.phone || '');
+  const [schoolEmail, setSchoolEmail] = useState(tenant.branding.email || '');
+  const [schoolCurrency, setSchoolCurrency] = useState(tenant.branding.currency || 'NGN');
+  const [schoolTimezone, setSchoolTimezone] = useState(tenant.branding.timezone || 'Africa/Lagos');
+  const [showClassRank, setShowClassRank] = useState(tenant.branding.showClassRank !== false);
+  const [showDomains, setShowDomains] = useState(tenant.branding.showDomains !== false);
   const [logoUrl, setLogoUrl] = useState(tenant.branding.logoUrl || '');
   const [primaryColor, setPrimaryColor] = useState(tenant.branding.primaryColor || '#0F172A');
   const [accentColor, setAccentColor] = useState(tenant.branding.accentColor || '#2563EB');
@@ -126,6 +145,7 @@ export default function SettingsClient({
   const [newSessionStart, setNewSessionStart] = useState('');
   const [newSessionEnd, setNewSessionEnd] = useState('');
   const [newSessionIsCurrent, setNewSessionIsCurrent] = useState(false);
+  const [newSessionTermPreset, setNewSessionTermPreset] = useState('three_terms');
 
   // Live PIN Calculation preview
   const platformPercent = pinFees.platformFeePercent || 10;
@@ -231,6 +251,41 @@ export default function SettingsClient({
     }
   };
 
+  const handleSaveTermDetails = async (termId: string, termName: string, nextTermStartsAt: string) => {
+    setSessionActionLoading(`term-details:${termId}`);
+    setErrorMsg(null);
+    setSuccessMsg(null);
+    try {
+      const res = await fetch('/api/tenant/sessions', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'update_term_details',
+          termId,
+          name: termName.trim(),
+          nextTermStartsAt: nextTermStartsAt || null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to save term details');
+      setSessionsList((prev) =>
+        prev.map((session) => ({
+          ...session,
+          terms: session.terms.map((term) =>
+            term.id === termId
+              ? { ...term, name: data.term.name, nextTermStartsAt: data.term.nextTermStartsAt }
+              : term
+          ),
+        }))
+      );
+      setSuccessMsg('Term name & next-term opening date saved.');
+    } catch (error: any) {
+      setErrorMsg(error.message || 'Failed to save term details');
+    } finally {
+      setSessionActionLoading(null);
+    }
+  };
+
   const handleCreateSession = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newSessionLabel.trim() || !newSessionStart || !newSessionEnd) {
@@ -251,6 +306,7 @@ export default function SettingsClient({
           startDate: newSessionStart,
           endDate: newSessionEnd,
           isCurrent: newSessionIsCurrent,
+          termPreset: newSessionTermPreset,
         }),
       });
 
@@ -326,6 +382,15 @@ export default function SettingsClient({
             primaryColor,
             accentColor,
             logoUrl: logoUrl.trim() || null,
+            principalName: principalName.trim() || null,
+            principalSignatureUrl: principalSignatureUrl.trim() || null,
+            address: schoolAddress.trim() || null,
+            phone: schoolPhone.trim() || null,
+            email: schoolEmail.trim() || null,
+            currency: schoolCurrency,
+            timezone: schoolTimezone,
+            showClassRank,
+            showDomains,
           },
           pinPrice: Number(pinPrice),
           admissionNumberPrefix: admissionNumberPrefix.trim(),
@@ -500,6 +565,145 @@ export default function SettingsClient({
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs font-mono text-slate-500 cursor-not-allowed"
               />
               <span className="text-[11px] text-slate-400 mt-1 block">Custom domain aliases can be configured via Enterprise subscription.</span>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                Principal / Head of School Name
+              </label>
+              <input
+                type="text"
+                value={principalName}
+                onChange={(e) => setPrincipalName(e.target.value)}
+                placeholder="e.g. Dr. Grace Okafor"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <span className="text-[11px] text-slate-400 mt-1 block">Printed as the official Principal signatory on student report cards.</span>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                Official School Email
+              </label>
+              <input
+                type="email"
+                value={schoolEmail}
+                onChange={(e) => setSchoolEmail(e.target.value)}
+                placeholder="e.g. info@yourschool.org"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                Official School Phone
+              </label>
+              <input
+                type="text"
+                value={schoolPhone}
+                onChange={(e) => setSchoolPhone(e.target.value)}
+                placeholder="e.g. +1 (555) 234-5678"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                School Street Address
+              </label>
+              <input
+                type="text"
+                value={schoolAddress}
+                onChange={(e) => setSchoolAddress(e.target.value)}
+                placeholder="e.g. 24 Maple Avenue, London, UK"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                School Local Currency
+              </label>
+              <select
+                value={schoolCurrency}
+                onChange={(e) => setSchoolCurrency(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-medium text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="NGN">NGN (₦ — Nigerian Naira)</option>
+                <option value="USD">USD ($ — US Dollar)</option>
+                <option value="GBP">GBP (£ — British Pound)</option>
+                <option value="EUR">EUR (€ — Euro)</option>
+                <option value="KES">KES (KSh — Kenyan Shilling)</option>
+                <option value="GHS">GHS (GH₵ — Ghanaian Cedi)</option>
+                <option value="ZAR">ZAR (R — South African Rand)</option>
+                <option value="CAD">CAD (CA$ — Canadian Dollar)</option>
+                <option value="AUD">AUD (A$ — Australian Dollar)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                School Timezone
+              </label>
+              <select
+                value={schoolTimezone}
+                onChange={(e) => setSchoolTimezone(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-medium text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="Africa/Lagos">Africa/Lagos (WAT, UTC+1)</option>
+                <option value="Africa/Nairobi">Africa/Nairobi (EAT, UTC+3)</option>
+                <option value="Africa/Accra">Africa/Accra (GMT, UTC+0)</option>
+                <option value="Africa/Johannesburg">Africa/Johannesburg (SAST, UTC+2)</option>
+                <option value="Europe/London">Europe/London (GMT/BST)</option>
+                <option value="Europe/Paris">Europe/Paris (CET/CEST)</option>
+                <option value="America/New_York">America/New_York (EST/EDT)</option>
+                <option value="America/Chicago">America/Chicago (CST/CDT)</option>
+                <option value="America/Los_Angeles">America/Los_Angeles (PST/PDT)</option>
+                <option value="Asia/Dubai">Asia/Dubai (GST, UTC+4)</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="pt-4 border-t border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <ImageUploadInput
+                label="Principal / Head of School Digital Signature (PNG)"
+                value={principalSignatureUrl}
+                onChange={setPrincipalSignatureUrl}
+                endpoint="/api/tenant/upload"
+                folder="signatures"
+                helperText="Upload a clean transparent PNG signature. Automatically stamped on official student report cards."
+                recommendedDimensions="Wide transparent PNG (e.g. 400x140)"
+                previewShape="square"
+              />
+            </div>
+
+            <div className="space-y-3 bg-slate-50 rounded-xl p-4 border border-slate-200">
+              <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Report Card Display Options</h3>
+              <label className="flex items-start gap-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showClassRank}
+                  onChange={(e) => setShowClassRank(e.target.checked)}
+                  className="mt-0.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-xs text-slate-700">
+                  <strong className="block text-slate-900">Show Class Position / Rank</strong>
+                  Uncheck for US/UK/international schools that do not publish student rankings (e.g. 1st of 30).
+                </span>
+              </label>
+              <label className="flex items-start gap-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={showDomains}
+                  onChange={(e) => setShowDomains(e.target.checked)}
+                  className="mt-0.5 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-xs text-slate-700">
+                  <strong className="block text-slate-900">Show Affective &amp; Psychomotor Ratings</strong>
+                  Toggle behavioral/practical trait tables on or off on printed report cards.
+                </span>
+              </label>
             </div>
           </div>
 
@@ -725,10 +929,62 @@ export default function SettingsClient({
                               type="button"
                               onClick={() => handleSaveSchoolDays(t.id, t.totalSchoolDays)}
                               disabled={sessionActionLoading === `school-days:${t.id}`}
-                              className="rounded-md bg-slate-900 px-2.5 py-1.5 text-[10px] font-bold text-white hover:bg-slate-700 disabled:opacity-50"
+                              className="rounded-md bg-slate-900 px-2.5 py-1.5 text-[10px] font-bold text-white hover:bg-slate-700 disabled:opacity-50 cursor-pointer"
                             >
                               {sessionActionLoading === `school-days:${t.id}` ? 'Saving…' : 'Save days'}
                             </button>
+                          </div>
+
+                          <div className="mt-2 space-y-1.5 border-t border-slate-100 pt-2">
+                            <label className="block text-[10px] font-semibold text-slate-500">
+                              Period / Term Name
+                              <input
+                                type="text"
+                                value={t.name}
+                                onChange={(event) => {
+                                  const val = event.target.value;
+                                  setSessionsList((prev) =>
+                                    prev.map((session) => ({
+                                      ...session,
+                                      terms: session.terms.map((term) =>
+                                        term.id === t.id ? { ...term, name: val } : term
+                                      ),
+                                    }))
+                                  );
+                                }}
+                                placeholder="e.g. Fall Semester, 1st Term, Q1"
+                                className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1 text-xs font-medium text-slate-900"
+                              />
+                            </label>
+                            <div className="flex items-end gap-2">
+                              <label className="flex-1 text-[10px] font-semibold text-slate-500">
+                                Next Term Opening Date
+                                <input
+                                  type="date"
+                                  value={t.nextTermStartsAt || ''}
+                                  onChange={(event) => {
+                                    const val = event.target.value;
+                                    setSessionsList((prev) =>
+                                      prev.map((session) => ({
+                                        ...session,
+                                        terms: session.terms.map((term) =>
+                                          term.id === t.id ? { ...term, nextTermStartsAt: val } : term
+                                        ),
+                                      }))
+                                    );
+                                  }}
+                                  className="mt-1 block w-full rounded-md border border-slate-300 px-2 py-1 text-xs font-medium text-slate-900"
+                                />
+                              </label>
+                              <button
+                                type="button"
+                                onClick={() => handleSaveTermDetails(t.id, t.name, t.nextTermStartsAt || '')}
+                                disabled={sessionActionLoading === `term-details:${t.id}`}
+                                className="rounded-md bg-blue-600 px-2.5 py-1.5 text-[10px] font-bold text-white hover:bg-blue-700 disabled:opacity-50 cursor-pointer"
+                              >
+                                {sessionActionLoading === `term-details:${t.id}` ? 'Saving…' : 'Save'}
+                              </button>
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -1072,6 +1328,24 @@ export default function SettingsClient({
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                  Academic Period Structure
+                </label>
+                <select
+                  value={newSessionTermPreset}
+                  onChange={(e) => setNewSessionTermPreset(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="three_terms">3 Terms (1st Term, 2nd Term, 3rd Term)</option>
+                  <option value="two_semesters">2 Semesters (Fall Semester, Spring Semester)</option>
+                  <option value="four_quarters">4 Quarters (Quarter 1 – Quarter 4)</option>
+                  <option value="uk_terms">UK Terms (Autumn, Spring, Summer Term)</option>
+                  <option value="three_trimesters">3 Trimesters (1er, 2e, 3e Trimestre)</option>
+                </select>
+                <span className="text-[11px] text-slate-400 mt-1 block">You can rename any period or set resumption dates anytime after creation.</span>
               </div>
 
               <div className="p-3 rounded-xl bg-slate-50 border border-slate-200">

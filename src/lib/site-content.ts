@@ -33,13 +33,38 @@ export interface PublicSiteData {
     vision: string;
     coreValues: string[];
     principalMessage: string;
+    headName?: string;
+    headPhotoUrl?: string | null;
+    campusPhotoUrl?: string | null;
     anthem?: string;
+  };
+  stats: {
+    foundedYear: string;
+    teacherRatio: string;
+    passRate: string;
+  };
+  newsEvents: Array<{
+    date: string;
+    category: 'Event' | 'News';
+    title: string;
+    summary?: string;
+    imageUrl?: string | null;
+  }>;
+  parentQuote: {
+    quote: string;
+    author: string;
+    role: string;
+  };
+  highlights: {
+    headline: string;
+    featureImageUrl?: string | null;
+    items: Array<{ title: string; body: string }>;
   };
   academics: {
     text: string;
     highlights: string[];
     curricula: string[];
-    levels: Array<{ name: string; description: string; ages: string }>;
+    levels: Array<{ name: string; description: string; ages: string; imageUrl?: string | null }>;
   };
   admissions: {
     text: string;
@@ -50,6 +75,7 @@ export interface PublicSiteData {
   contact: {
     email: string | null;
     phone: string | null;
+    whatsapp?: string | null;
     address: string | null;
     officeHours?: string;
   };
@@ -157,18 +183,84 @@ export async function getPublicSiteContent(tenantSlugOrId: string): Promise<Publ
       mission: aboutContent.mission || `To inspire intellectual growth, moral fortitude, and global leadership skills in every learner through purposeful inquiry and high standards.`,
       vision: aboutContent.vision || `To be a premier institution recognized regionally and globally for transformative education, ethical grounding, and academic innovation.`,
       coreValues: aboutContent.coreValues || ['Excellence', 'Integrity', 'Innovation', 'Discipline', 'Empathy & Service'],
-      principalMessage: aboutContent.principalMessage || `At ${tenant.name}, we believe every child possesses innate gifts waiting to be unlocked. Our dedicated faculty fosters an environment of curiosity, resilience, and compassion. We welcome you to experience our vibrant community where academic rigor and character building walk hand in hand.`,
-      anthem: aboutContent.anthem || `Forward ever, backward never, shining brightly as the stars. In truth and knowledge we strive, building future leaders for our nation.`,
+      principalMessage: aboutContent.principalMessage || `At ${tenant.name}, we believe every child possesses innate gifts waiting to be unlocked. Our dedicated faculty fosters an environment of curiosity, resilience, and compassion.`,
+      headName: aboutContent.headName || `Head of School, ${tenant.name}`,
+      headPhotoUrl: aboutContent.headPhotoUrl || null,
+      campusPhotoUrl: aboutContent.campusPhotoUrl || null,
+      anthem: aboutContent.anthem || `Forward ever, backward never, shining brightly as the stars. In truth and knowledge we strive, building future leaders for tomorrow.`,
+    },
+    stats: {
+      foundedYear: String(homeContent.foundedYear || new Date(tenant.createdAt).getFullYear()),
+      teacherRatio: String(homeContent.teacherRatio || '12:1'),
+      passRate: String(homeContent.passRate || '98%'),
+    },
+    newsEvents:
+      Array.isArray(homeContent.newsEvents) && homeContent.newsEvents.length > 0
+        ? homeContent.newsEvents
+        : [
+            {
+              date: 'Open Day',
+              category: 'Event',
+              title: 'Campus Open Day & Tour',
+              summary: 'Meet our faculty, tour our classrooms, and experience an ordinary school day.',
+              imageUrl: galleryImagesList[1]?.imageUrl || null,
+            },
+            {
+              date: '20 Jun',
+              category: 'Event',
+              title: 'Annual Sports & Athletics Day',
+              summary: 'Inter-house track, field, and team events celebrating spirit and teamwork.',
+              imageUrl: galleryImagesList[2]?.imageUrl || null,
+            },
+            {
+              date: 'New',
+              category: 'News',
+              title: 'Admissions Open for Upcoming Session',
+              summary: 'Applications are now open across Early Years, Primary, and Secondary stages.',
+              imageUrl: galleryImagesList[3]?.imageUrl || null,
+            },
+          ],
+    parentQuote: {
+      quote:
+        homeContent.parentQuote?.quote ||
+        `Our child looks forward to school every single morning. The teachers know every student personally and keep parents informed at every step.`,
+      author: homeContent.parentQuote?.author || 'Parent Community',
+      role: homeContent.parentQuote?.role || `${tenant.name} Family`,
+    },
+    highlights: {
+      headline: homeContent.highlights?.headline || 'Small classes, big attention.',
+      featureImageUrl: homeContent.highlights?.featureImageUrl || null,
+      items:
+        Array.isArray(homeContent.highlights?.items) && homeContent.highlights.items.length > 0
+          ? homeContent.highlights.items
+          : [
+              {
+                title: 'An open door',
+                body: 'Direct, regular communication between teachers and parents every week.',
+              },
+              {
+                title: 'Outdoors, every day',
+                body: 'Balanced academics, creative arts, sports, and practical discovery across every term.',
+              },
+              {
+                title: 'Small classes',
+                body: 'Teachers who notice the quiet child as much as the loud one.',
+              },
+              {
+                title: 'Stories first',
+                body: 'Language, curiosity, and structured reading built every single day.',
+              },
+            ],
     },
     academics: {
       text: academicsContent.text || 'We offer a comprehensive curriculum designed to nurture critical thinking, creativity, and STEM capabilities.',
-      highlights: academicsContent.highlights || ['Nursery & Early Years Foundation', 'Primary Education & Cambridge Checkpoint', 'Junior Secondary (BECE/NECO)', 'Senior Secondary (WAEC/WASSCE & UTME)'],
-      curricula: academicsContent.curricula || ['Nigerian National Curriculum (NERDC)', 'British Cambridge Assessment International Curriculum', 'Advanced STEM & Robotics Coding Academy'],
+      highlights: academicsContent.highlights || ['Early Years Foundation', 'Primary Education & Core Literacy', 'Middle / Junior Secondary', 'Senior Secondary & Exam Preparation'],
+      curricula: academicsContent.curricula || ['National & International Curriculum Standards', 'STEM, Robotics & Digital Literacy', 'Creative Arts, Sports & Leadership'],
       levels: academicsContent.levels || [
-        { name: 'Early Childhood & Nursery', ages: 'Ages 2 - 5', description: 'Montessori-inspired play, literacy foundations, and emotional development.' },
-        { name: 'Lower & Upper Primary', ages: 'Ages 6 - 11', description: 'Core numeracy, science discovery, creative arts, and ICT literacy.' },
-        { name: 'Junior Secondary School', ages: 'Ages 11 - 14', description: 'Broad-based exploration spanning sciences, humanities, and business studies.' },
-        { name: 'Senior Secondary School', ages: 'Ages 14 - 17', description: 'Specialized tracks in Science, Arts, and Commercial with comprehensive exam prep.' },
+        { name: 'Early Years & Nursery', ages: 'Ages 2 – 5', description: 'Gentle, play-led learning focused on language, curiosity, and joyful foundations.' },
+        { name: 'Primary School', ages: 'Ages 6 – 11', description: 'Strong foundations in reading, writing, mathematics, science, and creative arts.' },
+        { name: 'Junior Secondary', ages: 'Ages 11 – 14', description: 'Broad exploration across sciences, humanities, languages, and technology.' },
+        { name: 'Senior Secondary', ages: 'Ages 14 – 17', description: 'Rigorous subject depth, leadership, and comprehensive university preparation.' },
       ],
     },
     admissions: {
@@ -176,21 +268,21 @@ export async function getPublicSiteContent(tenantSlugOrId: string): Promise<Publ
       requirements: admissionsContent.requirements || [
         'Completed Online Admission Application Form',
         'Official academic transcript / report cards from previous school (last 2 terms)',
-        'Copy of Child Birth Certificate & 2 recent passport photographs',
-        'Satisfactory score on entrance assessment (Mathematics, English & General Paper)',
+        'Copy of Birth Certificate & 2 recent passport photographs',
+        'Placement conversation / age-appropriate entrance assessment',
       ],
       process: admissionsContent.process || [
-        { step: 1, title: 'Inquiry & School Tour', desc: 'Book a campus walkthrough and speak directly with our admissions counsellors.' },
-        { step: 2, title: 'Application Submission', desc: 'Submit the registration form along with required academic credentials.' },
-        { step: 3, title: 'Entrance Assessment', desc: 'Student participates in an age-appropriate aptitude and placement evaluation.' },
-        { step: 4, title: 'Offer & Enrollment', desc: 'Successful applicants receive formal admission letters and onboarding pack.' },
+        { step: 1, title: 'Enquire', desc: 'Send us a short message or request a callback from our admissions office.' },
+        { step: 2, title: 'Visit', desc: 'Tour the campus, explore classrooms, and meet our teachers in person.' },
+        { step: 3, title: 'Apply', desc: 'Submit the application form and documents; we confirm placement promptly.' },
       ],
       feeGuideText: admissionsContent.feeGuideText || 'Our tuition structure is transparent and structured across terms. Scholarships and sibling discounts are available upon application.',
     },
     contact: {
-      email: contactContent.email || `info@${tenant.slug}.edu.ng`,
-      phone: contactContent.phone || '+234 800 000 0000',
-      address: contactContent.address || 'School Campus Address, Victoria Island, Lagos, Nigeria',
+      email: contactContent.email || `admissions@${tenant.slug}.edu`,
+      phone: contactContent.phone || '+1 (555) 010-2000',
+      whatsapp: contactContent.whatsapp || null,
+      address: contactContent.address || `${tenant.name} Campus`,
       officeHours: contactContent.officeHours || 'Monday – Friday: 7:30 AM – 4:30 PM',
     },
     gallery: galleryImagesList,

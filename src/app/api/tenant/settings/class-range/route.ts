@@ -14,6 +14,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getTenantUserFromCookies } from '@/lib/auth/tenant-auth';
 import { findTenantBySlugOrDomain } from '@/lib/tenant';
+import { getTenantClassLevels } from '@/lib/class-levels';
 
 async function resolveTenant(slug: string | null) {
   if (!slug) return null;
@@ -30,9 +31,7 @@ export async function GET(req: NextRequest) {
   const tenant = await resolveTenant(slug);
   if (!tenant) return NextResponse.json({ error: 'Tenant not found' }, { status: 404 });
 
-  const allLevels = await prisma.classLevel.findMany({
-    orderBy: { orderIndex: 'asc' },
-  });
+  const allLevels = await getTenantClassLevels(tenant.id);
 
   const lowest = tenant.lowestClassLevel;
   const highest = tenant.highestClassLevel;
@@ -90,35 +89,22 @@ export async function PATCH(req: NextRequest) {
   const currLow = tenant.lowestClassLevel;
   const currHigh = tenant.highestClassLevel;
 
-  // §4.1: Shrink guard check
+  // §4.1: Shrink guard check (scoped to the tenant's active class ladder)
+  const tenantLadder = await getTenantClassLevels(tenant.id);
   const removedLevelIds: string[] = [];
 
   if (currLow && newLvlLow.orderIndex > currLow.orderIndex) {
-    // Bottom range raised: levels from currLow.orderIndex to newLvlLow.orderIndex - 1 are removed
-    const removedBottom = await prisma.classLevel.findMany({
-      where: {
-        orderIndex: {
-          gte: currLow.orderIndex,
-          lt: newLvlLow.orderIndex,
-        },
-      },
-      select: { id: true, name: true },
-    });
-    removedLevelIds.push(...removedBottom.map((l: any) => l.id));
+    const removedBottom = tenantLadder.filter(
+      (l) => l.orderIndex >= currLow.orderIndex && l.orderIndex < newLvlLow.orderIndex
+    );
+    removedLevelIds.push(...removedBottom.map((l) => l.id));
   }
 
   if (currHigh && newLvlHigh.orderIndex < currHigh.orderIndex) {
-    // Top range lowered: levels from newLvlHigh.orderIndex + 1 to currHigh.orderIndex are removed
-    const removedTop = await prisma.classLevel.findMany({
-      where: {
-        orderIndex: {
-          gt: newLvlHigh.orderIndex,
-          lte: currHigh.orderIndex,
-        },
-      },
-      select: { id: true, name: true },
-    });
-    removedLevelIds.push(...removedTop.map((l: any) => l.id));
+    const removedTop = tenantLadder.filter(
+      (l) => l.orderIndex > newLvlHigh.orderIndex && l.orderIndex <= currHigh.orderIndex
+    );
+    removedLevelIds.push(...removedTop.map((l) => l.id));
   }
 
   if (removedLevelIds.length > 0) {

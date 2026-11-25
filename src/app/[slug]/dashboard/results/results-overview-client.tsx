@@ -30,7 +30,7 @@ interface ResultsOverviewClientProps {
   terms: Array<{ id: string; name: string; isCurrent: boolean }>;
   currentTermId?: string;
   teacherAssignments: TeacherAssignmentItem[];
-  formTeacherClass: { classLevelId: string; className: string } | null;
+  formTeacherClasses: Array<{ classLevelId: string; className: string }>;
   classSummaries: ClassSummaryItem[];
 }
 
@@ -40,7 +40,7 @@ export default function ResultsOverviewClient({
   terms,
   currentTermId,
   teacherAssignments,
-  formTeacherClass,
+  formTeacherClasses,
   classSummaries,
 }: ResultsOverviewClientProps) {
   const [selectedTermId, setSelectedTermId] = useState<string>(currentTermId || terms[0]?.id || '');
@@ -299,36 +299,43 @@ export default function ResultsOverviewClient({
         </div>
       )}
 
-      {/* FORM TEACHER BROADSHEET ACCESS */}
-      {formTeacherClass && (
-        <div className="bg-blue-50/50 border border-blue-200 rounded-xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div>
-            <div className="flex items-center space-x-2">
-              <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-600 text-white">
-                Form Teacher
-              </span>
-              <h3 className="text-base font-bold text-slate-900">
-                {formTeacherClass.className} Broadsheet & Class Review
-              </h3>
+      {/* FORM TEACHER BROADSHEET ACCESS (Supports 1 or multiple form classes) */}
+      {formTeacherClasses.length > 0 && (
+        <div className="space-y-3">
+          {formTeacherClasses.map((ftc) => (
+            <div
+              key={ftc.classLevelId}
+              className="bg-blue-50/50 border border-blue-200 rounded-xl p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+            >
+              <div>
+                <div className="flex items-center space-x-2">
+                  <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-600 text-white">
+                    Form Teacher
+                  </span>
+                  <h3 className="text-base font-bold text-slate-900">
+                    {ftc.className} Broadsheet &amp; Class Review
+                  </h3>
+                </div>
+                <p className="text-xs text-slate-600 mt-1">
+                  Monitor subject submission progress, review compiled results, and submit remarks to the School Admin.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <Link
+                  href={`/${slug}/dashboard/results/broadsheet?classLevelId=${ftc.classLevelId}&termId=${selectedTermId}`}
+                  className="px-4 py-2 text-xs font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700 whitespace-nowrap text-center shadow-xs"
+                >
+                  Open Class Broadsheet →
+                </Link>
+                <Link
+                  href={`/${slug}/dashboard/results/report-cards?classLevelId=${ftc.classLevelId}&termId=${selectedTermId}`}
+                  className="px-4 py-2 text-xs font-semibold rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 whitespace-nowrap text-center shadow-xs"
+                >
+                  Terminal Report Cards →
+                </Link>
+              </div>
             </div>
-            <p className="text-xs text-slate-600 mt-1">
-              Monitor subject submission progress, review compiled results, and submit remarks to the School Admin.
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Link
-              href={`/${slug}/dashboard/results/broadsheet?classLevelId=${formTeacherClass.classLevelId}&termId=${selectedTermId}`}
-              className="px-4 py-2 text-xs font-semibold rounded-lg bg-blue-600 text-white hover:bg-blue-700 whitespace-nowrap text-center shadow-xs"
-            >
-              Open Class Broadsheet →
-            </Link>
-            <Link
-              href={`/${slug}/dashboard/results/report-cards?classLevelId=${formTeacherClass.classLevelId}&termId=${selectedTermId}`}
-              className="px-4 py-2 text-xs font-semibold rounded-lg border border-slate-300 bg-white text-slate-700 hover:bg-slate-50 whitespace-nowrap text-center shadow-xs"
-            >
-              Terminal Report Cards →
-            </Link>
-          </div>
+          ))}
         </div>
       )}
 

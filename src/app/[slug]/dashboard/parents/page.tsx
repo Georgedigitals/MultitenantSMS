@@ -2,6 +2,7 @@ import React from 'react';
 import { notFound, redirect } from 'next/navigation';
 import { getTenantContext } from '@/lib/tenant';
 import { getTenantUserFromCookies } from '@/lib/auth/tenant-auth';
+import { getTenantClassLevels } from '@/lib/class-levels';
 import prisma from '@/lib/prisma';
 import ParentsClient from './parents-client';
 
@@ -51,10 +52,9 @@ export default async function ParentsPage({ params }: ParentsPageProps) {
   });
 
   // Fetch class levels for filtering
-  const classLevels = await prisma.classLevel.findMany({
-    select: { id: true, name: true, orderIndex: true },
-    orderBy: { orderIndex: 'asc' },
-  }).catch(() => []);
+  const classLevels = await getTenantClassLevels(tenant.id, { filterLegacyByRange: true })
+    .then((rows) => rows.map((r) => ({ id: r.id, name: r.name, orderIndex: r.orderIndex })))
+    .catch(() => []);
 
   // Fetch tenant parent users to check portal activation status
   const parentUsers = await prisma.tenantUser.findMany({

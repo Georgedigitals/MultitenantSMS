@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import ImageUploadInput from '@/components/image-upload-input';
+import TemplateContentEditor from './template-content-editor';
 import {
   Palette,
   FileText,
@@ -54,13 +55,39 @@ interface WebsiteAdminClientProps {
       mission?: string;
       vision?: string;
       principalMessage?: string;
+      headName?: string;
+      headPhotoUrl?: string | null;
+      campusPhotoUrl?: string | null;
       anthem?: string;
       coreValues?: string[];
+    };
+    stats?: {
+      foundedYear: string;
+      teacherRatio: string;
+      passRate: string;
+    };
+    newsEvents?: Array<{
+      date: string;
+      category: 'Event' | 'News';
+      title: string;
+      summary?: string;
+      imageUrl?: string | null;
+    }>;
+    parentQuote?: {
+      quote: string;
+      author: string;
+      role: string;
+    };
+    highlights?: {
+      headline: string;
+      featureImageUrl?: string | null;
+      items: Array<{ title: string; body: string }>;
     };
     academics: {
       text: string;
       highlights: string[];
       curricula?: string[];
+      levels?: Array<{ name: string; ages: string; description: string; imageUrl?: string | null }>;
     };
     admissions?: {
       text: string;
@@ -70,6 +97,7 @@ interface WebsiteAdminClientProps {
     contact: {
       email: string | null;
       phone: string | null;
+      whatsapp?: string | null;
       address: string | null;
       officeHours?: string;
     };
@@ -122,13 +150,39 @@ export default function WebsiteAdminClient({
   const [aboutTitle, setAboutTitle] = useState(initialSiteData.about.title);
   const [aboutText, setAboutText] = useState(initialSiteData.about.text);
   const [principalMessage, setPrincipalMessage] = useState(initialSiteData.about.principalMessage || '');
+  const [headName, setHeadName] = useState(initialSiteData.about.headName || '');
+  const [headPhotoUrl, setHeadPhotoUrl] = useState(initialSiteData.about.headPhotoUrl || '');
+  const [campusPhotoUrl, setCampusPhotoUrl] = useState(initialSiteData.about.campusPhotoUrl || '');
   const [mission, setMission] = useState(initialSiteData.about.mission || '');
   const [vision, setVision] = useState(initialSiteData.about.vision || '');
   const [aboutAnthem, setAboutAnthem] = useState(initialSiteData.about.anthem || '');
   const [coreValues, setCoreValues] = useState((initialSiteData.about.coreValues || []).join(', '));
 
+  // Content state - School Stats, Parent Quote & News/Events (for Boutique Templates)
+  const [foundedYear, setFoundedYear] = useState(initialSiteData.stats?.foundedYear || '');
+  const [teacherRatio, setTeacherRatio] = useState(initialSiteData.stats?.teacherRatio || '12:1');
+  const [passRate, setPassRate] = useState(initialSiteData.stats?.passRate || '98%');
+  const [parentQuoteText, setParentQuoteText] = useState(initialSiteData.parentQuote?.quote || '');
+  const [parentQuoteAuthor, setParentQuoteAuthor] = useState(initialSiteData.parentQuote?.author || '');
+  const [parentQuoteRole, setParentQuoteRole] = useState(initialSiteData.parentQuote?.role || '');
+  const [newsEvents, setNewsEvents] = useState<
+    Array<{ date: string; category: 'Event' | 'News'; title: string; summary?: string; imageUrl?: string | null }>
+  >(initialSiteData.newsEvents || []);
+  const [highlightHeadline, setHighlightHeadline] = useState(
+    initialSiteData.highlights?.headline || 'Small classes, big attention.'
+  );
+  const [highlightFeatureImage, setHighlightFeatureImage] = useState(
+    initialSiteData.highlights?.featureImageUrl || ''
+  );
+  const [highlightItems, setHighlightItems] = useState<Array<{ title: string; body: string }>>(
+    initialSiteData.highlights?.items || []
+  );
+
   // Content state - Academics & Admissions
   const [academicsText, setAcademicsText] = useState(initialSiteData.academics.text);
+  const [academicLevels, setAcademicLevels] = useState<
+    Array<{ name: string; ages: string; description: string; imageUrl?: string | null }>
+  >(initialSiteData.academics.levels || []);
   const [academicHighlights, setAcademicHighlights] = useState(
     (initialSiteData.academics.highlights || []).join('\n')
   );
@@ -146,6 +200,7 @@ export default function WebsiteAdminClient({
   // Content state - Contact
   const [contactEmail, setContactEmail] = useState(initialSiteData.contact.email || '');
   const [contactPhone, setContactPhone] = useState(initialSiteData.contact.phone || '');
+  const [contactWhatsapp, setContactWhatsapp] = useState(initialSiteData.contact.whatsapp || '');
   const [contactAddress, setContactAddress] = useState(initialSiteData.contact.address || '');
   const [contactOfficeHours, setContactOfficeHours] = useState(
     initialSiteData.contact.officeHours || ''
@@ -265,6 +320,22 @@ export default function WebsiteAdminClient({
             heroSubtitle,
             motto: heroMotto || null,
             heroImageUrl: heroImageUrl || null,
+            foundedYear: foundedYear.trim() || null,
+            teacherRatio: teacherRatio.trim() || null,
+            passRate: passRate.trim() || null,
+            parentQuote: parentQuoteText.trim()
+              ? {
+                  quote: parentQuoteText.trim(),
+                  author: parentQuoteAuthor.trim() || 'Parent Community',
+                  role: parentQuoteRole.trim() || 'School Family',
+                }
+              : null,
+            newsEvents: newsEvents.filter((item) => item.title.trim()),
+            highlights: {
+              headline: highlightHeadline.trim() || 'Small classes, big attention.',
+              featureImageUrl: highlightFeatureImage || null,
+              items: highlightItems.filter((item) => item.title.trim()),
+            },
             featuredStudent: featuredStudentName.trim()
               ? {
                   name: featuredStudentName.trim(),
@@ -281,6 +352,9 @@ export default function WebsiteAdminClient({
             title: aboutTitle,
             text: aboutText,
             principalMessage: principalMessage || null,
+            headName: headName.trim() || null,
+            headPhotoUrl: headPhotoUrl || null,
+            campusPhotoUrl: campusPhotoUrl || null,
             mission: mission || null,
             vision: vision || null,
             anthem: aboutAnthem || null,
@@ -293,6 +367,7 @@ export default function WebsiteAdminClient({
             text: academicsText,
             highlights: academicHighlights.split('\n').filter((x) => x.trim()),
             curricula: curricula.split('\n').filter((x) => x.trim()),
+            levels: academicLevels.filter((lvl) => lvl.name.trim()),
           },
         },
         {
@@ -308,6 +383,7 @@ export default function WebsiteAdminClient({
           content: {
             email: contactEmail,
             phone: contactPhone,
+            whatsapp: contactWhatsapp.trim() || null,
             address: contactAddress,
             officeHours: contactOfficeHours || null,
           },
@@ -731,335 +807,92 @@ export default function WebsiteAdminClient({
         </div>
       )}
 
-      {/* ── TAB 2: PUBLIC COPY & LEADERSHIP ── */}
+      {/* ── TAB 2: TEMPLATE-AWARE PUBLIC CONTENT CMS ── */}
       {activeTab === 'content' && (
-        <div className="bg-white rounded-3xl p-6 sm:p-8 border border-slate-200/80 shadow-xs space-y-8">
-          <h2 className="text-lg font-bold text-slate-900 border-b border-slate-100 pb-3">
-            Public Website Copy &amp; Section CMS
-          </h2>
-
-          {/* Hero & Motto */}
-          <div className="space-y-4">
-            <h3 className="font-bold text-xs uppercase tracking-wider text-indigo-600">
-              1. Hero &amp; School Motto
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="md:col-span-2">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Main Heading / Hero Title (Press Enter to create line breaks)
-                </label>
-                <textarea
-                  rows={2}
-                  value={heroTitle}
-                  onChange={(e) => setHeroTitle(e.target.value)}
-                  placeholder="e.g. Inspiring Excellence &amp; Character&#10;For Tomorrow's Visionary Leaders"
-                  className="w-full px-3 py-2 border rounded-xl text-sm border-slate-300"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">School Motto</label>
-                <input
-                  type="text"
-                  value={heroMotto}
-                  onChange={(e) => setHeroMotto(e.target.value)}
-                  placeholder="e.g. In Truth and Knowledge We Strive"
-                  className="w-full px-3 py-2 border rounded-xl text-sm border-slate-300"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Subheading Copy</label>
-                <textarea
-                  value={heroSubtitle}
-                  onChange={(e) => setHeroSubtitle(e.target.value)}
-                  rows={2}
-                  className="w-full px-3 py-2 border rounded-xl text-sm border-slate-300"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <ImageUploadInput
-                  label="Hero Featured Photo"
-                  value={heroImageUrl}
-                  onChange={setHeroImageUrl}
-                  endpoint="/api/tenant/upload"
-                  folder="hero"
-                  helperText="Primary high-resolution photo displayed across templates."
-                  recommendedDimensions="Landscape photo (16:9 or 4:3) up to 5MB"
-                  previewShape="landscape"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Featured Student */}
-          <div className="space-y-4 pt-6 border-t border-slate-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-bold text-xs uppercase tracking-wider text-indigo-600">
-                  2. Scholar of the Term (Featured Student Spotlight)
-                </h3>
-                <p className="text-xs text-slate-500">Celebrate a student achievement banner on the public homepage. Clear all fields if not needed.</p>
-              </div>
-              {featuredStudentName && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setFeaturedStudentName('');
-                    setFeaturedStudentClass('');
-                    setFeaturedStudentAchievement('');
-                    setFeaturedStudentImage('');
-                  }}
-                  className="px-3 py-1.5 rounded-lg text-xs font-bold text-red-600 hover:bg-red-50 border border-red-200 transition cursor-pointer"
-                >
-                  Clear / Disable Spotlight
-                </button>
-              )}
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Student Name</label>
-                <input
-                  value={featuredStudentName}
-                  onChange={(e) => setFeaturedStudentName(e.target.value)}
-                  maxLength={100}
-                  className="w-full px-3 py-2 border rounded-xl text-sm border-slate-300"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Class / Year</label>
-                <input
-                  value={featuredStudentClass}
-                  onChange={(e) => setFeaturedStudentClass(e.target.value)}
-                  maxLength={80}
-                  className="w-full px-3 py-2 border rounded-xl text-sm border-slate-300"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Achievement Description</label>
-                <textarea
-                  value={featuredStudentAchievement}
-                  onChange={(e) => setFeaturedStudentAchievement(e.target.value)}
-                  maxLength={300}
-                  rows={2}
-                  className="w-full px-3 py-2 border rounded-xl text-sm border-slate-300"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <ImageUploadInput
-                  label="Student Photo"
-                  value={featuredStudentImage}
-                  onChange={setFeaturedStudentImage}
-                  endpoint="/api/tenant/upload"
-                  folder="gallery"
-                  helperText="Use a clear portrait photo."
-                  previewShape="landscape"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Leadership & About */}
-          <div className="space-y-4 pt-6 border-t border-slate-100">
-            <h3 className="font-bold text-xs uppercase tracking-wider text-indigo-600">
-              3. Leadership &amp; About Us
-            </h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Principal / Rector Message</label>
-                <textarea
-                  value={principalMessage}
-                  onChange={(e) => setPrincipalMessage(e.target.value)}
-                  rows={4}
-                  placeholder="Official address from the Head of School to prospective parents..."
-                  className="w-full px-3 py-2 border rounded-xl text-sm border-slate-300"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">School Overview / History</label>
-                <textarea
-                  value={aboutText}
-                  onChange={(e) => setAboutText(e.target.value)}
-                  rows={4}
-                  className="w-full px-3 py-2 border rounded-xl text-sm border-slate-300"
-                />
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Mission Statement</label>
-                  <textarea
-                    value={mission}
-                    onChange={(e) => setMission(e.target.value)}
-                    rows={2}
-                    className="w-full px-3 py-2 border rounded-xl text-sm border-slate-300"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 mb-1">Vision Statement</label>
-                  <textarea
-                    value={vision}
-                    onChange={(e) => setVision(e.target.value)}
-                    rows={2}
-                    className="w-full px-3 py-2 border rounded-xl text-sm border-slate-300"
-                  />
-                </div>
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Core Values (Separated by commas)
-                </label>
-                <input
-                  type="text"
-                  value={coreValues}
-                  onChange={(e) => setCoreValues(e.target.value)}
-                  placeholder="e.g. Excellence, Integrity, Innovation, Discipline, Empathy"
-                  className="w-full px-3 py-2 border rounded-xl text-sm border-slate-300"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  School Anthem &amp; Pledge Lyrics
-                </label>
-                <textarea
-                  value={aboutAnthem}
-                  onChange={(e) => setAboutAnthem(e.target.value)}
-                  rows={3}
-                  placeholder="Forward ever, backward never, shining brightly as the stars..."
-                  className="w-full px-3 py-2 border rounded-xl text-sm border-slate-300"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Academics & Admissions */}
-          <div className="space-y-4 pt-6 border-t border-slate-100">
-            <h3 className="font-bold text-xs uppercase tracking-wider text-indigo-600">
-              4. Academics &amp; Admissions Notice
-            </h3>
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Academics Overview</label>
-                <textarea
-                  value={academicsText}
-                  onChange={(e) => setAcademicsText(e.target.value)}
-                  rows={3}
-                  className="w-full px-3 py-2 border rounded-xl text-sm border-slate-300"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Curriculum Highlights (One per line)
-                </label>
-                <textarea
-                  value={academicHighlights}
-                  onChange={(e) => setAcademicHighlights(e.target.value)}
-                  rows={3}
-                  className="w-full px-3 py-2 border rounded-xl text-sm border-slate-300 font-mono text-xs"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Curricula &amp; Accreditations Offered (One per line)
-                </label>
-                <textarea
-                  value={curricula}
-                  onChange={(e) => setCurricula(e.target.value)}
-                  rows={3}
-                  placeholder="e.g. Nigerian National Curriculum (NERDC)&#10;British Cambridge Assessment Curriculum&#10;Advanced STEM &amp; Robotics"
-                  className="w-full px-3 py-2 border rounded-xl text-sm border-slate-300 font-mono text-xs"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Admissions Callout Text</label>
-                <textarea
-                  value={admissionsText}
-                  onChange={(e) => setAdmissionsText(e.target.value)}
-                  rows={2}
-                  placeholder="Information regarding applications, entrance assessments, and registration deadlines..."
-                  className="w-full px-3 py-2 border rounded-xl text-sm border-slate-300"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Admission Requirements (One per line)
-                </label>
-                <textarea
-                  value={admissionsRequirements}
-                  onChange={(e) => setAdmissionsRequirements(e.target.value)}
-                  rows={3}
-                  placeholder="e.g. Completed Online Admission Form&#10;Previous 2 terms report card&#10;Birth Certificate &amp; 2 passport photos"
-                  className="w-full px-3 py-2 border rounded-xl text-sm border-slate-300 font-mono text-xs"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Tuition &amp; Fee Policy Guide Note
-                </label>
-                <textarea
-                  value={admissionsFeeGuide}
-                  onChange={(e) => setAdmissionsFeeGuide(e.target.value)}
-                  rows={2}
-                  placeholder="Our tuition structure is transparent and structured across terms..."
-                  className="w-full px-3 py-2 border rounded-xl text-sm border-slate-300"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* Contact */}
-          <div className="space-y-4 pt-6 border-t border-slate-100">
-            <h3 className="font-bold text-xs uppercase tracking-wider text-indigo-600">
-              5. Official Contact Details
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Contact Email</label>
-                <input
-                  type="email"
-                  value={contactEmail}
-                  onChange={(e) => setContactEmail(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-xl text-sm border-slate-300"
-                />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Contact Phone</label>
-                <input
-                  type="text"
-                  value={contactPhone}
-                  onChange={(e) => setContactPhone(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-xl text-sm border-slate-300"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Campus Physical Address</label>
-                <input
-                  type="text"
-                  value={contactAddress}
-                  onChange={(e) => setContactAddress(e.target.value)}
-                  className="w-full px-3 py-2 border rounded-xl text-sm border-slate-300"
-                />
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-xs font-semibold text-slate-700 mb-1">Administrative Working Hours</label>
-                <input
-                  type="text"
-                  value={contactOfficeHours}
-                  onChange={(e) => setContactOfficeHours(e.target.value)}
-                  placeholder="e.g. Monday – Friday: 7:30 AM – 4:30 PM"
-                  className="w-full px-3 py-2 border rounded-xl text-sm border-slate-300"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="pt-4 flex justify-end">
-            <button
-              onClick={handleSaveContent}
-              disabled={loading}
-              className="px-6 py-3 rounded-xl bg-indigo-600 text-white font-bold text-xs uppercase tracking-wider shadow-md hover:bg-indigo-700 transition-colors disabled:opacity-50 cursor-pointer"
-            >
-              {loading ? 'Saving...' : 'Save All Website Content'}
-            </button>
-          </div>
-        </div>
+        <TemplateContentEditor
+          templateId={templateId}
+          loading={loading}
+          onSwitchTemplate={() => setActiveTab('template')}
+          onSave={handleSaveContent}
+          heroTitle={heroTitle}
+          setHeroTitle={setHeroTitle}
+          heroMotto={heroMotto}
+          setHeroMotto={setHeroMotto}
+          heroSubtitle={heroSubtitle}
+          setHeroSubtitle={setHeroSubtitle}
+          heroImageUrl={heroImageUrl}
+          setHeroImageUrl={setHeroImageUrl}
+          foundedYear={foundedYear}
+          setFoundedYear={setFoundedYear}
+          teacherRatio={teacherRatio}
+          setTeacherRatio={setTeacherRatio}
+          passRate={passRate}
+          setPassRate={setPassRate}
+          highlightHeadline={highlightHeadline}
+          setHighlightHeadline={setHighlightHeadline}
+          highlightFeatureImage={highlightFeatureImage}
+          setHighlightFeatureImage={setHighlightFeatureImage}
+          highlightItems={highlightItems}
+          setHighlightItems={setHighlightItems}
+          headName={headName}
+          setHeadName={setHeadName}
+          headPhotoUrl={headPhotoUrl}
+          setHeadPhotoUrl={setHeadPhotoUrl}
+          campusPhotoUrl={campusPhotoUrl}
+          setCampusPhotoUrl={setCampusPhotoUrl}
+          principalMessage={principalMessage}
+          setPrincipalMessage={setPrincipalMessage}
+          aboutText={aboutText}
+          setAboutText={setAboutText}
+          mission={mission}
+          setMission={setMission}
+          vision={vision}
+          setVision={setVision}
+          coreValues={coreValues}
+          setCoreValues={setCoreValues}
+          aboutAnthem={aboutAnthem}
+          setAboutAnthem={setAboutAnthem}
+          academicsText={academicsText}
+          setAcademicsText={setAcademicsText}
+          academicLevels={academicLevels}
+          setAcademicLevels={setAcademicLevels}
+          academicHighlights={academicHighlights}
+          setAcademicHighlights={setAcademicHighlights}
+          curricula={curricula}
+          setCurricula={setCurricula}
+          admissionsText={admissionsText}
+          setAdmissionsText={setAdmissionsText}
+          admissionsRequirements={admissionsRequirements}
+          setAdmissionsRequirements={setAdmissionsRequirements}
+          admissionsFeeGuide={admissionsFeeGuide}
+          setAdmissionsFeeGuide={setAdmissionsFeeGuide}
+          newsEvents={newsEvents}
+          setNewsEvents={setNewsEvents}
+          parentQuoteText={parentQuoteText}
+          setParentQuoteText={setParentQuoteText}
+          parentQuoteAuthor={parentQuoteAuthor}
+          setParentQuoteAuthor={setParentQuoteAuthor}
+          parentQuoteRole={parentQuoteRole}
+          setParentQuoteRole={setParentQuoteRole}
+          featuredStudentName={featuredStudentName}
+          setFeaturedStudentName={setFeaturedStudentName}
+          featuredStudentClass={featuredStudentClass}
+          setFeaturedStudentClass={setFeaturedStudentClass}
+          featuredStudentAchievement={featuredStudentAchievement}
+          setFeaturedStudentAchievement={setFeaturedStudentAchievement}
+          featuredStudentImage={featuredStudentImage}
+          setFeaturedStudentImage={setFeaturedStudentImage}
+          contactEmail={contactEmail}
+          setContactEmail={setContactEmail}
+          contactPhone={contactPhone}
+          setContactPhone={setContactPhone}
+          contactWhatsapp={contactWhatsapp}
+          setContactWhatsapp={setContactWhatsapp}
+          contactAddress={contactAddress}
+          setContactAddress={setContactAddress}
+          contactOfficeHours={contactOfficeHours}
+          setContactOfficeHours={setContactOfficeHours}
+        />
       )}
 
       {/* ── TAB 3: PHOTO GALLERY ── */}

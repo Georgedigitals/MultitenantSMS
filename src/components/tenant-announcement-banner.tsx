@@ -48,7 +48,7 @@ export function TenantAnnouncementBanner({ planName }: { planName?: string }) {
   if (visible.length === 0) return null;
 
   return (
-    <div className="space-y-2 mb-5">
+    <div className="print:hidden space-y-2 mb-5">
       {visible.map((item) => {
         const Icon =
           item.severity === 'warning'

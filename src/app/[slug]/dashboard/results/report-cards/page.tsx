@@ -5,6 +5,7 @@ import { ArrowLeft, ArrowRight, Award, Calendar, CheckCircle2, CircleDashed, Lay
 import prisma from '@/lib/prisma';
 import { getTenantContext } from '@/lib/tenant';
 import { getTenantUserFromCookies } from '@/lib/auth/tenant-auth';
+import { getTenantClassLevels } from '@/lib/class-levels';
 import DashboardNav from '@/components/dashboard-nav';
 import { AddSessionModal } from '@/components/add-session-modal';
 import { generateStudentReportCard, ReportCardData } from '@/lib/report-card';
@@ -31,24 +32,8 @@ export default async function ReportCardsDirectoryPage({
     redirect('/dashboard');
   }
 
-  // 1. Fetch available class levels within tenant range
-  const allLevels = await prisma.classLevel.findMany({
-    orderBy: { orderIndex: 'asc' },
-  });
-
-  const lowest = tenant.lowestClassLevelId
-    ? allLevels.find((l: any) => l.id === tenant.lowestClassLevelId)
-    : null;
-  const highest = tenant.highestClassLevelId
-    ? allLevels.find((l: any) => l.id === tenant.highestClassLevelId)
-    : null;
-
-  const minOrder = lowest ? lowest.orderIndex : -Infinity;
-  const maxOrder = highest ? highest.orderIndex : Infinity;
-
-  const tenantClasses = allLevels.filter(
-    (l: any) => l.orderIndex >= minOrder && l.orderIndex <= maxOrder
-  );
+  // 1. Fetch available class levels for this tenant
+  const tenantClasses = await getTenantClassLevels(tenant.id, { filterLegacyByRange: true });
 
   // 2. Fetch terms
   const tenantSessions = await prisma.academicSession.findMany({

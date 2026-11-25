@@ -1,5 +1,6 @@
 import prisma from './prisma';
 import { checkStudentFeeClearance } from './fees';
+import { getTenantClassLevels } from './class-levels';
 
 export interface PromotionEligibilityResult {
   eligible: boolean;
@@ -101,17 +102,8 @@ export async function getStudentPromotionRoster(
     where: { sessionId: fromSessionId },
   });
 
-  // 1. Fetch enabled class levels within tenant range
-  const allClassLevels = await prisma.classLevel.findMany({
-    orderBy: { orderIndex: 'asc' },
-  });
-
-  const lowestIndex = lowestClassLevel?.orderIndex ?? 0;
-  const highestIndex = highestClassLevel?.orderIndex ?? allClassLevels.length - 1;
-
-  const enabledClassLevels = allClassLevels.filter(
-    (cl: any) => cl.orderIndex >= lowestIndex && cl.orderIndex <= highestIndex
-  );
+  // 1. Fetch enabled class levels for this tenant (tenant-owned custom classes or legacy global range)
+  const enabledClassLevels = await getTenantClassLevels(tenantId, { filterLegacyByRange: true });
 
   const topClassLevel = enabledClassLevels[enabledClassLevels.length - 1] || null;
   const topClassLevelId = topClassLevel?.id || null;
@@ -248,24 +240,7 @@ export async function executeSessionPromotion(
 
   if (!tenant) throw new Error('Tenant not found');
 
-  const lowestClassLevel = tenant.lowestClassLevelId
-    ? await prisma.classLevel.findUnique({ where: { id: tenant.lowestClassLevelId } })
-    : null;
-  const highestClassLevel = tenant.highestClassLevelId
-    ? await prisma.classLevel.findUnique({ where: { id: tenant.highestClassLevelId } })
-    : null;
-
-  const allClassLevels = await prisma.classLevel.findMany({
-    orderBy: { orderIndex: 'asc' },
-  });
-
-  const lowestIndex = lowestClassLevel?.orderIndex ?? 0;
-  const highestIndex = highestClassLevel?.orderIndex ?? allClassLevels.length - 1;
-
-  const enabledClassLevels = allClassLevels.filter(
-    (cl: any) => cl.orderIndex >= lowestIndex && cl.orderIndex <= highestIndex
-  );
-
+  const enabledClassLevels = await getTenantClassLevels(tenantId, { filterLegacyByRange: true });
   const topClassLevelId = enabledClassLevels[enabledClassLevels.length - 1]?.id || null;
 
   // Process decisions

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireTenantAccess } from '@/lib/auth/tenant-access';
+import { getTenantClassLevels } from '@/lib/class-levels';
 
 function extractSlug(request: Request, candidate?: string | null): string | null {
   if (candidate && candidate.trim() !== '' && candidate !== 'undefined' && candidate !== 'null') {
@@ -54,10 +55,9 @@ export async function GET(request: Request) {
       prisma.smsConfiguration.findUnique({
         where: { tenantId: access.tenant.id },
       }),
-      prisma.classLevel.findMany({
-        orderBy: { orderIndex: 'asc' },
-        select: { id: true, name: true },
-      }),
+      getTenantClassLevels(access.tenant.id, { filterLegacyByRange: true }).then((rows) =>
+        rows.map((r) => ({ id: r.id, name: r.name }))
+      ),
       prisma.term.findMany({
         where: { session: { tenantId: access.tenant.id } },
         orderBy: { startDate: 'desc' },

@@ -118,10 +118,16 @@ export interface ReportCardData {
   };
   review: {
     formTeacherName: string;
+    formTeacherSignatureUrl: string | null;
     formTeacherRemarks: string | null;
     principalName: string;
+    principalSignatureUrl: string | null;
     principalRemarks: string | null;
     submittedAt: Date | null;
+  };
+  options?: {
+    showClassRank: boolean;
+    showDomains: boolean;
   };
   domains: {
     affective: DomainItem[];
@@ -189,15 +195,15 @@ export async function generateStudentReportCard(
   const schoolAddress =
     brandingRaw?.address ||
     contactContent.address ||
-    '14 Davis Cole Crescent, Surulere, Lagos State, Nigeria';
+    '';
   const schoolPhone =
     brandingRaw?.phone ||
     contactContent.phone ||
-    '08115414915, 07064852256';
+    '';
   const schoolEmail =
     brandingRaw?.email ||
     contactContent.email ||
-    `info@${tenant.slug}.edu.ng`;
+    '';
 
   const cleanStudentIdentifier = studentId.trim();
 
@@ -558,35 +564,55 @@ export async function generateStudentReportCard(
   const averageScore =
     subjectsCount > 0 ? Math.round((studentTotalScore / subjectsCount) * 10) / 10 : 0;
 
-  // Grade Analysis Distribution
-  const gradeDistributionMap: Record<string, number> = { A: 0, B: 0, C: 0, D: 0, E: 0, F: 0 };
+  // Grade Analysis Distribution — built dynamically from the school's own grading scale!
+  const scaleGradesOrdered = gradingScaleLegend.length > 0
+    ? gradingScaleLegend.map((gs) => gs.grade)
+    : ['A', 'B', 'C', 'D', 'E', 'F'];
+  const gradeDistributionMap: Record<string, number> = {};
+  for (const g of scaleGradesOrdered) {
+    gradeDistributionMap[g] = 0;
+  }
   for (const s of subjects) {
-    const gKey = (s.grade || 'F').charAt(0).toUpperCase();
-    if (gradeDistributionMap[gKey] !== undefined) {
-      gradeDistributionMap[gKey] += 1;
+    const exact = (s.grade || '').trim();
+    if (exact && gradeDistributionMap[exact] !== undefined) {
+      gradeDistributionMap[exact] += 1;
     } else {
-      gradeDistributionMap['F'] += 1;
+      const firstChar = exact.charAt(0).toUpperCase();
+      if (firstChar && gradeDistributionMap[firstChar] !== undefined) {
+        gradeDistributionMap[firstChar] += 1;
+      } else if (exact) {
+        gradeDistributionMap[exact] = (gradeDistributionMap[exact] || 0) + 1;
+        if (!scaleGradesOrdered.includes(exact)) scaleGradesOrdered.push(exact);
+      }
     }
   }
 
   const gradeAnalysis: ReportCardGradeAnalysis = {
-    distribution: ['A', 'B', 'C', 'D', 'E', 'F'].map((grade) => ({
+    distribution: scaleGradesOrdered.map((grade) => ({
       grade,
-      count: gradeDistributionMap[grade],
+      count: gradeDistributionMap[grade] || 0,
     })),
     totalSubjects: subjectsCount,
   };
 
-  // Determine overall letter grade and remark
-  let overallGrade = 'A';
-  if (averageScore >= 70) overallGrade = 'A';
-  else if (averageScore >= 60) overallGrade = 'B';
-  else if (averageScore >= 50) overallGrade = 'C';
-  else if (averageScore >= 45) overallGrade = 'D';
-  else if (averageScore >= 40) overallGrade = 'E';
-  else overallGrade = 'F';
+  // Determine overall letter grade and remark strictly from the school's own grading scale
+  const roundedAvg = Math.round(averageScore * 10) / 10;
+  const matchedOverallScale = classGradingScales.find(
+    (gs: typeof classGradingScales[number]) =>
+      (roundedAvg >= Number(gs.minScore) && roundedAvg <= Number(gs.maxScore)) ||
+      (Math.round(averageScore) >= Number(gs.minScore) && Math.round(averageScore) <= Number(gs.maxScore))
+  );
+  let overallGrade = matchedOverallScale?.grade || '';
+  if (!overallGrade) {
+    if (averageScore >= 70) overallGrade = 'A';
+    else if (averageScore >= 60) overallGrade = 'B';
+    else if (averageScore >= 50) overallGrade = 'C';
+    else if (averageScore >= 45) overallGrade = 'D';
+    else if (averageScore >= 40) overallGrade = 'E';
+    else overallGrade = 'F';
+  }
 
-  const overallRemark = resolveRemark(averageScore, overallGrade);
+  const overallRemark = matchedOverallScale?.remark || resolveRemark(averageScore, overallGrade);
 
   // 10. Ledger Attendance Stats (§5.3A)
   const attendanceStats = await computeAttendanceStats(canonicalStudentId, termId);
@@ -595,22 +621,56 @@ export async function generateStudentReportCard(
     })`;
 
   // 11. Form Teacher Review & Principal Remarks
-  const classReview = await prisma.classResultReview.findUnique({
-    where: {
-      classLevelId_termId: {
-        classLevelId: classLevel.id,
-        termId,
+  const [classReview, assignedFormTeacher, adminStaff] = await Promise.all([
+    prisma.classResultReview.findUnique({
+      where: {
+        classLevelId_termId: {
+          classLevelId: classLevel.id,
+          termId,
+        },
       },
-    },
-  });
+    }),
+    prisma.formTeacherAssignment.findFirst({
+      where: {
+        classLevelId: classLevel.id,
+        sessionId: term.sessionId,
+      },
+      include: {
+        staff: { select: { name: true, signatureUrl: true } },
+      },
+    }),
+    prisma.staff.findFirst({
+      where: {
+        tenantId,
+        roleBase: 'admin',
+      },
+      orderBy: { createdAt: 'asc' },
+      select: { name: true, signatureUrl: true },
+    }),
+  ]);
 
-  let formTeacherName = 'MR ADIGUN TIMILEYIN';
+  let formTeacherName = assignedFormTeacher?.staff?.name?.trim() || '';
+  let formTeacherSignatureUrl: string | null = assignedFormTeacher?.staff?.signatureUrl || null;
   if (classReview?.formTeacherId) {
-    const ft = await prisma.staff.findUnique({ where: { id: classReview.formTeacherId } });
-    if (ft) formTeacherName = ft.name;
+    const ft = await prisma.staff.findUnique({
+      where: { id: classReview.formTeacherId },
+      select: { name: true, signatureUrl: true },
+    });
+    if (ft?.name?.trim()) formTeacherName = ft.name.trim();
+    if (ft?.signatureUrl) formTeacherSignatureUrl = ft.signatureUrl;
+  }
+  if (!formTeacherName) {
+    formTeacherName = 'Class Form Teacher';
   }
 
-  const principalName = brandingRaw?.principalName || 'MR OWOLABI BADMOS';
+  const configuredPrincipalName =
+    typeof brandingRaw?.principalName === 'string' ? brandingRaw.principalName.trim() : '';
+  const principalName =
+    configuredPrincipalName || adminStaff?.name?.trim() || 'Principal / Head of School';
+  const principalSignatureUrl: string | null =
+    (typeof brandingRaw?.principalSignatureUrl === 'string' && brandingRaw.principalSignatureUrl.trim()) ||
+    adminStaff?.signatureUrl ||
+    null;
 
   // 12. Teacher-entered, term-specific affective & psychomotor ratings & individual remarks.
   const domainAssessment = await prisma.reportCardAssessment.findFirst({
@@ -635,7 +695,7 @@ export async function generateStudentReportCard(
     score: psychomotorRatings[trait],
   }));
 
-  // Next term resumption date
+  // Next term resumption / opening date (explicit term setting -> next term start -> TBA)
   const nextTerm = await prisma.term.findFirst({
     where: {
       sessionId: term.sessionId,
@@ -644,19 +704,15 @@ export async function generateStudentReportCard(
     orderBy: { startDate: 'asc' },
   });
 
-  const nextTermBegins = nextTerm
-    ? nextTerm.startDate.toLocaleDateString('en-GB', {
-      weekday: 'short',
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric',
-    })
-    : new Date(term.endDate.getTime() + 28 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB', {
-      weekday: 'short',
-      day: '2-digit',
-      month: 'long',
-      year: 'numeric',
-    });
+  const resolvedNextDate = term.nextTermStartsAt || nextTerm?.startDate || null;
+  const nextTermBegins = resolvedNextDate
+    ? resolvedNextDate.toLocaleDateString('en-GB', {
+        weekday: 'short',
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric',
+      })
+    : 'To Be Announced';
 
   const latestPublishDate = studentEntries.reduce((latest: any, e: any) => {
     return e.updatedAt > latest ? e.updatedAt : latest;
@@ -724,6 +780,7 @@ export async function generateStudentReportCard(
     },
     review: {
       formTeacherName,
+      formTeacherSignatureUrl,
       formTeacherRemarks:
         (() => {
           const rawAff = (domainAssessment?.affectiveRatings && typeof domainAssessment.affectiveRatings === 'object')
@@ -735,14 +792,16 @@ export async function generateStudentReportCard(
           if (typeof (domainAssessment as any)?.remarks === 'string' && (domainAssessment as any).remarks.trim()) {
             return (domainAssessment as any).remarks.trim();
           }
-          return (
-            classReview?.overallRemarks ||
-            `${student.name.split(' ')[0]} is a bright, diligent and studious student. Always inquisitive and ready to learn.`
-          );
+          return classReview?.overallRemarks?.trim() || null;
         })(),
       principalName,
+      principalSignatureUrl,
       principalRemarks: derivePrincipalRemark(averageScore),
       submittedAt: classReview?.submittedToAdminAt || null,
+    },
+    options: {
+      showClassRank: brandingRaw?.showClassRank !== false,
+      showDomains: brandingRaw?.showDomains !== false,
     },
     domains: {
       affective: affectiveDomain,

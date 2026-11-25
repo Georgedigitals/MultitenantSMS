@@ -3,6 +3,7 @@ import { redirect, notFound } from 'next/navigation';
 import { getTenantContext } from '@/lib/tenant';
 import { getTenantUserFromCookies } from '@/lib/auth/tenant-auth';
 import { getTermFeeOverview } from '@/lib/fees';
+import { getTenantClassLevels } from '@/lib/class-levels';
 import prisma from '@/lib/prisma';
 import DashboardNav from '@/components/dashboard-nav';
 import FeesAdminClient from './fees-admin-client';
@@ -57,9 +58,7 @@ export default async function FeesPage({ params }: FeesPageProps) {
     );
   }
 
-  const classLevels = await prisma.classLevel.findMany({
-    orderBy: { orderIndex: 'asc' },
-  });
+  const classLevels = await getTenantClassLevels(tenant.id, { filterLegacyByRange: true });
   const feeOverview = activeTerm ? await getTermFeeOverview(tenant.id, activeTerm.id) : null;
 
   // 1. Fetch all configured fee items for the active term

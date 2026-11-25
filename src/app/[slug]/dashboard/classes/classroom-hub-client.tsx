@@ -21,6 +21,7 @@ import {
   Sliders,
   Check,
 } from 'lucide-react';
+import { ManageClassesModal } from './manage-classes-modal';
 
 interface ClassItem {
   id: string;
@@ -56,9 +57,11 @@ interface SubjectOption {
 interface ClassroomHubClientProps {
   slug: string;
   schoolName: string;
+  isAdmin?: boolean;
 }
 
-export function ClassroomHubClient({ slug, schoolName }: ClassroomHubClientProps) {
+export function ClassroomHubClient({ slug, schoolName, isAdmin = true }: ClassroomHubClientProps) {
+  const [manageClassesOpen, setManageClassesOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -184,7 +187,17 @@ export function ClassroomHubClient({ slug, schoolName }: ClassroomHubClientProps
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2.5">
+          {isAdmin && (
+            <button
+              type="button"
+              onClick={() => setManageClassesOpen(true)}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-slate-900 hover:bg-slate-800 text-white shadow-xs transition cursor-pointer"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add / Manage Classes</span>
+            </button>
+          )}
           <button
             onClick={() => fetchHubData(true)}
             disabled={refreshing}
@@ -747,6 +760,16 @@ export function ClassroomHubClient({ slug, schoolName }: ClassroomHubClientProps
             </div>
           </div>
         </div>
+      )}
+
+      {isAdmin && (
+        <ManageClassesModal
+          open={manageClassesOpen}
+          onClose={() => setManageClassesOpen(false)}
+          onChanged={() => {
+            fetchHubData(true);
+          }}
+        />
       )}
     </div>
   );

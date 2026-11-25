@@ -110,27 +110,7 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // 4. §4.1: "at most one active FormTeacherAssignment per session" for a staff member
-  const existingStaffAssignment = await prisma.formTeacherAssignment.findFirst({
-    where: {
-      staffId,
-      sessionId,
-      classLevelId: { not: classLevelId },
-    },
-    include: { classLevel: true },
-  });
-
-  if (existingStaffAssignment) {
-    return NextResponse.json(
-      {
-        error: `${staff.name} is already assigned as form teacher for ${existingStaffAssignment.classLevel.name} in this session. A staff member can hold at most one form teacher assignment per session (§4.1).`,
-      },
-      { status: 422 }
-    );
-  }
-
-  // 5. §4.1: "one active per class per session"
-  // Upsert or create: if class already has a form teacher in this session, replace it atomically
+  // 4. Upsert form teacher for this class & session (a teacher may oversee multiple classes)
   const assignment = await prisma.formTeacherAssignment.upsert({
     where: {
       classLevelId_sessionId: {

@@ -8,6 +8,7 @@ export interface PendingRegistrationPayload {
   adminEmail: string;
   planId?: string;
   registrationMode?: 'trial' | 'paid';
+  educationSystem?: string;
   lowestLevelName?: string;
   highestLevelName?: string;
   primaryColor?: string;

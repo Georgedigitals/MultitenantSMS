@@ -4,6 +4,7 @@ import { getTenantContext } from '@/lib/tenant';
 import { getTenantUserFromCookies } from '@/lib/auth/tenant-auth';
 import prisma from '@/lib/prisma';
 import { calculatePinFees } from '@/lib/pin';
+import { getTenantClassLevels } from '@/lib/class-levels';
 import SettingsClient from './settings-client';
 
 interface SettingsPageProps {
@@ -47,9 +48,7 @@ export default async function SettingsPage({ params }: SettingsPageProps) {
     notFound();
   }
 
-  const allClassLevels = await prisma.classLevel.findMany({
-    orderBy: { orderIndex: 'asc' },
-  });
+  const allClassLevels = await getTenantClassLevels(fullTenant.id);
 
   const pinFees = await calculatePinFees(fullTenant.id);
 
@@ -91,6 +90,7 @@ export default async function SettingsPage({ params }: SettingsPageProps) {
             name: t.name,
             isCurrent: t.isCurrent,
             totalSchoolDays: t.totalSchoolDays,
+            nextTermStartsAt: t.nextTermStartsAt ? t.nextTermStartsAt.toISOString().slice(0, 10) : '',
           })),
         }))}
         allClassLevels={allClassLevels.map((lvl: any) => ({

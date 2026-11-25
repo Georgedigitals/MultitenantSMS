@@ -395,6 +395,28 @@ export async function fulfillPinStockSale(options: {
       });
     } catch { console.warn('[PIN stock sale] Receipt email dispatch failed.'); }
     const guardianInfo = (student.guardianContactInfo as Record<string, unknown> | null) || {};
+    const parentEmailRaw = guardianInfo.email || guardianInfo.guardianEmail;
+    if (
+      typeof parentEmailRaw === 'string' &&
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(parentEmailRaw.trim()) &&
+      parentEmailRaw.trim().toLowerCase() !== intent.payerEmail.trim().toLowerCase()
+    ) {
+      try {
+        await sendResultPinPurchaseEmail({
+          tenantId,
+          recipientEmail: parentEmailRaw.trim().toLowerCase(),
+          pinCode: result.pin.pinCode,
+          studentName: student.name,
+          studentId: student.id,
+          termName,
+          pricePaid: Number(intent.amount),
+          paymentRef: reference,
+          slug: student.tenant.slug,
+        });
+      } catch {
+        console.warn('[PIN stock sale] Linked parent copy email dispatch failed.');
+      }
+    }
     const parentPhone = guardianInfo.guardianPhone || guardianInfo.phone || guardianInfo.phoneNumber;
     if (typeof parentPhone === 'string' && parentPhone) {
       try {

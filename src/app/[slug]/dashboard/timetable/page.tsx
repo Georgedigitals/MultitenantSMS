@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import { getTenantContext } from '@/lib/tenant';
 import { getTenantUserFromCookies } from '@/lib/auth/tenant-auth';
 import { getClassTimetable } from '@/lib/timetable';
+import { getTenantClassLevels } from '@/lib/class-levels';
 import TimetableAdminClient from './timetable-client';
 
 interface TimetablePageProps {
@@ -23,11 +24,8 @@ export default async function TimetablePage({ params, searchParams }: TimetableP
   if (!auth) redirect('/login');
   if (!['school_admin', 'teacher'].includes(auth.user.role)) redirect(`/${slug}/dashboard`);
 
-  // Classes in tenant range
-  const allClasses = await prisma.classLevel.findMany({ orderBy: { orderIndex: 'asc' } });
-  const minOrder = tenant.lowestClassLevel?.orderIndex ?? 1;
-  const maxOrder = tenant.highestClassLevel?.orderIndex ?? 15;
-  const tenantClasses = allClasses.filter((c: any) => c.orderIndex >= minOrder && c.orderIndex <= maxOrder);
+  // Classes for this tenant
+  const tenantClasses = await getTenantClassLevels(tenant.id, { filterLegacyByRange: true });
 
   const selectedClassId = paramClassId && tenantClasses.some((c) => c.id === paramClassId)
     ? paramClassId

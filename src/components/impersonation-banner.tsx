@@ -87,8 +87,7 @@ export function ImpersonationBanner({ currentTenantSlug }: ImpersonationBannerPr
   return (
     <div
       id="super-admin-impersonation-banner"
-      className="sticky top-0 z-[99999] bg-amber-600 text-white px-4 py-2.5 shadow-md flex items-center justify-between font-medium text-sm border-b border-amber-700 select-none"
-      style={{ display: 'flex' }}
+      className="print:hidden sticky top-0 z-[99999] bg-amber-600 text-white px-4 py-2.5 shadow-md flex items-center justify-between font-medium text-sm border-b border-amber-700 select-none"
     >
       <div className="flex items-center gap-2">
         <span className="bg-amber-800 text-amber-100 text-xs px-2 py-0.5 rounded font-bold uppercase tracking-wider">

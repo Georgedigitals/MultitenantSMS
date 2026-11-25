@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import { getTenantContext } from '@/lib/tenant';
 import { getTenantUserFromCookies } from '@/lib/auth/tenant-auth';
 import { getTenantDb } from '@/lib/tenant-db';
+import { getTenantClassLevels } from '@/lib/class-levels';
 import DashboardNav from '@/components/dashboard-nav';
 import GradingClient from './grading-client';
 
@@ -94,15 +95,7 @@ export default async function GradingPage({ params }: GradingPageProps) {
   }));
 
   // Fetch tenant-scoped class levels
-  const allClassLevels = await prisma.classLevel.findMany({
-    orderBy: { orderIndex: 'asc' },
-  });
-
-  const minOrder = tenant.lowestClassLevel?.orderIndex ?? 1;
-  const maxOrder = tenant.highestClassLevel?.orderIndex ?? 15;
-  const tenantClassLevels = allClassLevels.filter(
-    (cl: any) => cl.orderIndex >= minOrder && cl.orderIndex <= maxOrder
-  );
+  const tenantClassLevels = await getTenantClassLevels(tenant.id, { filterLegacyByRange: true });
 
   // Every school administrator has full authority over their school's grading system
   const canCustomize = true;

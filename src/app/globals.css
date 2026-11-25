@@ -63,7 +63,7 @@ body {
 @media print {
   @page {
     size: A4 portrait;
-    margin: 5mm 6mm;
+    margin: 4mm 5mm;
   }
 
   html,
@@ -78,7 +78,8 @@ body {
   }
 
   .print\:hidden,
-  .print-hidden {
+  .print-hidden,
+  #super-admin-impersonation-banner {
     display: none !important;
   }
 
@@ -94,8 +95,49 @@ body {
     border: 0 !important;
     border-radius: 0 !important;
     box-shadow: none !important;
+    font-size: 9.5px !important;
+    line-height: 1.15 !important;
+    zoom: 0.9;
     break-inside: avoid !important;
     page-break-inside: avoid !important;
+  }
+
+  .report-card-sheet .report-card-header {
+    padding-bottom: 4px !important;
+    margin-bottom: 5px !important;
+  }
+
+  .report-card-sheet .report-card-logo {
+    width: 58px !important;
+    height: 58px !important;
+  }
+
+  .report-card-sheet .report-card-bio {
+    padding: 5px 7px !important;
+    margin-bottom: 5px !important;
+  }
+
+  .report-card-sheet .report-card-photo {
+    width: 68px !important;
+  }
+
+  .report-card-sheet .report-card-photo-img {
+    height: 74px !important;
+  }
+
+  .report-card-sheet .report-card-section {
+    margin-bottom: 5px !important;
+  }
+
+  .report-card-sheet table th,
+  .report-card-sheet table td {
+    padding-top: 1.5px !important;
+    padding-bottom: 1.5px !important;
+  }
+
+  .report-card-sheet .report-card-remarks-box {
+    min-height: 26px !important;
+    padding: 4px 6px !important;
   }
 
   .report-card-sheet * {

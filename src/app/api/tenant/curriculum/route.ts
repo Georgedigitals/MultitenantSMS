@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import { getTenantUserFromCookies } from '@/lib/auth/tenant-auth';
 import { getTenantCurriculum, saveTenantCurriculum, TenantCurriculumConfig } from '@/lib/curriculum';
 import { findTenantBySlugOrDomain } from '@/lib/tenant';
+import { getTenantClassLevels } from '@/lib/class-levels';
 
 export async function GET(req: NextRequest) {
   try {
@@ -27,9 +28,7 @@ export async function GET(req: NextRequest) {
         where: { tenantId: tenant.id },
         orderBy: { name: 'asc' },
       }),
-      prisma.classLevel.findMany({
-        orderBy: { orderIndex: 'asc' },
-      }),
+      getTenantClassLevels(tenant.id, { filterLegacyByRange: true }),
     ]);
 
     return NextResponse.json({

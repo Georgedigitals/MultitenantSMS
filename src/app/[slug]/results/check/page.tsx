@@ -1,8 +1,14 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getTenantContext } from '@/lib/tenant';
+import { getPublicSiteContent } from '@/lib/site-content';
+import { getTemplateThemeTokens } from '@/lib/template-theme';
+import { TenantPublicHeader } from '@/components/tenant-public-header';
+import { TenantPublicFooter } from '@/components/tenant-public-footer';
 import { prisma } from '@/lib/prisma';
 import ResultCheckerClient from './result-checker-client';
+
+export const dynamic = 'force-dynamic';
 
 export default async function ResultCheckerPage({
   params,
@@ -19,35 +25,40 @@ export default async function ResultCheckerPage({
     notFound();
   }
 
-  const dbTenant = await prisma.tenant.findUnique({
-    where: { id: tenant.id },
-    select: {
-      pinPrice: true,
-      hasOnlinePayment: true,
-      hasOnlinePinPayment: true,
-      bankName: true,
-      bankAccountNumber: true,
-      bankAccountName: true,
-    },
-  });
-
-  const [availablePin, pinGateway] = await Promise.all([
+  const [siteData, dbTenant, availablePin, pinGateway, terms] = await Promise.all([
+    getPublicSiteContent(tenant.id),
+    prisma.tenant.findUnique({
+      where: { id: tenant.id },
+      select: {
+        pinPrice: true,
+        hasOnlinePayment: true,
+        hasOnlinePinPayment: true,
+        bankName: true,
+        bankAccountNumber: true,
+        bankAccountName: true,
+      },
+    }),
     prisma.generatedPin.findFirst({
-      where: { tenantId: tenant.id, studentId: null, soldAt: null, isUsed: false, onlineSaleReference: null, batch: { status: 'completed' } },
+      where: {
+        tenantId: tenant.id,
+        studentId: null,
+        soldAt: null,
+        isUsed: false,
+        onlineSaleReference: null,
+        batch: { status: 'completed' },
+      },
       include: { batch: { select: { pricePerPin: true } } },
       orderBy: [{ createdAt: 'asc' }, { id: 'asc' }],
     }),
     prisma.tenantPaymentGateway.findUnique({ where: { tenantId: tenant.id }, select: { enabled: true } }),
+    prisma.term.findMany({
+      where: {
+        session: { tenantId: tenant.id },
+      },
+      include: { session: true },
+      orderBy: { startDate: 'desc' },
+    }),
   ]);
-
-  // Fetch active terms for dropdown
-  const terms = await prisma.term.findMany({
-    where: {
-      session: { tenantId: tenant.id },
-    },
-    include: { session: true },
-    orderBy: { startDate: 'desc' },
-  });
 
   const currentTermId = tenant.currentSession?.currentTerm?.id || '';
 
@@ -57,8 +68,17 @@ export default async function ResultCheckerPage({
     isCurrent: t.id === currentTermId,
   }));
 
-  const brandColor = (tenant.branding as any)?.primaryColor || '#0F172A';
-  const pinPrice = availablePin ? Number(availablePin.batch.pricePerPin) : (dbTenant ? Number(dbTenant.pinPrice) : 1000);
+  const { branding, templateId, contact } = siteData;
+  const primary = branding.primaryColor || '#1D3251';
+  const accent = branding.accentColor || '#C8A45D';
+  const textOnPrimary = branding.textOnPrimary || '#FFFFFF';
+  const theme = getTemplateThemeTokens(templateId, primary, accent);
+
+  const pinPrice = availablePin
+    ? Number(availablePin.batch.pricePerPin)
+    : dbTenant
+      ? Number(dbTenant.pinPrice)
+      : 1000;
   const hasOnlinePayment = dbTenant?.hasOnlinePayment ?? tenant.hasOnlinePayment ?? true;
   const hasPinStock = Boolean(availablePin && pinGateway?.enabled && dbTenant?.hasOnlinePinPayment);
   const bankDetails = {
@@ -68,51 +88,45 @@ export default async function ResultCheckerPage({
   };
 
   return (
-    <div className="min-h-screen bg-[#f4f3f1] text-[#0a0a0a] font-sans print:bg-white print:min-h-0">
-      {/* Clean Architectural Header */}
-      <header className="w-full bg-white border-b border-[#e4e2dd] mb-8 sticky top-0 z-40 print:hidden">
-        <div className="max-w-5xl mx-auto px-5 sm:px-8 h-16 flex items-center justify-between gap-4">
-          <Link href={`/${tenant.slug}`} className="flex items-center gap-3 min-w-0">
-            {(tenant.branding as any)?.logoUrl ? (
-              <img
-                src={(tenant.branding as any).logoUrl}
-                alt={tenant.name}
-                className="h-8 w-8 object-contain shrink-0"
-              />
-            ) : (
-              <div
-                className="h-8 w-8 rounded-[6px] flex items-center justify-center font-semibold text-white text-xs shrink-0"
-                style={{ backgroundColor: brandColor }}
-              >
-                {tenant.name.substring(0, 2).toUpperCase()}
-              </div>
-            )}
-            <div className="min-w-0">
-              <h1 className="text-[15px] font-semibold tracking-[-0.01em] text-[#0a0a0a] truncate">
-                {tenant.name}
-              </h1>
-              <p className="text-[12px] text-[#66645e] truncate">Term result checker</p>
-            </div>
-          </Link>
+    <div
+      className="min-h-screen flex flex-col text-[#171614] print:bg-white print:min-h-0"
+      style={{ backgroundColor: theme.canvasBg }}
+    >
+      {/* Template-Aware Public Header (hidden when printing report card) */}
+      <div className="print:hidden">
+        <TenantPublicHeader
+          slug={tenant.slug}
+          tenantName={tenant.name}
+          branding={branding}
+          templateId={templateId}
+          contact={contact}
+        />
+      </div>
 
-          <div className="flex items-center gap-2.5 shrink-0">
-            <Link
-              href={`/${tenant.slug}`}
-              className="h-9 px-3.5 rounded-[6px] text-[13px] font-medium border border-[#d4d1ca] bg-white text-[#0a0a0a] hover:bg-[#f4f3f1] transition-colors inline-flex items-center"
-            >
-              ← School website
+      {/* Template-Cohesive Brand Header Strip (hidden when printing) */}
+      <section
+        className="w-full py-12 sm:py-16 text-white print:hidden"
+        style={{ backgroundColor: theme.deepBandBg }}
+      >
+        <div className="max-w-[1140px] mx-auto px-5 sm:px-8 space-y-3">
+          <div className="flex items-center gap-2 text-[12px] text-white/70">
+            <Link href={`/${tenant.slug}`} className="hover:text-white underline-offset-4 hover:underline">
+              Home
             </Link>
-            <Link
-              href={`/${tenant.slug}/login`}
-              className="h-9 px-4 rounded-[6px] text-[13px] font-medium bg-[#141414] text-white hover:bg-[#2a2a2a] transition-colors inline-flex items-center"
-            >
-              Portal login
-            </Link>
+            <span>/</span>
+            <span>Term Result Checker</span>
           </div>
+          <h1 className={`${theme.headingClass} text-[34px] sm:text-[48px] leading-[1.06] text-white`}>
+            Term result portal
+          </h1>
+          <p className="text-[15px] sm:text-[17px] leading-[1.6] text-white/80 max-w-2xl">
+            Verify and print official terminal report cards for {tenant.name} using a student admission number and Result PIN.
+          </p>
         </div>
-      </header>
+      </section>
 
-      <main className="max-w-4xl mx-auto px-4 pb-12 print:p-0 print:m-0 print:max-w-none">
+      {/* Main Checker Workspace */}
+      <main className="flex-1 w-full max-w-4xl mx-auto px-4 sm:px-6 py-10 sm:py-14 print:p-0 print:m-0 print:max-w-none">
         <ResultCheckerClient
           tenantSlug={tenant.slug}
           tenantName={tenant.name}
@@ -123,8 +137,17 @@ export default async function ResultCheckerPage({
           hasOnlinePayment={hasOnlinePayment}
           hasPinStock={hasPinStock}
           bankDetails={bankDetails}
+          primaryColor={primary}
+          textOnPrimary={textOnPrimary}
+          cardRadius={theme.cardRadius}
+          buttonRadius={theme.buttonRadius}
         />
       </main>
+
+      {/* Template-Aware Public Footer (hidden when printing) */}
+      <div className="print:hidden">
+        <TenantPublicFooter data={siteData} />
+      </div>
     </div>
   );
 }

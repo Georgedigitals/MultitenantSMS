@@ -159,6 +159,7 @@ export default async function ScoreEntryPage({ params, searchParams }: ScoreEntr
     return {
       studentId: e.studentId,
       studentName: e.student.name,
+      hasSavedEntry: Boolean(entry),
       scores: scoreData,
       total,
       previewGrade: entry?.grade || preview.grade,
@@ -167,9 +168,11 @@ export default async function ScoreEntryPage({ params, searchParams }: ScoreEntr
     };
   });
 
-  const isLocked = existingEntries.some((e: any) =>
-    ['form_teacher_reviewed', 'published'].includes(e.status)
-  );
+  const isAdmin = auth.user.role === 'school_admin';
+  const isPublished = existingEntries.some((e: any) => e.status === 'published');
+  const isLocked = isAdmin
+    ? isPublished
+    : existingEntries.some((e: any) => ['form_teacher_reviewed', 'published'].includes(e.status));
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -177,6 +180,7 @@ export default async function ScoreEntryPage({ params, searchParams }: ScoreEntr
 
       <ScoreEntryClient
         slug={slug}
+        isAdmin={isAdmin}
         classLevelId={classLevelId}
         className={classLevel.name}
         subjectId={subjectId}

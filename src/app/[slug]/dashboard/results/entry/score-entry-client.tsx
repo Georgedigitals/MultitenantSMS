@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
+import { Trash2 } from 'lucide-react';
 import { computeTotal, previewGrade, type GradingScaleLike } from '@/lib/grading';
 
 interface ComponentDef {
@@ -14,6 +15,7 @@ interface ComponentDef {
 interface StudentRow {
   studentId: string;
   studentName: string;
+  hasSavedEntry?: boolean;
   scores: Record<string, number | string>;
   total: number;
   previewGrade: string | null;
@@ -23,6 +25,7 @@ interface StudentRow {
 
 interface ScoreEntryClientProps {
   slug: string;
+  isAdmin?: boolean;
   classLevelId: string;
   className: string;
   subjectId: string;
@@ -38,6 +41,7 @@ interface ScoreEntryClientProps {
 
 export default function ScoreEntryClient({
   slug,
+  isAdmin = false,
   classLevelId,
   className,
   subjectId,
@@ -52,7 +56,105 @@ export default function ScoreEntryClient({
 }: ScoreEntryClientProps) {
   const [rows, setRows] = useState<StudentRow[]>(initialRows);
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [clearingAll, setClearingAll] = useState(false);
+  const [removingFromClass, setRemovingFromClass] = useState(false);
   const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
+
+  const handleDeleteEntry = async (studentId: string, studentName: string) => {
+    if (!confirm(`Delete saved ${subjectName} result entry for ${studentName}? This removes this subject score from their record.`)) {
+      return;
+    }
+    setDeletingId(studentId);
+    setMessage(null);
+    try {
+      const qs = new URLSearchParams({ slug, termId, subjectId, studentId });
+      const res = await fetch(`/api/tenant/results/entries?${qs.toString()}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) {
+        setMessage({ text: data.error || 'Failed to delete result entry', error: true });
+        return;
+      }
+      setRows((prev) =>
+        prev.map((r) =>
+          r.studentId === studentId
+            ? { ...r, hasSavedEntry: false, scores: {}, total: 0, previewGrade: null, comment: '', status: 'not_started' }
+            : r
+        )
+      );
+      setMessage({ text: data.message || `Deleted entry for ${studentName}.`, error: false });
+    } catch {
+      setMessage({ text: 'Network error while deleting result entry', error: true });
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
+  const handleClearSubjectScores = async () => {
+    if (!confirm(`Clear ALL saved ${subjectName} scores for ${className} in ${termName}? This action is logged and cannot be undone.`)) {
+      return;
+    }
+    setClearingAll(true);
+    setMessage(null);
+    try {
+      const qs = new URLSearchParams({ slug, termId, subjectId, classLevelId, clearAll: 'true' });
+      const res = await fetch(`/api/tenant/results/entries?${qs.toString()}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) {
+        setMessage({ text: data.error || 'Failed to clear subject scores', error: true });
+        return;
+      }
+      setRows((prev) =>
+        prev.map((r) => ({
+          ...r,
+          hasSavedEntry: false,
+          scores: {},
+          total: 0,
+          previewGrade: null,
+          comment: '',
+          status: 'not_started',
+        }))
+      );
+      setMessage({ text: data.message || 'Cleared all subject scores.', error: false });
+    } catch {
+      setMessage({ text: 'Network error while clearing subject scores', error: true });
+    } finally {
+      setClearingAll(false);
+    }
+  };
+
+  const handleRemoveSubjectFromClass = async () => {
+    if (
+      !confirm(
+        `Remove "${subjectName}" from ${className} completely (and clear any saved ${subjectName} scores in ${className})?\n\nOther classes offering ${subjectName} will NOT be affected.`
+      )
+    ) {
+      return;
+    }
+    setRemovingFromClass(true);
+    setMessage(null);
+    try {
+      const qs = new URLSearchParams({
+        slug,
+        termId,
+        subjectId,
+        classLevelId,
+        clearAll: 'true',
+        removeFromClass: 'true',
+      });
+      const res = await fetch(`/api/tenant/results/entries?${qs.toString()}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) {
+        setMessage({ text: data.error || 'Failed to remove subject from class', error: true });
+        setRemovingFromClass(false);
+        return;
+      }
+      window.location.href = `/${slug}/dashboard/results/broadsheet?classLevelId=${classLevelId}&termId=${termId}`;
+    } catch {
+      setMessage({ text: 'Network error while removing subject from class', error: true });
+      setRemovingFromClass(false);
+    }
+  };
 
   const handleScoreChange = (studentIndex: number, compName: string, value: string) => {
     const updated = [...rows];
@@ -127,6 +229,7 @@ export default function ScoreEntryClient({
         setRows(
           rows.map((r) => ({
             ...r,
+            hasSavedEntry: true,
             status: markAsSubmitted ? 'submitted' : 'not_started',
           }))
         );
@@ -160,11 +263,36 @@ export default function ScoreEntryClient({
           </p>
         </div>
 
-        {isLocked && (
-          <div className="inline-flex items-center px-3 py-1.5 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 text-xs font-semibold">
-            Results Reviewed or Published (Read-Only)
-          </div>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          {isAdmin && !isLocked && rows.some((r) => r.hasSavedEntry) && (
+            <button
+              type="button"
+              onClick={handleClearSubjectScores}
+              disabled={clearingAll || removingFromClass}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 text-xs font-bold transition cursor-pointer disabled:opacity-50"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              {clearingAll ? 'Clearing...' : 'Clear Subject Scores'}
+            </button>
+          )}
+          {isAdmin && !isLocked && (
+            <button
+              type="button"
+              onClick={handleRemoveSubjectFromClass}
+              disabled={removingFromClass || clearingAll}
+              title={`Unassign ${subjectName} from ${className} only (other classes are unaffected)`}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition cursor-pointer disabled:opacity-50"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              {removingFromClass ? 'Removing...' : `Remove Subject from ${className}`}
+            </button>
+          )}
+          {isLocked && (
+            <div className="inline-flex items-center px-3 py-1.5 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 text-xs font-semibold">
+              {isAdmin ? 'Results Published — Reopen Class to Edit/Delete' : 'Results Reviewed or Published (Read-Only)'}
+            </div>
+          )}
+        </div>
       </div>
 
       {message && (
@@ -197,6 +325,7 @@ export default function ScoreEntryClient({
                 <th className="py-3 px-4">Preview Grade</th>
                 <th className="py-3 px-4">Teacher Remark / Comment</th>
                 <th className="py-3 px-4">Status</th>
+                {isAdmin && !isLocked && <th className="py-3 px-4 text-right">Action</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -260,6 +389,24 @@ export default function ScoreEntryClient({
                       {r.status.replace(/_/g, ' ')}
                     </span>
                   </td>
+                  {isAdmin && !isLocked && (
+                    <td className="py-3 px-4 text-right">
+                      {r.hasSavedEntry ? (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteEntry(r.studentId, r.studentName)}
+                          disabled={deletingId === r.studentId}
+                          title="Delete this student's result entry"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition cursor-pointer disabled:opacity-50"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>{deletingId === r.studentId ? 'Deleting...' : 'Delete'}</span>
+                        </button>
+                      ) : (
+                        <span className="text-xs text-slate-300">—</span>
+                      )}
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

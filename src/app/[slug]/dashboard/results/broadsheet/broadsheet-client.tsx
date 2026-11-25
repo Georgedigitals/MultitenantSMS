@@ -29,6 +29,7 @@ interface MatrixRow {
 
 interface BroadsheetClientProps {
   slug: string;
+  isAdmin?: boolean;
   classLevelId: string;
   className: string;
   termId: string;
@@ -53,6 +54,7 @@ interface BroadsheetClientProps {
 
 export default function BroadsheetClient({
   slug,
+  isAdmin = false,
   classLevelId,
   className,
   termId,
@@ -66,8 +68,42 @@ export default function BroadsheetClient({
 }: BroadsheetClientProps) {
   const [remarks, setRemarks] = useState(existingReview?.overallRemarks || '');
   const [submitting, setSubmitting] = useState(false);
+  const [removingSubjectId, setRemovingSubjectId] = useState<string | null>(null);
   const [message, setMessage] = useState<{ text: string; error?: boolean } | null>(null);
   const [studentAssessments, setStudentAssessments] = useState(initialStudentAssessments);
+
+  const handleRemoveSubjectFromClass = async (subjectId: string, subjectName: string) => {
+    if (
+      !confirm(
+        `Remove "${subjectName}" from ${className} for this session (and clear any saved ${subjectName} scores in ${className})?\n\nOther classes offering ${subjectName} will NOT be affected.`
+      )
+    ) {
+      return;
+    }
+    setRemovingSubjectId(subjectId);
+    setMessage(null);
+    try {
+      const qs = new URLSearchParams({
+        slug,
+        termId,
+        subjectId,
+        classLevelId,
+        clearAll: 'true',
+        removeFromClass: 'true',
+      });
+      const res = await fetch(`/api/tenant/results/entries?${qs.toString()}`, { method: 'DELETE' });
+      const data = await res.json();
+      if (!res.ok) {
+        setMessage({ text: data.error || 'Failed to remove subject from class', error: true });
+        setRemovingSubjectId(null);
+        return;
+      }
+      window.location.reload();
+    } catch {
+      setMessage({ text: 'Network error while removing subject from class', error: true });
+      setRemovingSubjectId(null);
+    }
+  };
 
   const isSubmittedToAdmin = Boolean(existingReview?.submittedToAdminAt);
   const assessmentsComplete = studentAssessments.length > 0 && studentAssessments.every((student) =>
@@ -195,22 +231,61 @@ export default function BroadsheetClient({
 
         {/* Subject Chips */}
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2 pt-2">
-          {coverage.subjects.map((s) => (
-            <div
-              key={s.subjectId}
-              className={`p-2.5 rounded-lg border text-xs flex flex-col justify-between ${
-                s.isComplete
-                  ? 'bg-emerald-50/60 border-emerald-200 text-emerald-900'
-                  : 'bg-slate-50 border-slate-200 text-slate-700'
-              }`}
-            >
-              <div className="font-semibold truncate">{s.subjectName}</div>
-              <div className="mt-1 flex items-center justify-between text-2xs opacity-80">
-                <span>{s.submittedCount}/{s.totalStudents}</span>
-                <span>{s.isComplete ? '✓' : 'Pending'}</span>
+          {coverage.subjects.map((s) =>
+            isAdmin ? (
+              <div
+                key={s.subjectId}
+                className={`p-2.5 rounded-lg border text-xs flex flex-col justify-between transition hover:border-blue-400 hover:shadow-2xs ${
+                  s.isComplete
+                    ? 'bg-emerald-50/60 border-emerald-200 text-emerald-900'
+                    : 'bg-slate-50 border-slate-200 text-slate-700'
+                }`}
+              >
+                <div className="flex items-start justify-between gap-1">
+                  <Link
+                    href={`/${slug}/dashboard/results/entry?classLevelId=${classLevelId}&subjectId=${s.subjectId}&termId=${termId}`}
+                    className="font-semibold truncate hover:underline"
+                    title="Open subject scores"
+                  >
+                    {s.subjectName}
+                  </Link>
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveSubjectFromClass(s.subjectId, s.subjectName)}
+                    disabled={removingSubjectId === s.subjectId}
+                    title={`Remove ${s.subjectName} from ${className} only`}
+                    className="text-slate-400 hover:text-rose-600 font-bold leading-none px-1 cursor-pointer disabled:opacity-40"
+                  >
+                    ×
+                  </button>
+                </div>
+                <div className="mt-1 flex items-center justify-between text-2xs opacity-80">
+                  <span>{s.submittedCount}/{s.totalStudents}</span>
+                  <Link
+                    href={`/${slug}/dashboard/results/entry?classLevelId=${classLevelId}&subjectId=${s.subjectId}&termId=${termId}`}
+                    className="font-bold text-blue-600 hover:underline"
+                  >
+                    Manage →
+                  </Link>
+                </div>
               </div>
-            </div>
-          ))}
+            ) : (
+              <div
+                key={s.subjectId}
+                className={`p-2.5 rounded-lg border text-xs flex flex-col justify-between ${
+                  s.isComplete
+                    ? 'bg-emerald-50/60 border-emerald-200 text-emerald-900'
+                    : 'bg-slate-50 border-slate-200 text-slate-700'
+                }`}
+              >
+                <div className="font-semibold truncate">{s.subjectName}</div>
+                <div className="mt-1 flex items-center justify-between text-2xs opacity-80">
+                  <span>{s.submittedCount}/{s.totalStudents}</span>
+                  <span>{s.isComplete ? '✓' : 'Pending'}</span>
+                </div>
+              </div>
+            )
+          )}
         </div>
       </div>
 

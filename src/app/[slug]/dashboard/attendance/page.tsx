@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import { getTenantContext } from '@/lib/tenant';
 import { getTenantUserFromCookies } from '@/lib/auth/tenant-auth';
 import { getTenantDb } from '@/lib/tenant-db';
+import { getTenantClassLevels } from '@/lib/class-levels';
 import DashboardNav from '@/components/dashboard-nav';
 import AttendanceClient from './attendance-client';
 import { getClassAttendanceForDate } from '@/lib/attendance';
@@ -41,24 +42,22 @@ export default async function AttendancePage({ params, searchParams }: Attendanc
   const terms = rawTerms.map((t: any) => ({ id: t.id, name: t.name, totalDays: t.totalSchoolDays }));
   const selectedTerm = terms.find((t: any) => t.id === paramTermId) || terms[0];
 
-  // 2. Class levels within tenant range
-  const allClasses = await prisma.classLevel.findMany({ orderBy: { orderIndex: 'asc' } });
-  const minOrder = tenant.lowestClassLevel?.orderIndex ?? 1;
-  const maxOrder = tenant.highestClassLevel?.orderIndex ?? 15;
-  const tenantClasses = allClasses.filter((c: any) => c.orderIndex >= minOrder && c.orderIndex <= maxOrder);
+  // 2. Class levels for this tenant
+  const tenantClasses = await getTenantClassLevels(tenant.id, { filterLegacyByRange: true });
 
-  // Form Teacher verification & class isolation
-  let teacherFormAssignment: any = null;
+  // Form Teacher verification & class isolation (supports multiple form classes per teacher)
+  let teacherFormAssignments: any[] = [];
   if (auth.user.role === 'teacher') {
     if (auth.user.staffId && currentSession) {
-      teacherFormAssignment = await prisma.formTeacherAssignment.findFirst({
+      teacherFormAssignments = await prisma.formTeacherAssignment.findMany({
         where: { staffId: auth.user.staffId, sessionId: currentSession.id },
         include: { classLevel: true },
+        orderBy: { classLevel: { orderIndex: 'asc' } },
       });
     }
 
     // Non-form teachers are forbidden from marking attendance
-    if (!teacherFormAssignment) {
+    if (teacherFormAssignments.length === 0) {
       return (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <DashboardNav slug={slug} role={auth.user.role} />
@@ -81,14 +80,16 @@ export default async function AttendancePage({ params, searchParams }: Attendanc
     }
   }
 
-  // Scoped class list: Form teachers only see their own class; Admin sees all enabled classes
-  const accessibleClasses = teacherFormAssignment
-    ? [teacherFormAssignment.classLevel]
-    : tenantClasses;
+  // Scoped class list: Form teachers see all of their assigned form classes; Admin sees all enabled classes
+  const accessibleClasses =
+    auth.user.role === 'teacher'
+      ? teacherFormAssignments.map((a: any) => a.classLevel)
+      : tenantClasses;
 
-  const defaultClassId = teacherFormAssignment
-    ? teacherFormAssignment.classLevelId
-    : (paramClassId && tenantClasses.some((c: any) => c.id === paramClassId) ? paramClassId : tenantClasses[0]?.id);
+  const defaultClassId =
+    paramClassId && accessibleClasses.some((c: any) => c.id === paramClassId)
+      ? paramClassId
+      : accessibleClasses[0]?.id;
 
   const todayStr = paramDate || new Date().toISOString().split('T')[0];
 
@@ -121,8 +122,8 @@ export default async function AttendancePage({ params, searchParams }: Attendanc
         <div>
           <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Daily Attendance Register</h1>
           <p className="text-sm text-slate-500">
-            {teacherFormAssignment
-              ? `Form Teacher Register • ${teacherFormAssignment.classLevel.name}`
+            {teacherFormAssignments.length > 0
+              ? `Form Teacher Register • ${teacherFormAssignments.map((a: any) => a.classLevel.name).join(', ')}`
               : 'Mark daily roll-call and track term attendance percentage'}
           </p>
         </div>

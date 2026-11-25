@@ -125,12 +125,34 @@ export function LanguageProvider({
 
   useEffect(() => {
     try {
+      const serverDefault = isSupportedLanguage(localization.defaultLanguage)
+        ? localization.defaultLanguage
+        : 'en';
+      const seenDefault = localStorage.getItem('platform_default_lang_seen');
+
+      // If the Super Admin changed the global platform default language, clear stale visitor overrides
+      // so every subdomain (e.g. apex.localhost:3000) immediately adopts the new platform language.
+      if (seenDefault && seenDefault !== serverDefault) {
+        localStorage.removeItem('platform_lang_explicit');
+        localStorage.removeItem('platform_lang');
+        localStorage.setItem('platform_default_lang_seen', serverDefault);
+        document.cookie = `platform_lang=${serverDefault}; path=/; max-age=31536000; SameSite=Lax`;
+        document.cookie = `platform_default_lang_seen=${serverDefault}; path=/; max-age=31536000; SameSite=Lax`;
+        setLangState(serverDefault);
+        return;
+      }
+
+      if (!seenDefault) {
+        localStorage.setItem('platform_default_lang_seen', serverDefault);
+        document.cookie = `platform_default_lang_seen=${serverDefault}; path=/; max-age=31536000; SameSite=Lax`;
+      }
+
       const explicit = localStorage.getItem('platform_lang_explicit');
       const saved = localStorage.getItem('platform_lang');
       if (explicit === '1' && saved && isSupportedLanguage(saved) && enabledLanguages.includes(saved)) {
         setLangState(saved);
-      } else if (isSupportedLanguage(localization.defaultLanguage)) {
-        setLangState(localization.defaultLanguage);
+      } else {
+        setLangState(serverDefault);
       }
     } catch {
       // ignore storage errors
@@ -297,9 +319,14 @@ export function LanguageProvider({
   const setLang = (next: SupportedLanguage) => {
     setLangState(next);
     try {
+      const serverDefault = isSupportedLanguage(localization.defaultLanguage)
+        ? localization.defaultLanguage
+        : 'en';
       localStorage.setItem('platform_lang', next);
       localStorage.setItem('platform_lang_explicit', '1');
+      localStorage.setItem('platform_default_lang_seen', serverDefault);
       document.cookie = `platform_lang=${next}; path=/; max-age=31536000; SameSite=Lax`;
+      document.cookie = `platform_default_lang_seen=${serverDefault}; path=/; max-age=31536000; SameSite=Lax`;
     } catch {
       // ignore
     }

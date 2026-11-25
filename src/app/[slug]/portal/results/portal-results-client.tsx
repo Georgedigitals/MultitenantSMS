@@ -25,6 +25,11 @@ interface TermResult {
   avg: string;
   count: number;
   isUnlocked: boolean;
+  activePin?: {
+    code: string;
+    usesRemaining: number;
+    maxUses: number;
+  } | null;
   reportCard?: ReportCardData | null;
 }
 
@@ -71,7 +76,8 @@ export default function PortalResultsClient({
   studentsData,
   userEmail,
 }: PortalResultsClientProps) {
-  const { localization: { currencySymbol, locale } } = useLanguage();
+  const { formatMoney, localization: { currencySymbol, locale } } = useLanguage();
+  const [copiedPinKey, setCopiedPinKey] = useState<string | null>(null);
   // Unlocked terms state map: key `${studentId}_${termId}` -> boolean
   const [unlockedMap, setUnlockedMap] = useState<Record<string, boolean>>(() => {
     const initial: Record<string, boolean> = {};
@@ -317,14 +323,14 @@ export default function PortalResultsClient({
               const pending = Boolean(fee.pendingTransfer) || Boolean(feeTransferStatus[key]?.startsWith('Transfer submitted'));
               return <div key={key} className="rounded-xl border border-slate-200 p-4">
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div><p className="text-sm font-semibold text-slate-900">{student.student.name} · {fee.sessionLabel} {fee.termName}</p><p className="mt-1 text-xs text-slate-600">Assigned {currencySymbol}{fee.assigned.toLocaleString()} · Paid {currencySymbol}{fee.paid.toLocaleString()} · Outstanding <strong>{currencySymbol}{fee.outstanding.toLocaleString()}</strong></p></div>
+                  <div><p className="text-sm font-semibold text-slate-900">{student.student.name} · {fee.sessionLabel} {fee.termName}</p><p className="mt-1 text-xs text-slate-600">Assigned {formatMoney(fee.assigned, 2)} · Paid {formatMoney(fee.paid, 2)} · Outstanding <strong>{formatMoney(fee.outstanding, 2)}</strong></p></div>
                   {pending ? <span className="rounded-full bg-amber-100 px-3 py-1 text-[11px] font-bold text-amber-900">Transfer pending review</span> : fee.outstanding > 0 ? <button type="button" onClick={() => setFeeTransferKey(feeTransferKey === key ? null : key)} className="rounded-lg border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-800 hover:bg-slate-50">{feeTransferKey === key ? 'Cancel' : 'Report a bank transfer'}</button> : <span className="rounded-full bg-emerald-100 px-3 py-1 text-[11px] font-bold text-emerald-900">Paid in full</span>}
                 </div>
                 {feeTransferKey === key && !pending && <div className="mt-3 grid gap-2 sm:grid-cols-4">
                   <input aria-label="Fee transfer sender name" placeholder="Name on transfer" value={feeTransferFields.senderName} onChange={(event) => setFeeTransferFields({ ...feeTransferFields, senderName: event.target.value })} className="rounded-lg border border-slate-300 px-3 py-2 text-xs text-slate-900" />
                   <input aria-label="Fee transfer sending bank" placeholder="Your bank" value={feeTransferFields.bankName} onChange={(event) => setFeeTransferFields({ ...feeTransferFields, bankName: event.target.value })} className="rounded-lg border border-slate-300 px-3 py-2 text-xs text-slate-900" />
                   <input aria-label="Fee transfer transaction reference" placeholder="Bank transaction reference" value={feeTransferFields.transactionRef} onChange={(event) => setFeeTransferFields({ ...feeTransferFields, transactionRef: event.target.value })} className="rounded-lg border border-slate-300 px-3 py-2 text-xs text-slate-900" />
-                  <button type="button" disabled={loadingMap[key]} onClick={() => submitFeeTransfer(student.student.id, fee.termId, fee.outstanding)} className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">{loadingMap[key] ? 'Submitting…' : `Report ${currencySymbol}${fee.outstanding.toLocaleString()}`}</button>
+                  <button type="button" disabled={loadingMap[key]} onClick={() => submitFeeTransfer(student.student.id, fee.termId, fee.outstanding)} className="rounded-lg bg-slate-900 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">{loadingMap[key] ? 'Submitting…' : `Report ${formatMoney(fee.outstanding, 2)}`}</button>
                 </div>}
                 {feeTransferStatus[key] && <p className="mt-2 text-xs text-slate-700">{feeTransferStatus[key]}</p>}
               </div>;
@@ -405,6 +411,33 @@ export default function PortalResultsClient({
                         )}
                       </div>
                     </div>
+
+                    {/* Shared Active PIN Banner (visible to both linked Parent & Student) */}
+                    {tr.activePin && (
+                      <div className="px-5 py-2.5 bg-emerald-50/80 border-b border-emerald-100 flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <div className="flex flex-wrap items-center gap-2 text-emerald-900">
+                          <span className="inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                          <span className="font-semibold">Active Result PIN:</span>
+                          <code className="px-2 py-0.5 rounded bg-white border border-emerald-200 font-mono font-bold text-emerald-950 tracking-wider">
+                            {tr.activePin.code}
+                          </code>
+                          <span className="text-emerald-700">
+                            ({tr.activePin.usesRemaining} of {tr.activePin.maxUses} uses remaining)
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            navigator.clipboard.writeText(tr.activePin!.code);
+                            setCopiedPinKey(key);
+                            setTimeout(() => setCopiedPinKey(null), 2000);
+                          }}
+                          className="px-2.5 py-1 rounded-lg bg-white border border-emerald-200 hover:bg-emerald-100 text-emerald-800 font-semibold text-[11px] transition-colors cursor-pointer"
+                        >
+                          {copiedPinKey === key ? '✓ Copied' : 'Copy PIN'}
+                        </button>
+                      </div>
+                    )}
 
                     {/* Unlocked view: Authentic Nigerian Report Card Document */}
                     {isUnlocked ? (

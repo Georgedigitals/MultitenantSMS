@@ -13,6 +13,7 @@ import { CsvExportButton } from '@/components/csv-export-button';
 import { CsvImportModal } from '@/components/csv-import-modal';
 import { ClassCurriculumClient } from './class-curriculum-client';
 import { getTenantCurriculum } from '@/lib/curriculum';
+import { getTenantClassLevels } from '@/lib/class-levels';
 import { BookOpen, Layers } from 'lucide-react';
 
 interface SubjectsPageProps {
@@ -65,14 +66,7 @@ export default async function SubjectsPage({ params, searchParams }: SubjectsPag
   }
 
   // Fetch tenant class levels for the Curriculum Matrix
-  const allLevels = await prisma.classLevel.findMany({ orderBy: { orderIndex: 'asc' } });
-  const tenantLevels = allLevels.filter((lvl: any) => {
-    if (!tenant.lowestClassLevel || !tenant.highestClassLevel) return true;
-    return (
-      lvl.orderIndex >= tenant.lowestClassLevel.orderIndex &&
-      lvl.orderIndex <= tenant.highestClassLevel.orderIndex
-    );
-  });
+  const tenantLevels = await getTenantClassLevels(tenant.id, { filterLegacyByRange: true });
 
   const allSubjects = subjects.map((s: any) => ({
     id: s.id,

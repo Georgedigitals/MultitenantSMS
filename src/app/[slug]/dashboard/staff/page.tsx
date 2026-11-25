@@ -130,7 +130,11 @@ export default async function StaffPage({ params }: StaffPageProps) {
             ) : (
               staffList.map((st: any) => {
                 const contact = st.contactInfo as any;
-                const formClass = st.formTeacherAssignments?.[0]?.classLevel?.name;
+                const formClasses: string[] = (st.formTeacherAssignments || [])
+                  .slice()
+                  .sort((a: any, b: any) => (a.classLevel?.orderIndex || 0) - (b.classLevel?.orderIndex || 0))
+                  .map((a: any) => a.classLevel?.name)
+                  .filter(Boolean);
                 const teachings = st.teachingAssignments || [];
 
                 return (
@@ -152,10 +156,17 @@ export default async function StaffPage({ params }: StaffPageProps) {
                       </span>
                     </td>
                     <td className="px-6 py-4">
-                      {formClass ? (
-                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                          Form Teacher: {formClass}
-                        </span>
+                      {formClasses.length > 0 ? (
+                        <div className="flex flex-wrap gap-1">
+                          {formClasses.map((clsName) => (
+                            <span
+                              key={clsName}
+                              className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            >
+                              Form Teacher: {clsName}
+                            </span>
+                          ))}
+                        </div>
                       ) : (
                         <span className="text-xs text-slate-400">None</span>
                       )}

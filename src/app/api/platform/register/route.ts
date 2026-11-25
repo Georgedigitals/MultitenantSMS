@@ -9,6 +9,7 @@ import { sendPlatformWelcomeEmail } from '@/lib/email-service';
 import { checkRateLimit, getClientIp } from '@/lib/rate-limiter';
 import { recordAuditLog } from '@/lib/audit';
 import { getDefaultTrialDays } from '@/lib/platform-settings';
+import { getPresetByKey } from '@/lib/class-levels';
 
 export async function POST(req: NextRequest) {
   try {
@@ -43,6 +44,7 @@ export async function POST(req: NextRequest) {
       adminEmail,
       password,
       planId = 'plan_growth',
+      educationSystem = 'nigeria',
       lowestLevelName = 'Nursery 1',
       highestLevelName = 'SSS 3',
       primaryColor = '#1E3A8A',
@@ -168,7 +170,43 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    // 2. In local development only, create a domain alias for localhost testing
+    // 2. Seed tenant-owned ClassLevels from chosen country/education system preset
+    const preset = getPresetByKey(educationSystem);
+    let lowestClassForTenant = lowestClass;
+    let highestClassForTenant = highestClass;
+
+    if (preset.classes.length > 0) {
+      const startIdx = Math.max(0, preset.classes.indexOf(lowestLevelName));
+      const rawEndIdx = preset.classes.indexOf(highestLevelName);
+      const endIdx = rawEndIdx >= startIdx ? rawEndIdx : preset.classes.length - 1;
+      const selectedNames = preset.classes.slice(startIdx, endIdx + 1);
+
+      const createdLevels = [];
+      for (let i = 0; i < selectedNames.length; i++) {
+        const lvl = await tx.classLevel.create({
+          data: {
+            tenantId: tenant.id,
+            name: selectedNames[i],
+            orderIndex: i + 1,
+          },
+        });
+        createdLevels.push(lvl);
+      }
+
+      if (createdLevels.length > 0) {
+        lowestClassForTenant = createdLevels[0];
+        highestClassForTenant = createdLevels[createdLevels.length - 1];
+        await tx.tenant.update({
+          where: { id: tenant.id },
+          data: {
+            lowestClassLevelId: lowestClassForTenant.id,
+            highestClassLevelId: highestClassForTenant.id,
+          },
+        });
+      }
+    }
+
+    // 2b. In local development only, create a domain alias for localhost testing
     const rootDomain = (process.env.NEXT_PUBLIC_ROOT_DOMAIN || 'localhost:3000').toLowerCase();
     if (rootDomain.includes('localhost')) {
       await tx.domainAlias.create({
@@ -219,15 +257,15 @@ export async function POST(req: NextRequest) {
     });
 
     // 5. Create Default Grading Scale
-    if (lowestClass && highestClass) {
+    if (lowestClassForTenant && highestClassForTenant) {
       await tx.gradingScale.createMany({
         data: [
-          { tenantId: tenant.id, lowestClassLevelId: lowestClass.id, highestClassLevelId: highestClass.id, minScore: 70, maxScore: 100, grade: 'A', remark: 'Excellent' },
-          { tenantId: tenant.id, lowestClassLevelId: lowestClass.id, highestClassLevelId: highestClass.id, minScore: 60, maxScore: 69, grade: 'B', remark: 'Very Good' },
-          { tenantId: tenant.id, lowestClassLevelId: lowestClass.id, highestClassLevelId: highestClass.id, minScore: 50, maxScore: 59, grade: 'C', remark: 'Good' },
-          { tenantId: tenant.id, lowestClassLevelId: lowestClass.id, highestClassLevelId: highestClass.id, minScore: 45, maxScore: 49, grade: 'D', remark: 'Fair' },
-          { tenantId: tenant.id, lowestClassLevelId: lowestClass.id, highestClassLevelId: highestClass.id, minScore: 40, maxScore: 44, grade: 'E', remark: 'Poor' },
-          { tenantId: tenant.id, lowestClassLevelId: lowestClass.id, highestClassLevelId: highestClass.id, minScore: 0, maxScore: 39, grade: 'F', remark: 'Fail' },
+          { tenantId: tenant.id, lowestClassLevelId: lowestClassForTenant.id, highestClassLevelId: highestClassForTenant.id, minScore: 70, maxScore: 100, grade: 'A', remark: 'Excellent' },
+          { tenantId: tenant.id, lowestClassLevelId: lowestClassForTenant.id, highestClassLevelId: highestClassForTenant.id, minScore: 60, maxScore: 69, grade: 'B', remark: 'Very Good' },
+          { tenantId: tenant.id, lowestClassLevelId: lowestClassForTenant.id, highestClassLevelId: highestClassForTenant.id, minScore: 50, maxScore: 59, grade: 'C', remark: 'Good' },
+          { tenantId: tenant.id, lowestClassLevelId: lowestClassForTenant.id, highestClassLevelId: highestClassForTenant.id, minScore: 45, maxScore: 49, grade: 'D', remark: 'Fair' },
+          { tenantId: tenant.id, lowestClassLevelId: lowestClassForTenant.id, highestClassLevelId: highestClassForTenant.id, minScore: 40, maxScore: 44, grade: 'E', remark: 'Poor' },
+          { tenantId: tenant.id, lowestClassLevelId: lowestClassForTenant.id, highestClassLevelId: highestClassForTenant.id, minScore: 0, maxScore: 39, grade: 'F', remark: 'Fail' },
         ],
       });
     }

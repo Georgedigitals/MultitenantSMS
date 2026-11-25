@@ -6,6 +6,7 @@ import { getTenantUserFromCookies } from '@/lib/auth/tenant-auth';
 import { calculatePinFees } from '@/lib/pin';
 import { recordAuditLog } from '@/lib/audit';
 import { getClientIp } from '@/lib/rate-limiter';
+import { getTenantClassLevels } from '@/lib/class-levels';
 
 export async function GET(req: NextRequest) {
   try {
@@ -38,9 +39,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const allClassLevels = await prisma.classLevel.findMany({
-      orderBy: { orderIndex: 'asc' },
-    });
+    const allClassLevels = await getTenantClassLevels(tenant.id);
 
     const pinFees = await calculatePinFees(tenant.id);
 
@@ -214,7 +213,7 @@ export async function PATCH(req: NextRequest) {
 
     // 5. Class Level Range
     if (lowestClassLevelId !== undefined || highestClassLevelId !== undefined) {
-      const allLevels = await prisma.classLevel.findMany({ orderBy: { orderIndex: 'asc' } });
+      const allLevels = await getTenantClassLevels(tenant.id);
       const targetLowestId = lowestClassLevelId !== undefined ? lowestClassLevelId : tenant.lowestClassLevelId;
       const targetHighestId = highestClassLevelId !== undefined ? highestClassLevelId : tenant.highestClassLevelId;
 

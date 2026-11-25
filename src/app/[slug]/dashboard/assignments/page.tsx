@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import { getTenantContext } from '@/lib/tenant';
 import { getTenantUserFromCookies } from '@/lib/auth/tenant-auth';
 import { getTenantDb } from '@/lib/tenant-db';
+import { getTenantClassLevels } from '@/lib/class-levels';
 import DashboardNav from '@/components/dashboard-nav';
 import { AssignFormTeacherModal } from './assign-form-teacher-modal';
 import { AssignSubjectTeacherModal } from './assign-subject-teacher-modal';
@@ -26,15 +27,8 @@ export default async function AssignmentsPage({ params }: AssignmentsPageProps) 
   const db = getTenantDb(tenant.id);
   const currentSession = tenant.currentSession;
 
-  // Filter global class levels ladder to tenant's enabled range (§4.1)
-  const allLevels = await prisma.classLevel.findMany({ orderBy: { orderIndex: 'asc' } });
-  const usableLevels = allLevels.filter((lvl: any) => {
-    if (!tenant.lowestClassLevel || !tenant.highestClassLevel) return true;
-    return (
-      lvl.orderIndex >= tenant.lowestClassLevel.orderIndex &&
-      lvl.orderIndex <= tenant.highestClassLevel.orderIndex
-    );
-  });
+  // Tenant-scoped class levels (custom or legacy range)
+  const usableLevels = await getTenantClassLevels(tenant.id, { filterLegacyByRange: true });
 
   const isTeacher = auth.user.role === 'teacher';
 
@@ -136,15 +130,20 @@ export default async function AssignmentsPage({ params }: AssignmentsPageProps) 
           <div className="bg-white rounded-xl border border-slate-200 p-6 shadow-2xs">
             <h2 className="text-base font-bold text-slate-900 mb-1">Form Teacher Allocation</h2>
             {formTeacherAssignments.length > 0 ? (
-              <div className="flex items-center space-x-3 mt-3">
+              <div className="flex flex-wrap items-center gap-2.5 mt-3">
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
                   Form Teacher
                 </span>
-                <span className="text-sm font-semibold text-slate-900">
-                  {formTeacherAssignments[0].classLevel.name}
-                </span>
+                {formTeacherAssignments.map((fa: any) => (
+                  <span
+                    key={fa.id || fa.classLevelId}
+                    className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 text-slate-900 border border-slate-200"
+                  >
+                    {fa.classLevel.name}
+                  </span>
+                ))}
                 <span className="text-xs text-slate-500">
-                  (You are responsible for daily attendance, conduct remarks, and final broadsheet compilation for this class)
+                  (You are responsible for daily attendance, conduct remarks, and final broadsheet compilation for {formTeacherAssignments.length > 1 ? 'these classes' : 'this class'})
                 </span>
               </div>
             ) : (

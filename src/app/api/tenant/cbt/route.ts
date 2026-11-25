@@ -4,6 +4,7 @@ import { getTenantDb } from '@/lib/tenant-db';
 import { requireTenantAccess } from '@/lib/auth/tenant-access';
 import { recordAuditLog } from '@/lib/audit';
 import { computeTotal } from '@/lib/grading';
+import { getTenantClassLevels } from '@/lib/class-levels';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -259,7 +260,7 @@ export async function GET(request: Request) {
     });
   } else {
     subjects = await prisma.subject.findMany({ where: { tenantId: access.tenant.id } });
-    classLevels = await prisma.classLevel.findMany({ orderBy: { orderIndex: 'asc' } });
+    classLevels = await getTenantClassLevels(access.tenant.id, { filterLegacyByRange: true });
   }
 
   const terms = await prisma.term.findMany({
@@ -638,6 +639,7 @@ export async function DELETE(request: Request) {
     const slug = searchParams.get('slug');
     const examId = searchParams.get('examId');
     const questionId = searchParams.get('questionId');
+    const attemptId = searchParams.get('attemptId');
 
     if (!slug) {
       return NextResponse.json({ error: 'Missing tenant slug' }, { status: 400 });
@@ -651,6 +653,51 @@ export async function DELETE(request: Request) {
     const hasFeature = await access.tenant.hasFeature('feature_cbt_exams');
     if (!hasFeature) {
       return NextResponse.json({ error: 'CBT Online Exams module disabled' }, { status: 403 });
+    }
+
+    // 0. Delete / Reset a single student CBT attempt (School Admin only — allows retake)
+    if (attemptId) {
+      if (access.user.role !== 'school_admin') {
+        return NextResponse.json(
+          { error: 'Forbidden: Only school administrators can reset or delete student CBT attempts' },
+          { status: 403 }
+        );
+      }
+
+      const attempt = await prisma.cbtStudentAttempt.findUnique({
+        where: { id: attemptId },
+        include: {
+          exam: { select: { id: true, title: true, tenantId: true } },
+          student: { select: { id: true, name: true } },
+        },
+      });
+      if (!attempt || attempt.exam.tenantId !== access.tenant.id) {
+        return NextResponse.json({ error: 'Student CBT attempt not found' }, { status: 404 });
+      }
+
+      await prisma.cbtStudentAttempt.delete({ where: { id: attempt.id } });
+
+      await recordAuditLog({
+        tenantId: access.tenant.id,
+        actorId: access.user.id,
+        actorName: access.user.staffProfile?.name || access.user.username,
+        actorRole: access.user.role,
+        action: 'reset_cbt_student_attempt',
+        entityType: 'cbt_student_attempt',
+        entityId: attempt.id,
+        details: {
+          examId: attempt.exam.id,
+          examTitle: attempt.exam.title,
+          studentId: attempt.student.id,
+          studentName: attempt.student.name,
+          previousScore: attempt.score,
+        },
+      });
+
+      return NextResponse.json({
+        success: true,
+        message: `Reset CBT attempt for ${attempt.student.name}. They can now retake "${attempt.exam.title}".`,
+      });
     }
 
     // 1. Delete single question

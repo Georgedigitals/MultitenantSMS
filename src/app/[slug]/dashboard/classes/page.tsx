@@ -22,7 +22,7 @@ export default async function ClassesPage({ params }: ClassesPageProps) {
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <DashboardNav slug={slug} role={auth.user.role} />
-      <ClassroomHubClient slug={slug} schoolName={tenant.name} />
+      <ClassroomHubClient slug={slug} schoolName={tenant.name} isAdmin={auth.user.role === 'school_admin'} />
     </div>
   );
 }

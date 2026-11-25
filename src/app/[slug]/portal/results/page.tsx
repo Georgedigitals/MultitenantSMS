@@ -120,12 +120,38 @@ export default async function PortalResultsPage({ params }: PortalResultsPagePro
 
           if (entries.length === 0) return null;
 
-          // Check if term is unlocked via PIN & Fee Clearance
+          // Check if term is unlocked via PIN & Fee Clearance + load active PIN status for shared Parent/Student visibility
           let isUnlocked = false;
+          let activePin: { code: string; usesRemaining: number; maxUses: number } | null = null;
           if (pinRequired) {
             const { verifyPinAccess } = await import('@/lib/pin');
             const access = await verifyPinAccess(tenant.id, sid, termId, undefined, { consumeUse: false });
             isUnlocked = access.isUnlocked;
+
+            const [genPin, digPin] = await Promise.all([
+              prisma.generatedPin.findFirst({
+                where: { tenantId: tenant.id, studentId: sid, termId, soldAt: { not: null } },
+                orderBy: { soldAt: 'desc' },
+                select: { pinCode: true, usesCount: true, batch: { select: { maxUsesPerPin: true } } },
+              }),
+              prisma.resultPIN.findFirst({
+                where: { studentId: sid, termId, status: 'active', student: { tenantId: tenant.id } },
+                orderBy: { createdAt: 'desc' },
+                select: { code: true, usesCount: true, maxUses: true },
+              }),
+            ]);
+            const found = genPin
+              ? { code: genPin.pinCode, usesCount: genPin.usesCount ?? 0, maxUses: genPin.batch?.maxUsesPerPin ?? 5 }
+              : digPin
+                ? { code: digPin.code, usesCount: digPin.usesCount ?? 0, maxUses: digPin.maxUses ?? 5 }
+                : null;
+            if (found) {
+              activePin = {
+                code: found.code,
+                usesRemaining: Math.max(0, found.maxUses - found.usesCount),
+                maxUses: found.maxUses,
+              };
+            }
           } else if (tenantFull?.blockResultOnFeeBalance) {
             const feeBal = await calculateStudentFeeBalance(tenant.id, sid, termId).catch(() => null);
             isUnlocked = !feeBal || feeBal.balanceRemaining <= 0;
@@ -152,10 +178,10 @@ export default async function PortalResultsPage({ params }: PortalResultsPagePro
           const avg = !isUnlocked
             ? 'Locked'
             : reportCard
-            ? `${reportCard.summary.averageScore.toFixed(1)}`
-            : entries.length > 0
-            ? (totalScore / entries.length).toFixed(1)
-            : 'N/A';
+              ? `${reportCard.summary.averageScore.toFixed(1)}`
+              : entries.length > 0
+                ? (totalScore / entries.length).toFixed(1)
+                : 'N/A';
 
           return {
             termId,
@@ -165,6 +191,7 @@ export default async function PortalResultsPage({ params }: PortalResultsPagePro
             avg,
             count: reportCard ? reportCard.summary.subjectsCount : entries.length,
             isUnlocked,
+            activePin,
             reportCard,
           };
         })

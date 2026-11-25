@@ -39,9 +39,11 @@ export default async function RootLayout({
   ]);
 
   const cookieLang = cookieStore.get("platform_lang")?.value || "";
-  const activeLang = isSupportedLanguage(cookieLang)
-    ? cookieLang
-    : localization.defaultLanguage;
+  const cookieSeenDefault = cookieStore.get("platform_default_lang_seen")?.value || "";
+  const activeLang =
+    cookieSeenDefault === localization.defaultLanguage && isSupportedLanguage(cookieLang)
+      ? cookieLang
+      : localization.defaultLanguage;
   const activeDir = getLanguageDir(activeLang);
 
   const jsonLd = {

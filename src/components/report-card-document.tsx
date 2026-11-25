@@ -22,7 +22,11 @@ export function ReportCardDocument({ reportCard, isBatchPrint = false, isLastInB
     gradeAnalysis,
     nextTermBegins,
     gradingScale,
+    options,
   } = reportCard;
+
+  const showClassRank = options?.showClassRank !== false;
+  const showDomains = options?.showDomains !== false;
 
   const primaryColor = school.branding.primaryColor || '#0F172A';
 
@@ -52,18 +56,18 @@ export function ReportCardDocument({ reportCard, isBatchPrint = false, isLastInB
       style={{ WebkitPrintColorAdjust: 'exact', printColorAdjust: 'exact' }}
     >
       {/* 1. OFFICIAL SCHOOL HEADER */}
-      <div className="flex items-start justify-between gap-4 pb-3 mb-2.5 border-b-2 border-black">
+      <div className="report-card-header flex items-start justify-between gap-4 pb-3 mb-2.5 border-b-2 border-black">
         {/* School Crest / Logo */}
         <div className="flex-shrink-0 pt-0.5">
           {school.branding.logoUrl ? (
             <img
               src={school.branding.logoUrl}
               alt={school.name}
-              className="w-20 h-20 sm:w-24 sm:h-24 object-contain"
+              className="report-card-logo w-20 h-20 sm:w-24 sm:h-24 object-contain"
             />
           ) : (
             <div
-              className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-2 border-black flex flex-col items-center justify-center text-center p-1 font-serif"
+              className="report-card-logo w-20 h-20 sm:w-24 sm:h-24 rounded-full border-2 border-black flex flex-col items-center justify-center text-center p-1 font-serif"
               style={{ color: primaryColor }}
             >
               <div className="text-2xl font-black">🎓</div>
@@ -77,33 +81,46 @@ export function ReportCardDocument({ reportCard, isBatchPrint = false, isLastInB
         {/* School Name & Contact Information */}
         <div className="flex-1 text-center px-2">
           <h1
-            className="text-2xl sm:text-3xl font-black tracking-wider uppercase font-serif"
+            className="text-2xl sm:text-3xl print:text-xl font-black tracking-wider uppercase font-serif"
             style={{ color: primaryColor }}
           >
             {school.name}
           </h1>
-          <p className="text-[11px] font-medium text-slate-800 mt-1">
-            {school.address}
-          </p>
-          <p className="text-[10px] text-slate-700 mt-0.5">
-            <span className="font-semibold">TEL:</span> {school.phone} &bull;{' '}
-            <span className="font-semibold">Email:</span> {school.email}
-          </p>
+          {school.address && (
+            <p className="text-[11px] print:text-[9.5px] font-medium text-slate-800 mt-1 print:mt-0.5">
+              {school.address}
+            </p>
+          )}
+          {(school.phone || school.email) && (
+            <p className="text-[10px] print:text-[9px] text-slate-700 mt-0.5">
+              {school.phone && (
+                <>
+                  <span className="font-semibold">TEL:</span> {school.phone}
+                </>
+              )}
+              {school.phone && school.email && <> &bull; </>}
+              {school.email && (
+                <>
+                  <span className="font-semibold">Email:</span> {school.email}
+                </>
+              )}
+            </p>
+          )}
 
           {/* Subheading: Term Student's Performance Report */}
-          <div className="mt-2.5">
-            <h2 className="text-sm sm:text-base font-black uppercase tracking-widest font-serif border-y-2 border-black py-0.5 bg-slate-100/70 inline-block px-4">
+          <div className="mt-2.5 print:mt-1.5">
+            <h2 className="text-sm sm:text-base print:text-xs font-black uppercase tracking-widest font-serif border-y-2 border-black py-0.5 bg-slate-100/70 inline-block px-4">
               {student.term.name.toUpperCase()} STUDENT'S PERFORMANCE REPORT
             </h2>
           </div>
         </div>
 
         {/* Right Balance spacer for centered title against logo */}
-        <div className="w-16 sm:w-20 hidden sm:block flex-shrink-0" />
+        <div className="w-16 sm:w-20 print:w-14 hidden sm:block print:block flex-shrink-0" />
       </div>
 
       {/* 2. STUDENT BIO INFORMATION & PASSPORT PHOTO */}
-      <div className="flex items-stretch justify-between gap-3 mb-2.5 border-2 border-black p-2.5 bg-slate-50/60">
+      <div className="report-card-bio flex items-stretch justify-between gap-3 mb-2.5 border-2 border-black p-2.5 bg-slate-50/60">
         {/* Bio Data Fields */}
         <div className="flex-1 space-y-1.5 text-[11px]">
           {/* Row 1 */}
@@ -192,19 +209,19 @@ export function ReportCardDocument({ reportCard, isBatchPrint = false, isLastInB
         </div>
 
         {/* Passport Photo Box */}
-        <div className="w-24 sm:w-28 flex-shrink-0 flex flex-col items-center justify-center border-2 border-black bg-white p-1">
+        <div className="report-card-photo w-24 sm:w-28 flex-shrink-0 flex flex-col items-center justify-center border-2 border-black bg-white p-1">
           {student.avatarUrl ? (
             <img
               src={student.avatarUrl}
               alt={student.name}
-              className="w-full h-28 object-cover"
+              className="report-card-photo-img w-full h-28 object-cover"
             />
           ) : (
-            <div className="w-full h-28 bg-slate-100 flex flex-col items-center justify-center text-center p-1">
-              <svg className="w-10 h-10 text-slate-400 mb-1" fill="currentColor" viewBox="0 0 20 20">
+            <div className="report-card-photo-img w-full h-28 bg-slate-100 flex flex-col items-center justify-center text-center p-1">
+              <svg className="w-10 h-10 print:w-7 print:h-7 text-slate-400 mb-1" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
               </svg>
-              <span className="text-[9px] font-bold text-slate-500 uppercase leading-none">
+              <span className="text-[9px] print:text-[7.5px] font-bold text-slate-500 uppercase leading-none">
                 PASSPORT PHOTO
               </span>
             </div>
@@ -213,15 +230,15 @@ export function ReportCardDocument({ reportCard, isBatchPrint = false, isLastInB
       </div>
 
       {/* 3. MAIN ACADEMIC SECTION: COGNITIVE DOMAIN + RIGHT PANELS */}
-      <div className="report-card-main-grid grid grid-cols-1 lg:grid-cols-12 gap-3 mb-2.5 items-start">
-        {/* LEFT COLUMN: COGNITIVE DOMAIN TABLE (~60% width) */}
-        <div className="lg:col-span-7">
+      <div className={`${showDomains ? 'report-card-main-grid' : ''} report-card-section grid grid-cols-1 ${showDomains ? 'lg:grid-cols-12' : ''} gap-3 print:gap-2 mb-2.5 items-start`}>
+        {/* LEFT COLUMN: COGNITIVE DOMAIN TABLE */}
+        <div className={showDomains ? 'lg:col-span-7' : 'w-full'}>
           <div className="border-2 border-black overflow-hidden">
             <table className="w-full text-left border-collapse text-[10px]">
               <thead>
                 <tr className="bg-slate-300 text-black border-b-2 border-black">
                   <th
-                    colSpan={assessmentComponents.length + 6}
+                    colSpan={assessmentComponents.length + (showClassRank ? 6 : 5)}
                     className="py-1 px-2 text-center font-black uppercase tracking-wider text-xs border-b border-black"
                   >
                     COGNITIVE DOMAIN
@@ -242,7 +259,7 @@ export function ReportCardDocument({ reportCard, isBatchPrint = false, isLastInB
                     <div className="font-normal text-[8px]">(100)</div>
                   </th>
                   <th className="py-1 px-1 border-r border-black">GRADE</th>
-                  <th className="py-1 px-1 border-r border-black">POS</th>
+                  {showClassRank && <th className="py-1 px-1 border-r border-black">POS</th>}
                   <th className="py-1 px-1 border-r border-black">REMARKS</th>
                   <th className="py-1 px-1">AVG</th>
                 </tr>
@@ -284,9 +301,11 @@ export function ReportCardDocument({ reportCard, isBatchPrint = false, isLastInB
                     </td>
 
                     {/* Subject Position */}
-                    <td className="py-1 px-1 text-center font-bold font-mono border-r border-black">
-                      {sub.subjectPosition || '-'}
-                    </td>
+                    {showClassRank && (
+                      <td className="py-1 px-1 text-center font-bold font-mono border-r border-black">
+                        {sub.subjectPosition || '-'}
+                      </td>
+                    )}
 
                     {/* Remark */}
                     <td className="py-1 px-1 text-center font-semibold uppercase text-[8.5px] border-r border-black">
@@ -305,6 +324,7 @@ export function ReportCardDocument({ reportCard, isBatchPrint = false, isLastInB
         </div>
 
         {/* RIGHT COLUMN: ATTENDANCE + AFFECTIVE + PSYCHOMOTOR + RATING INDICES (~40% width) */}
+        {showDomains && (
         <div className="lg:col-span-5 space-y-2">
           {/* 1. ATTENDANCE SUMMARY */}
           <div className="border-2 border-black overflow-hidden text-[10px]">
@@ -435,10 +455,11 @@ export function ReportCardDocument({ reportCard, isBatchPrint = false, isLastInB
             <strong>RATING SCALE:</strong> 5 - Excellent &bull; 4 - Very Good &bull; 3 - Good &bull; 2 - Fair &bull; 1 - Needs Support
           </div>
         </div>
+        )}
       </div>
 
       {/* 4. PERFORMANCE SUMMARY BAR */}
-      <div className="border-2 border-black overflow-hidden mb-2.5 text-[10px]">
+      <div className="report-card-section border-2 border-black overflow-hidden mb-2.5 text-[10px]">
         <table className="w-full text-center border-collapse">
           <thead>
             <tr className="bg-slate-300 border-b border-black">
@@ -479,11 +500,11 @@ export function ReportCardDocument({ reportCard, isBatchPrint = false, isLastInB
                 {summary.totalObtainable}
               </td>
               <td className="py-1 px-2 border-r border-black font-semibold text-left">
-                GRADE / POSITION:
+                {showClassRank ? 'GRADE / POSITION:' : 'OVERALL GRADE:'}
               </td>
               <td className="py-1 px-2 border-r border-black font-black font-mono text-xs">
                 {summary.overallGrade}{' '}
-                {summary.position && (
+                {showClassRank && summary.position && (
                   <span className="font-normal text-[10px]">
                     ({getOrdinal(summary.position)} of {summary.classSize})
                   </span>
@@ -495,7 +516,7 @@ export function ReportCardDocument({ reportCard, isBatchPrint = false, isLastInB
       </div>
 
       {/* 5. GRADE SCALE & GRADE ANALYSIS (Side by side) */}
-      <div className="report-card-grade-grid grid grid-cols-1 md:grid-cols-12 gap-3 mb-2.5">
+      <div className="report-card-grade-grid report-card-section grid grid-cols-1 md:grid-cols-12 gap-3 print:gap-2 mb-2.5">
         {/* Left: Grade Scale Legend */}
         <div className="md:col-span-7 border-2 border-black overflow-hidden text-[9px]">
           <div className="bg-slate-300 font-black text-center py-1 uppercase border-b border-black">
@@ -561,41 +582,59 @@ export function ReportCardDocument({ reportCard, isBatchPrint = false, isLastInB
       </div>
 
       {/* 6. TEACHER'S & PRINCIPAL'S REMARKS & SIGNATURES (Side by side for perfect balance) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 print:grid-cols-2 gap-3 mb-2.5 text-[10px]">
+      <div className="report-card-section grid grid-cols-1 sm:grid-cols-2 print:grid-cols-2 gap-3 print:gap-2 mb-2.5 text-[10px]">
         {/* Form Teacher's Remark */}
-        <div className="border-2 border-black p-2 bg-slate-50/40 flex flex-col justify-between">
+        <div className="border-2 border-black p-2 print:p-1.5 bg-slate-50/40 flex flex-col justify-between">
           <div>
-            <span className="font-bold italic text-slate-800 block mb-1">Teacher's Remark:</span>
-            <div className="border border-slate-300 p-2 min-h-[38px] bg-white italic font-serif text-[11px] flex items-center">
-              "{review.formTeacherRemarks}"
+            <span className="font-bold italic text-slate-800 block mb-1 print:mb-0.5">Teacher's Remark:</span>
+            <div className="report-card-remarks-box border border-slate-300 p-2 min-h-[38px] bg-white italic font-serif text-[11px] print:text-[9.5px] flex items-center">
+              {review.formTeacherRemarks ? `"${review.formTeacherRemarks}"` : <span className="text-slate-400 not-italic text-[10px]">—</span>}
             </div>
           </div>
-          <div className="flex justify-between items-center mt-1.5 pt-1 border-t border-dotted border-slate-300 text-[10px]">
+          <div className="flex justify-between items-end mt-1.5 print:mt-1 pt-1 border-t border-dotted border-slate-300 text-[10px] print:text-[9px] gap-2">
             <div>
               <span className="font-bold text-slate-700">Teacher:</span>{' '}
               <strong className="uppercase">{review.formTeacherName}</strong>
             </div>
-            <div className="font-bold text-slate-700">
-              Sign: <span className="inline-block border-b border-black w-24 ml-1"></span>
+            <div className="font-bold text-slate-700 flex items-end gap-1 shrink-0">
+              <span>Sign:</span>
+              <span className="inline-flex flex-col items-center justify-end border-b border-black min-w-[84px] print:min-w-[68px] min-h-[24px] print:min-h-[18px]">
+                {review.formTeacherSignatureUrl && (
+                  <img
+                    src={review.formTeacherSignatureUrl}
+                    alt={`${review.formTeacherName} signature`}
+                    className="h-7 print:h-5 max-w-[90px] object-contain -mb-0.5"
+                  />
+                )}
+              </span>
             </div>
           </div>
         </div>
 
         {/* Principal's Remark */}
-        <div className="border-2 border-black p-2 bg-slate-50/40 flex flex-col justify-between">
+        <div className="border-2 border-black p-2 print:p-1.5 bg-slate-50/40 flex flex-col justify-between">
           <div>
-            <span className="font-bold italic text-slate-800 block mb-1">Principal's Remark:</span>
-            <div className="border border-slate-300 p-2 min-h-[38px] bg-white italic font-serif text-[11px] flex items-center">
-              "{review.principalRemarks}"
+            <span className="font-bold italic text-slate-800 block mb-1 print:mb-0.5">Principal's Remark:</span>
+            <div className="report-card-remarks-box border border-slate-300 p-2 min-h-[38px] bg-white italic font-serif text-[11px] print:text-[9.5px] flex items-center">
+              {review.principalRemarks ? `"${review.principalRemarks}"` : <span className="text-slate-400 not-italic text-[10px]">—</span>}
             </div>
           </div>
-          <div className="flex justify-between items-center mt-1.5 pt-1 border-t border-dotted border-slate-300 text-[10px]">
+          <div className="flex justify-between items-end mt-1.5 print:mt-1 pt-1 border-t border-dotted border-slate-300 text-[10px] print:text-[9px] gap-2">
             <div>
               <span className="font-bold text-slate-700">Principal:</span>{' '}
               <strong className="uppercase">{review.principalName}</strong>
             </div>
-            <div className="font-bold text-slate-700">
-              Sign: <span className="inline-block border-b border-black w-24 ml-1"></span>
+            <div className="font-bold text-slate-700 flex items-end gap-1 shrink-0">
+              <span>Sign:</span>
+              <span className="inline-flex flex-col items-center justify-end border-b border-black min-w-[84px] print:min-w-[68px] min-h-[24px] print:min-h-[18px]">
+                {review.principalSignatureUrl && (
+                  <img
+                    src={review.principalSignatureUrl}
+                    alt={`${review.principalName} signature`}
+                    className="h-7 print:h-5 max-w-[90px] object-contain -mb-0.5"
+                  />
+                )}
+              </span>
             </div>
           </div>
         </div>

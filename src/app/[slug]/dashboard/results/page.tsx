@@ -4,6 +4,7 @@ import prisma from '@/lib/prisma';
 import { getTenantContext } from '@/lib/tenant';
 import { getTenantUserFromCookies } from '@/lib/auth/tenant-auth';
 import { getTenantDb } from '@/lib/tenant-db';
+import { getTenantClassLevels } from '@/lib/class-levels';
 import DashboardNav from '@/components/dashboard-nav';
 import ResultsOverviewClient from './results-overview-client';
 
@@ -38,16 +39,13 @@ export default async function ResultsPage({ params }: ResultsPageProps) {
   const terms = rawTerms.map((t: any) => ({ id: t.id, name: t.name, isCurrent: t.isCurrent }));
   const currentTerm = terms.find((t: any) => t.isCurrent) || terms[0];
 
-  // 2. Fetch classes within tenant range
-  const allClasses = await prisma.classLevel.findMany({ orderBy: { orderIndex: 'asc' } });
-  const minOrder = tenant.lowestClassLevel?.orderIndex ?? 1;
-  const maxOrder = tenant.highestClassLevel?.orderIndex ?? 15;
-  const tenantClasses = allClasses.filter((c: any) => c.orderIndex >= minOrder && c.orderIndex <= maxOrder);
+  // 2. Fetch classes for this tenant
+  const tenantClasses = await getTenantClassLevels(tenant.id, { filterLegacyByRange: true });
 
-  // 3. If teacher: fetch teaching assignments & form teacher assignment
+  // 3. If teacher: fetch teaching assignments & all form teacher assignments
   const staffId = auth.user.staffId;
   let teachingAssignments: any[] = [];
-  let formTeacherAssignment: any = null;
+  let formTeacherAssignments: any[] = [];
 
   if (staffId && currentSession) {
     const rawTeaching = await prisma.teachingAssignment.findMany({
@@ -70,17 +68,11 @@ export default async function ResultsPage({ params }: ResultsPageProps) {
       subject: subjMap.get(t.subjectId) || { name: 'Unknown' },
     })).sort((a: any, b: any) => (a.classLevel.orderIndex || 0) - (b.classLevel.orderIndex || 0));
 
-    const rawForm = await prisma.formTeacherAssignment.findFirst({
+    formTeacherAssignments = await prisma.formTeacherAssignment.findMany({
       where: { staffId, sessionId: currentSession.id },
+      include: { classLevel: true },
+      orderBy: { classLevel: { orderIndex: 'asc' } },
     });
-
-    if (rawForm) {
-      const formCls = await prisma.classLevel.findUnique({ where: { id: rawForm.classLevelId } });
-      formTeacherAssignment = {
-        ...rawForm,
-        classLevel: formCls || { name: 'Unknown' },
-      };
-    }
   }
 
   // 4. If admin: fetch all teaching assignments across tenant to build class-by-class status
@@ -106,6 +98,12 @@ export default async function ResultsPage({ params }: ResultsPageProps) {
       if (review?.formTeacherId) {
         const ft = await db.staff.findUnique({ where: { id: review.formTeacherId } });
         if (ft) formTeacherName = ft.name;
+      } else {
+        const assignedFt = await prisma.formTeacherAssignment.findFirst({
+          where: { classLevelId: cl.id, sessionId: currentSession.id },
+          include: { staff: { select: { name: true } } },
+        });
+        if (assignedFt?.staff?.name) formTeacherName = assignedFt.staff.name;
       }
 
       // Check published and submitted status strictly for this class
@@ -177,14 +175,10 @@ export default async function ResultsPage({ params }: ResultsPageProps) {
           subjectId: a.subjectId,
           subjectName: a.subject.name,
         }))}
-        formTeacherClass={
-          formTeacherAssignment
-            ? {
-                classLevelId: formTeacherAssignment.classLevelId,
-                className: formTeacherAssignment.classLevel.name,
-              }
-            : null
-        }
+        formTeacherClasses={formTeacherAssignments.map((fa: any) => ({
+          classLevelId: fa.classLevelId,
+          className: fa.classLevel?.name || 'Unknown',
+        }))}
         classSummaries={classStatusSummaries}
       />
     </div>

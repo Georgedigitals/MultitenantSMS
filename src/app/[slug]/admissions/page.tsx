@@ -2,6 +2,7 @@ import React from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getPublicSiteContent } from '@/lib/site-content';
+import { getTemplateThemeTokens } from '@/lib/template-theme';
 import { TenantPublicHeader } from '@/components/tenant-public-header';
 import { TenantPublicFooter } from '@/components/tenant-public-footer';
 import { AdmissionFormClient } from './admission-form-client';
@@ -22,100 +23,106 @@ export default async function TenantAdmissionsPage({ params }: PageProps) {
     notFound();
   }
 
-  const { tenant, branding, admissions, contact } = siteData;
-  const primary = branding.primaryColor || '#141414';
-  const textOnPrimary = branding.textOnPrimary || '#ffffff';
+  const { tenant, branding, templateId, admissions, contact } = siteData;
+  const primary = branding.primaryColor || '#1D3251';
+  const accent = branding.accentColor || '#C8A45D';
+  const theme = getTemplateThemeTokens(templateId, primary, accent);
 
   return (
-    <div className="min-h-screen flex flex-col tenant-editorial text-[#0a0a0a] bg-white">
-      <TenantPublicHeader slug={tenant.slug} tenantName={tenant.name} branding={branding} />
+    <div
+      className="min-h-screen flex flex-col text-[#171614]"
+      style={{ backgroundColor: theme.canvasBg }}
+    >
+      <TenantPublicHeader
+        slug={tenant.slug}
+        tenantName={tenant.name}
+        branding={branding}
+        templateId={templateId}
+        contact={contact}
+      />
 
-      {/* Chapter 1: Flat Brand Header */}
-      <section
-        className="w-full py-16 sm:py-24"
-        style={{ backgroundColor: primary, color: textOnPrimary }}
-      >
-        <div className="max-w-[1360px] mx-auto px-5 sm:px-8 space-y-5">
-          <div className="flex items-center gap-2 text-[13px] opacity-75">
-            <Link href={`/${tenant.slug}`} className="hover:opacity-100 underline-offset-4 hover:underline">
+      {/* Chapter 1: Template-Cohesive Header */}
+      <section className="w-full py-14 sm:py-20 text-white" style={{ backgroundColor: theme.deepBandBg }}>
+        <div className="max-w-[1140px] mx-auto px-5 sm:px-8 space-y-4">
+          <div className="flex items-center gap-2 text-[12px] text-white/70">
+            <Link href={`/${tenant.slug}`} className="hover:text-white underline-offset-4 hover:underline">
               Home
             </Link>
             <span>/</span>
             <span>Admissions</span>
           </div>
-          <h1 className="tenant-editorial-display text-[44px] sm:text-[64px] leading-[0.98] tracking-[-0.025em]">
+          <h1 className={`${theme.headingClass} text-[38px] sm:text-[54px] leading-[1.04] text-white`}>
             Admissions &amp; enrollment
           </h1>
-          <p className="text-[17px] sm:text-[19px] leading-[1.6] opacity-85 max-w-2xl">
+          <p className="text-[16px] sm:text-[18px] leading-[1.6] text-white/80 max-w-2xl">
             {admissions.text}
           </p>
         </div>
       </section>
 
-      {/* Chapter 2: Application Roadmap (Stone Field) */}
-      <section className="w-full bg-[#f4f3f1] py-20 sm:py-24">
-        <div className="max-w-[1360px] mx-auto px-5 sm:px-8">
-          <div className="pb-10 border-b border-[#d8d5ce]">
-            <h2 className="tenant-editorial-display text-[36px] sm:text-[48px] leading-[1.02] text-[#0a0a0a]">
-              How to apply
-            </h2>
-          </div>
+      {/* Chapter 2: Application Roadmap */}
+      <section className="w-full py-16 sm:py-20" style={{ backgroundColor: theme.softBandBg }}>
+        <div className="max-w-[1140px] mx-auto px-5 sm:px-8">
+          <h2 className={`${theme.headingClass} text-[30px] sm:text-[40px] leading-[1.06] text-[#171614] pb-8`}>
+            How to apply
+          </h2>
 
-          <ol className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 sm:divide-x divide-[#d8d5ce] border-b border-[#d8d5ce]">
+          <ol className="grid grid-cols-1 md:grid-cols-3 gap-5">
             {admissions.process.map((p) => (
-              <li key={p.step} className="py-8 sm:px-6 first:sm:pl-0 last:sm:pr-0 space-y-2.5">
-                <h3 className="text-[18px] font-semibold text-[#0a0a0a]">{p.title}</h3>
-                <p className="text-[14px] leading-[1.65] text-[#4f4d48]">{p.desc}</p>
+              <li key={p.step} className={`${theme.cardRadius} bg-white border ${theme.borderClass} p-6 space-y-2.5`}>
+                <span className="text-[12px] font-bold uppercase tracking-[0.14em]" style={{ color: theme.eyebrowColor }}>
+                  Step {p.step}
+                </span>
+                <h3 className="text-[18px] font-semibold text-[#171614]">{p.title}</h3>
+                <p className="text-[14px] leading-[1.6] text-[#57534a]">{p.desc}</p>
               </li>
             ))}
           </ol>
         </div>
       </section>
 
-      {/* Chapter 3: Requirements & Online Application Form (White Field) */}
-      <section className="w-full bg-white py-20 sm:py-28">
-        <div className="max-w-[1360px] mx-auto px-5 sm:px-8 grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-16 items-start">
+      {/* Chapter 3: Requirements & Online Inquiry Form */}
+      <section className={`w-full bg-white py-16 sm:py-24 border-t ${theme.borderClass}`}>
+        <div className="max-w-[1140px] mx-auto px-5 sm:px-8 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-start">
           {/* Left: Requirements & Tuition Policy */}
-          <div className="lg:col-span-5 space-y-10">
+          <div className="lg:col-span-5 space-y-8">
             <div className="space-y-4">
-              <h2 className="tenant-editorial-display text-[34px] leading-[1.05] text-[#0a0a0a]">
+              <h2 className={`${theme.headingClass} text-[28px] sm:text-[34px] leading-[1.08] text-[#171614]`}>
                 Application requirements
               </h2>
-              <ul className="divide-y divide-[#efede9] border-t border-b border-[#efede9]">
+              <ul className={`divide-y ${theme.borderClass} border-y ${theme.borderClass}`}>
                 {admissions.requirements.map((req, i) => (
-                  <li key={i} className="py-3.5 text-[15px] leading-[1.55] text-[#262522]">
+                  <li key={i} className="py-3.5 text-[14.5px] leading-[1.55] text-[#2b2924]">
                     {req}
                   </li>
                 ))}
               </ul>
             </div>
 
-            <div className="space-y-3">
-              <h3 className="text-[18px] font-semibold text-[#0a0a0a]">Tuition &amp; fee policy</h3>
-              <p className="text-[15px] leading-[1.65] text-[#4f4d48]">
-                {admissions.feeGuideText}
-              </p>
-              <p className="text-[14px] text-[#66645e] pt-1">
+            <div className="space-y-2.5">
+              <h3 className="text-[17px] font-semibold text-[#171614]">Tuition &amp; fee policy</h3>
+              <p className="text-[14.5px] leading-[1.65] text-[#524f47]">{admissions.feeGuideText}</p>
+              <p className="text-[13.5px] text-[#6d685c] pt-1">
                 Payments are accepted online through the parent portal or by verified bank transfer.
               </p>
             </div>
 
-            <div className="p-6 bg-[#f4f3f1] border border-[#e4e2dd] space-y-1.5">
-              <p className="text-[15px] font-semibold text-[#0a0a0a]">Direct admissions office</p>
-              <p className="text-[14px] text-[#4f4d48]">
+            <div className={`${theme.cardRadius} p-6 border ${theme.borderClass} space-y-1.5`} style={{ backgroundColor: theme.softBandBg }}>
+              <p className="text-[14.5px] font-semibold text-[#171614]">Direct admissions office</p>
+              <p className="text-[13.5px] text-[#4c4a43]">
                 Call {contact.phone} or email {contact.email} for assessment dates and campus visits.
               </p>
             </div>
           </div>
 
           {/* Right: Inquiry Form */}
-          <div className="lg:col-span-7 bg-[#f4f3f1] border border-[#e4e2dd] p-7 sm:p-10">
-            <div className="pb-6 mb-6 border-b border-[#d8d5ce]">
-              <h2 className="tenant-editorial-display text-[34px] leading-[1.05] text-[#0a0a0a]">
+          <div className={`lg:col-span-7 ${theme.cardRadius} border ${theme.borderClass} p-6 sm:p-9`} style={{ backgroundColor: theme.canvasBg }}>
+            <div className={`pb-5 mb-6 border-b ${theme.borderClass}`}>
+              <h2 className={`${theme.headingClass} text-[28px] sm:text-[34px] leading-[1.08] text-[#171614]`}>
                 Admission inquiry form
               </h2>
-              <p className="mt-2 text-[14px] text-[#57554f]">
-                Submit your child’s details to reserve an entrance assessment seat at {tenant.name}.
+              <p className="mt-1.5 text-[14px] text-[#57534a]">
+                Submit your child&apos;s details to reserve an entrance assessment seat at {tenant.name}.
               </p>
             </div>
 

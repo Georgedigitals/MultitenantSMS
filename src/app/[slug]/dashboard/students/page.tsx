@@ -14,6 +14,7 @@ import { CsvImportModal } from '@/components/csv-import-modal';
 import NormalizeStudentUsernamesButton from './normalize-student-usernames-button';
 import { StudentTrackBadge } from './student-track-badge';
 import { isSeniorSecondaryClass, getTenantCurriculum } from '@/lib/curriculum';
+import { getTenantClassLevels } from '@/lib/class-levels';
 
 interface StudentsPageProps {
   params: Promise<{ slug: string }>;
@@ -73,15 +74,8 @@ export default async function StudentsPage({ params, searchParams }: StudentsPag
     ])).filter(Boolean);
   }
 
-  // Filter global class levels ladder to tenant's enabled range (§4.1), scoped if teacher
-  const allLevels = await prisma.classLevel.findMany({ orderBy: { orderIndex: 'asc' } });
-  const tenantLevels = allLevels.filter((lvl: any) => {
-    if (!tenant.lowestClassLevel || !tenant.highestClassLevel) return true;
-    return (
-      lvl.orderIndex >= tenant.lowestClassLevel.orderIndex &&
-      lvl.orderIndex <= tenant.highestClassLevel.orderIndex
-    );
-  });
+  // Tenant-scoped class levels (custom or legacy range), scoped if teacher
+  const tenantLevels = await getTenantClassLevels(tenant.id, { filterLegacyByRange: true });
 
   const usableLevels = isTeacher
     ? tenantLevels.filter((lvl: any) => teacherClassLevelIds.includes(lvl.id))

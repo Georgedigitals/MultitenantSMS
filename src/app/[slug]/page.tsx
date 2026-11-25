@@ -27,12 +27,15 @@ export default async function PublicTenantSitePage({ params }: PublicSitePagePro
     throw err;
   }
 
-  const { tenant, branding, templateId } = siteData;
+  const { tenant, branding, templateId, contact } = siteData;
+  const pageBg =
+    templateId === 'horizon' ? '#FAF9F5' : templateId === 'vanguard' ? '#FBF8F1' : '#F8F5EE';
 
   return (
     <div
-      className="min-h-screen flex flex-col font-sans text-slate-900 bg-white"
+      className="min-h-screen flex flex-col font-sans text-slate-900"
       style={{
+        backgroundColor: pageBg,
         ['--brand-primary' as any]: branding.primaryColor,
         ['--brand-accent' as any]: branding.accentColor,
       }}
@@ -42,6 +45,8 @@ export default async function PublicTenantSitePage({ params }: PublicSitePagePro
         slug={tenant.slug}
         tenantName={tenant.name}
         branding={branding}
+        templateId={templateId}
+        contact={contact}
       />
 
       {/* Main Template Dispatcher */}

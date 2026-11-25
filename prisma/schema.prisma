@@ -221,6 +221,7 @@ model Tenant {
   plan                    Plan                     @relation(fields: [planId], references: [id])
   lowestClassLevel        ClassLevel?              @relation("TenantLowestClass", fields: [lowestClassLevelId], references: [id])
   highestClassLevel       ClassLevel?              @relation("TenantHighestClass", fields: [highestClassLevelId], references: [id])
+  ownedClassLevels        ClassLevel[]             @relation("TenantOwnedClassLevels")
   domainAliases           DomainAlias[]
   admissionNumberCounters AdmissionNumberCounter[]
   featureOverrides        TenantFeatureOverride[]
@@ -263,6 +264,8 @@ model Tenant {
   paymentGateway          TenantPaymentGateway?
   paymentIntents          PaymentIntent[]
   pinSettlements          PinSettlement[]
+  studentAssignments      StudentAssignment[]
+  assignmentSubmissions   StudentAssignmentSubmission[]
 
   @@map("tenants")
 }
@@ -281,8 +284,10 @@ model DomainAlias {
 
 model ClassLevel {
   id                     String                  @id @default(cuid())
-  name                   String                  @unique
-  orderIndex             Int                     @unique @map("order_index")
+  tenantId               String?                 @map("tenant_id")
+  name                   String
+  orderIndex             Int                     @map("order_index")
+  tenant                 Tenant?                 @relation("TenantOwnedClassLevels", fields: [tenantId], references: [id], onDelete: Cascade)
   tenantsLowest          Tenant[]                @relation("TenantLowestClass")
   tenantsHighest         Tenant[]                @relation("TenantHighestClass")
   enrollments            Enrollment[]
@@ -295,7 +300,11 @@ model ClassLevel {
   gradingScalesHighest   GradingScale[]          @relation("GradingScaleHighest")
   cbtExams               CbtExam[]
   timetableSlots         TimetableSlot[]
+  studentAssignments     StudentAssignment[]
 
+  @@unique([tenantId, name])
+  @@unique([tenantId, orderIndex])
+  @@index([tenantId])
   @@map("class_levels")
 }
 
@@ -321,15 +330,16 @@ model AcademicSession {
 }
 
 model Term {
-  id              String   @id @default(cuid())
-  sessionId       String   @map("session_id")
-  name            String
-  startDate       DateTime @map("start_date")
-  endDate         DateTime @map("end_date")
-  isCurrent       Boolean  @default(false) @map("is_current")
-  totalSchoolDays Int?     @map("total_school_days")
-  createdAt       DateTime @default(now()) @map("created_at")
-  updatedAt       DateTime @updatedAt @map("updated_at")
+  id               String    @id @default(cuid())
+  sessionId        String    @map("session_id")
+  name             String
+  startDate        DateTime  @map("start_date")
+  endDate          DateTime  @map("end_date")
+  nextTermStartsAt DateTime? @map("next_term_starts_at")
+  isCurrent        Boolean   @default(false) @map("is_current")
+  totalSchoolDays  Int?      @map("total_school_days")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
 
   session                 AcademicSession          @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   resultEntries           ResultEntry[]
@@ -344,6 +354,7 @@ model Term {
   pinTransferVerifications PinTransferVerification[]
   generatedPins           GeneratedPin[]
   reportCardAssessments   ReportCardAssessment[]
+  studentAssignments      StudentAssignment[]
 
   @@unique([sessionId, name])
   @@map("terms")
@@ -374,6 +385,7 @@ model Student {
   pinTransferVerifications PinTransferVerification[]
   generatedPins           GeneratedPin[]
   reportCardAssessments   ReportCardAssessment[]
+  assignmentSubmissions   StudentAssignmentSubmission[]
 
   @@unique([tenantId, admissionNumber])
   @@map("students")
@@ -415,11 +427,13 @@ model Staff {
   reviewedPinTransfers   PinTransferVerification[] @relation("PinTransferReviewer")
   userAccount            TenantUser?
   staffCode              String?                  @map("staff_code")
+  signatureUrl           String?                  @map("signature_url")
   attendancePin          String?                  @default("1234") @map("attendance_pin")
   attendances            StaffAttendance[]
   leaveRequests          StaffLeaveRequest[]
   reportCardAssessments  ReportCardAssessment[]
   timetableSlots         TimetableSlot[]
+  createdAssignments     StudentAssignment[]
 
   @@map("staff")
 }
@@ -467,6 +481,7 @@ model Subject {
   resultEntries       ResultEntry[]
   cbtExams            CbtExam[]
   timetableSlots      TimetableSlot[]
+  studentAssignments  StudentAssignment[]
 
   @@unique([tenantId, name])
   @@map("subjects")
@@ -1452,4 +1467,55 @@ model TimetableSlot {
   @@index([tenantId, classLevelId])
   @@index([tenantId, staffId, dayOfWeek, periodId])
   @@map("timetable_slots")
+}
+
+model StudentAssignment {
+  id               String    @id @default(cuid())
+  tenantId         String    @map("tenant_id")
+  classLevelId     String    @map("class_level_id")
+  subjectId        String    @map("subject_id")
+  termId           String?   @map("term_id")
+  createdByStaffId String?   @map("created_by_staff_id")
+  title            String
+  instructions     String?   @db.Text
+  attachmentUrl    String?   @map("attachment_url")
+  dueDate          DateTime? @map("due_date")
+  maxScore         Int       @default(100) @map("max_score")
+  isPublished      Boolean   @default(true) @map("is_published")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
+
+  tenant      Tenant                        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  classLevel  ClassLevel                    @relation(fields: [classLevelId], references: [id], onDelete: Cascade)
+  subject     Subject                       @relation(fields: [subjectId], references: [id], onDelete: Cascade)
+  term        Term?                         @relation(fields: [termId], references: [id], onDelete: SetNull)
+  staff       Staff?                        @relation(fields: [createdByStaffId], references: [id], onDelete: SetNull)
+  submissions StudentAssignmentSubmission[]
+
+  @@index([tenantId, classLevelId])
+  @@index([tenantId, subjectId])
+  @@map("student_assignments")
+}
+
+model StudentAssignmentSubmission {
+  id            String    @id @default(cuid())
+  tenantId      String    @map("tenant_id")
+  assignmentId  String    @map("assignment_id")
+  studentId     String    @map("student_id")
+  content       String?   @db.Text
+  attachmentUrl String?   @map("attachment_url")
+  score         Float?
+  feedback      String?   @db.Text
+  status        String    @default("submitted") // submitted | graded
+  submittedAt   DateTime  @default(now()) @map("submitted_at")
+  gradedAt      DateTime? @map("graded_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+
+  tenant     Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  assignment StudentAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  student    Student           @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([assignmentId, studentId])
+  @@index([tenantId, studentId])
+  @@map("student_assignment_submissions")
 }

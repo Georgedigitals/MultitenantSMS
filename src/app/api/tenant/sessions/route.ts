@@ -69,7 +69,20 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { label, startDate, endDate, isCurrent } = body;
+    const { label, startDate, endDate, isCurrent, termPreset, termNames } = body;
+
+    const TERM_PRESET_MAP: Record<string, string[]> = {
+      three_terms: ['1st Term', '2nd Term', '3rd Term'],
+      two_semesters: ['Fall Semester', 'Spring Semester'],
+      four_quarters: ['Quarter 1', 'Quarter 2', 'Quarter 3', 'Quarter 4'],
+      three_trimesters: ['1er Trimestre', '2e Trimestre', '3e Trimestre'],
+      uk_terms: ['Autumn Term', 'Spring Term', 'Summer Term'],
+    };
+
+    const resolvedTermNames: string[] =
+      Array.isArray(termNames) && termNames.filter((n: any) => typeof n === 'string' && n.trim()).length > 0
+        ? termNames.map((n: string) => n.trim()).filter(Boolean)
+        : TERM_PRESET_MAP[String(termPreset || 'three_terms')] || TERM_PRESET_MAP.three_terms;
 
     if (!label || typeof label !== 'string' || !label.trim()) {
       return NextResponse.json({ error: 'Valid session label is required (e.g. 2025/2026)' }, { status: 400 });
@@ -125,38 +138,29 @@ export async function POST(req: NextRequest) {
         },
       });
 
-      // Default term dates spread across session
+      // Distribute term dates evenly across the academic session
       const startMs = parsedStart.getTime();
       const endMs = parsedEnd.getTime();
       const durationMs = endMs - startMs;
-      const termDurationMs = Math.floor(durationMs / 3);
+      const periodCount = Math.max(1, resolvedTermNames.length);
+      const periodDurationMs = Math.floor(durationMs / periodCount);
+      const breakGapMs = 7 * 24 * 60 * 60 * 1000;
 
-      const termsData = [
-        {
+      const termsData = resolvedTermNames.map((termName, idx) => {
+        const pStart = new Date(startMs + periodDurationMs * idx);
+        const pEnd =
+          idx === periodCount - 1
+            ? new Date(endMs)
+            : new Date(Math.max(pStart.getTime() + 86400000, startMs + periodDurationMs * (idx + 1) - breakGapMs));
+        return {
           sessionId: session.id,
-          name: '1st Term',
-          startDate: new Date(startMs),
-          endDate: new Date(startMs + termDurationMs - 7 * 24 * 60 * 60 * 1000),
-          isCurrent: Boolean(isCurrent),
+          name: termName,
+          startDate: pStart,
+          endDate: pEnd,
+          isCurrent: Boolean(isCurrent) && idx === 0,
           totalSchoolDays: null,
-        },
-        {
-          sessionId: session.id,
-          name: '2nd Term',
-          startDate: new Date(startMs + termDurationMs),
-          endDate: new Date(startMs + termDurationMs * 2 - 7 * 24 * 60 * 60 * 1000),
-          isCurrent: false,
-          totalSchoolDays: null,
-        },
-        {
-          sessionId: session.id,
-          name: '3rd Term',
-          startDate: new Date(startMs + termDurationMs * 2),
-          endDate: new Date(endMs),
-          isCurrent: false,
-          totalSchoolDays: null,
-        },
-      ];
+        };
+      });
 
       for (const t of termsData) {
         await tx.term.create({ data: t });
@@ -252,6 +256,68 @@ export async function PATCH(req: NextRequest) {
       });
 
       return NextResponse.json({ success: true, totalSchoolDays: updatedTerm.totalSchoolDays });
+    }
+
+    if (action === 'update_term_details') {
+      if (!termId) {
+        return NextResponse.json({ error: 'termId is required' }, { status: 400 });
+      }
+      const targetTerm = await prisma.term.findFirst({
+        where: { id: termId, session: { tenantId } },
+      });
+      if (!targetTerm) {
+        return NextResponse.json({ error: 'Term not found for this school' }, { status: 404 });
+      }
+
+      const updateData: Record<string, any> = {};
+      if (typeof body.name === 'string' && body.name.trim()) {
+        updateData.name = body.name.trim();
+      }
+      if (body.nextTermStartsAt !== undefined) {
+        if (body.nextTermStartsAt === null || body.nextTermStartsAt === '') {
+          updateData.nextTermStartsAt = null;
+        } else {
+          const parsedNext = new Date(body.nextTermStartsAt);
+          if (isNaN(parsedNext.getTime())) {
+            return NextResponse.json({ error: 'Invalid next term opening date' }, { status: 400 });
+          }
+          updateData.nextTermStartsAt = parsedNext;
+        }
+      }
+
+      if (Object.keys(updateData).length === 0) {
+        return NextResponse.json({ error: 'No term updates provided' }, { status: 400 });
+      }
+
+      const updated = await prisma.term.update({
+        where: { id: targetTerm.id },
+        data: updateData,
+        select: { id: true, name: true, nextTermStartsAt: true },
+      });
+
+      await recordAuditLog({
+        tenantId,
+        actorId: auth.user.id,
+        actorName: auth.user.staffProfile?.name || auth.user.username,
+        actorRole: auth.user.role,
+        action: 'TERM_DETAILS_UPDATED',
+        entityType: 'Term',
+        entityId: updated.id,
+        details: {
+          name: updated.name,
+          nextTermStartsAt: updated.nextTermStartsAt ? updated.nextTermStartsAt.toISOString() : null,
+        },
+        ipAddress: clientIp,
+      });
+
+      return NextResponse.json({
+        success: true,
+        term: {
+          id: updated.id,
+          name: updated.name,
+          nextTermStartsAt: updated.nextTermStartsAt ? updated.nextTermStartsAt.toISOString().slice(0, 10) : '',
+        },
+      });
     }
 
     if (action === 'activate_session') {

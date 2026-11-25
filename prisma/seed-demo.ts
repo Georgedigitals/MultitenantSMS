@@ -27,11 +27,17 @@ async function main() {
 
   const classLevels: Record<string, string> = {};
   for (const level of classLevelsData) {
-    const record = await prisma.classLevel.upsert({
-      where: { name: level.name },
-      update: { orderIndex: level.orderIndex },
-      create: level,
+    const existing = await prisma.classLevel.findFirst({
+      where: { tenantId: null, name: level.name },
     });
+    const record = existing
+      ? await prisma.classLevel.update({
+          where: { id: existing.id },
+          data: { orderIndex: level.orderIndex },
+        })
+      : await prisma.classLevel.create({
+          data: { ...level, tenantId: null },
+        });
     classLevels[record.name] = record.id;
   }
   console.log(`  ✓ ${classLevelsData.length} global class levels`);

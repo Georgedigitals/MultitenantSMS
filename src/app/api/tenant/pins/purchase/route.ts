@@ -137,6 +137,34 @@ export async function POST(req: NextRequest) {
     }
     await resolveExpiredReservations(tenant.id, secret);
 
+    // Duplicate-purchase guard: block buying another online PIN while an active PIN still has remaining uses.
+    // Once all uses are exhausted (0 remaining), allow purchasing a fresh PIN.
+    const [existingGeneratedPins, existingDigitalPins] = await Promise.all([
+      prisma.generatedPin.findMany({
+        where: { tenantId: tenant.id, studentId: student.id, termId: term.id, soldAt: { not: null } },
+        select: { usesCount: true, batch: { select: { maxUsesPerPin: true } } },
+      }),
+      prisma.resultPIN.findMany({
+        where: { studentId: student.id, termId: term.id, status: 'active', student: { tenantId: tenant.id } },
+        select: { usesCount: true, maxUses: true },
+      }),
+    ]);
+
+    const normalizedPins = [
+      ...existingGeneratedPins.map((p) => ({ usesCount: p.usesCount ?? 0, maxUses: p.batch?.maxUsesPerPin ?? 5 })),
+      ...existingDigitalPins.map((p) => ({ usesCount: p.usesCount ?? 0, maxUses: p.maxUses ?? 5 })),
+    ];
+    const activeExistingPin = normalizedPins.find((p) => p.usesCount < p.maxUses);
+    if (activeExistingPin) {
+      const remaining = Math.max(0, activeExistingPin.maxUses - activeExistingPin.usesCount);
+      return NextResponse.json(
+        {
+          error: `An active Result PIN (${remaining} of ${activeExistingPin.maxUses} uses remaining) has already been issued for this student and term. Check your email or sign in to the Parent/Student Portal — no need to pay twice.`,
+        },
+        { status: 409 }
+      );
+    }
+
     const paymentReference = `RPIN_${randomUUID().replace(/-/g, '')}`;
     reference = paymentReference;
     const intent = await prisma.$transaction(async (tx) => {

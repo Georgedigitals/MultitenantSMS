@@ -227,6 +227,7 @@ export default async function BroadsheetPage({ params, searchParams }: Broadshee
 
       <BroadsheetClient
         slug={slug}
+        isAdmin={auth.user.role === 'school_admin'}
         classLevelId={classLevelId}
         className={classLevel.name}
         termId={termId}

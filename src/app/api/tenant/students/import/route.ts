@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/prisma';
 import { getTenantContext } from '@/lib/tenant';
 import { getTenantUserFromCookies } from '@/lib/auth/tenant-auth';
+import { getTenantClassLevels } from '@/lib/class-levels';
 
 export async function POST(req: NextRequest) {
   try {
@@ -32,10 +33,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No active academic session configured for this school' }, { status: 400 });
     }
 
-    // Load available class levels
-    const classLevels = await prisma.classLevel.findMany({
-      orderBy: { orderIndex: 'asc' },
-    });
+    // Load available class levels for this tenant
+    const classLevels = await getTenantClassLevels(tenant.id, { filterLegacyByRange: true });
     const classMap = new Map<string, string>();
     for (const lvl of classLevels) {
       classMap.set(lvl.name.toLowerCase().trim(), lvl.id);

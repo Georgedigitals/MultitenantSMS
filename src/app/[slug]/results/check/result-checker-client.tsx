@@ -24,6 +24,10 @@ interface ResultCheckerClientProps {
     bankAccountNumber?: string | null;
     bankAccountName?: string | null;
   };
+  primaryColor?: string;
+  textOnPrimary?: string;
+  cardRadius?: string;
+  buttonRadius?: string;
 }
 
 export default function ResultCheckerClient({
@@ -36,8 +40,14 @@ export default function ResultCheckerClient({
   hasOnlinePayment = true,
   hasPinStock = false,
   bankDetails,
+  primaryColor = '#141414',
+  textOnPrimary = '#FFFFFF',
+  cardRadius = 'rounded-2xl',
+  buttonRadius = 'rounded-xl',
 }: ResultCheckerClientProps) {
-  const { localization: { currencySymbol, locale } } = useLanguage();
+  const { formatMoney, localization: { currencySymbol, locale } } = useLanguage();
+  const formattedPinPrice = formatMoney(pinPrice, 2);
+  const hasBankAccount = Boolean(bankDetails?.bankAccountNumber && bankDetails.bankAccountNumber.trim());
   const [studentId, setStudentId] = useState(initialStudentId);
   const [termId, setTermId] = useState(initialTermId);
   const [pinCode, setPinCode] = useState('');
@@ -482,19 +492,20 @@ export default function ResultCheckerClient({
 
                 <div className="p-4 rounded-xl bg-slate-900 text-white flex items-center justify-between">
                   <span className="text-xs text-slate-300 font-mono">Amount Due for Full Clearance:</span>
-                  <span className="text-lg font-black text-amber-400">{currencySymbol}{feeBlockedData.balanceRemaining.toLocaleString()}</span>
+                  <span className="text-lg font-black text-amber-400">{formatMoney(feeBlockedData.balanceRemaining, 2)}</span>
                 </div>
 
                 <button
                   type="submit"
                   disabled={payingFeeOnline}
-                  className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm hover:shadow transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50"
+                  className={`w-full py-3 ${buttonRadius} text-white font-bold text-xs shadow-sm hover:opacity-90 transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-50`}
+                  style={{ backgroundColor: primaryColor, color: textOnPrimary }}
                 >
                   {payingFeeOnline ? (
                     'Connecting to Paystack Gateway...'
                   ) : (
                     <>
-                      <span>Pay {currencySymbol}{feeBlockedData.balanceRemaining.toLocaleString()} via Paystack &amp; Unlock Result</span>
+                      <span>Pay {formatMoney(feeBlockedData.balanceRemaining, 2)} via Paystack &amp; Unlock Result</span>
                       <span>→</span>
                     </>
                   )}
@@ -803,7 +814,8 @@ export default function ResultCheckerClient({
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 py-3 px-6 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-medium text-sm transition-colors disabled:opacity-50"
+                className={`flex-1 py-3 px-6 ${buttonRadius} font-semibold text-sm transition-opacity hover:opacity-90 disabled:opacity-50 cursor-pointer shadow-xs`}
+                style={{ backgroundColor: primaryColor, color: textOnPrimary }}
               >
                 {loading ? 'Verifying Result PIN...' : 'Check Result'}
               </button>
@@ -878,16 +890,17 @@ export default function ResultCheckerClient({
 
                 <div className="pt-1 flex flex-col sm:flex-row items-center justify-between gap-3">
                   <div className="text-xs text-slate-600">
-                    Standard Fee: <strong className="text-slate-900 text-sm font-black">{currencySymbol}{pinPrice.toLocaleString()}</strong>
+                    Standard Fee: <strong className="text-slate-900 text-sm font-black">{formattedPinPrice}</strong>
                   </div>
 
                   <button
                     type="submit"
                     disabled={buyingPin}
-                    className="w-full sm:w-auto px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs uppercase tracking-wider shadow-sm hover:shadow transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5"
+                    className={`w-full sm:w-auto px-6 py-2.5 ${buttonRadius} font-bold text-xs uppercase tracking-wider shadow-sm hover:opacity-90 transition-all cursor-pointer disabled:opacity-50 flex items-center justify-center gap-1.5`}
+                    style={{ backgroundColor: primaryColor, color: textOnPrimary }}
                   >
                     <span>🔒</span>
-                    <span>{buyingPin ? 'Connecting to Paystack...' : `Pay ${currencySymbol}${pinPrice.toLocaleString()} & Generate PIN`}</span>
+                    <span>{buyingPin ? 'Connecting to Paystack...' : `Pay ${formattedPinPrice} & Generate PIN`}</span>
                   </button>
                 </div>
               </form>
@@ -895,12 +908,12 @@ export default function ResultCheckerClient({
           ) : (
             <div className="mt-8 pt-6 border-t border-slate-200">
               <div className="p-5 rounded-2xl bg-amber-50/70 border border-amber-200/80 space-y-4">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
                   <span className="text-[11px] font-bold text-amber-800 uppercase tracking-wider bg-amber-100 px-2.5 py-0.5 rounded-md border border-amber-300">
                     Offline Physical Scratch Card
                   </span>
                   <span className="text-xs font-bold text-amber-900">
-                    Standard Fee: <strong>{currencySymbol}{pinPrice.toLocaleString()}</strong>
+                    Standard Fee: <strong>{formattedPinPrice}</strong>
                   </span>
                 </div>
 
@@ -911,25 +924,25 @@ export default function ResultCheckerClient({
                   </p>
                 </div>
 
-                {/* School Bank Account Details */}
-                <div className="p-4 rounded-xl bg-white border border-amber-200 space-y-2">
-                  <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">
-                    Official School Bank Account (For Transfers):
-                  </span>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-                    <div>
-                      <span className="text-slate-400 block text-[10px] uppercase font-bold">Bank Name</span>
-                      <strong className="text-slate-900 text-xs font-bold">{bankDetails?.bankName || 'Contact School Bursar'}</strong>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 block text-[10px] uppercase font-bold">Account Number</span>
-                      <div className="flex items-center gap-1.5">
-                        <strong className="font-mono text-slate-900 text-xs font-black">{bankDetails?.bankAccountNumber || 'N/A'}</strong>
-                        {bankDetails?.bankAccountNumber && (
+                {/* School Bank Account Details — only shown when configured */}
+                {hasBankAccount && (
+                  <div className="p-4 rounded-xl bg-white border border-amber-200 space-y-2">
+                    <span className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">
+                      Official School Bank Account (For Transfers):
+                    </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                      <div>
+                        <span className="text-slate-400 block text-[10px] uppercase font-bold">Bank Name</span>
+                        <strong className="text-slate-900 text-xs font-bold">{bankDetails?.bankName || 'School Bank'}</strong>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[10px] uppercase font-bold">Account Number</span>
+                        <div className="flex items-center gap-1.5">
+                          <strong className="font-mono text-slate-900 text-xs font-black">{bankDetails?.bankAccountNumber}</strong>
                           <button
                             type="button"
                             onClick={() => {
-                              navigator.clipboard.writeText(bankDetails.bankAccountNumber || '');
+                              navigator.clipboard.writeText(bankDetails?.bankAccountNumber || '');
                               setBankCopied(true);
                               setTimeout(() => setBankCopied(false), 2000);
                             }}
@@ -937,20 +950,23 @@ export default function ResultCheckerClient({
                           >
                             {bankCopied ? '✓ Copied' : 'Copy'}
                           </button>
-                        )}
+                        </div>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block text-[10px] uppercase font-bold">Account Name</span>
+                        <strong className="text-slate-900 text-xs font-bold">{bankDetails?.bankAccountName || tenantName}</strong>
                       </div>
                     </div>
-                    <div>
-                      <span className="text-slate-400 block text-[10px] uppercase font-bold">Account Name</span>
-                      <strong className="text-slate-900 text-xs font-bold">{bankDetails?.bankAccountName || tenantName}</strong>
-                    </div>
                   </div>
-                </div>
+                )}
 
                 <div className="space-y-1.5 text-xs text-slate-600">
                   <p className="flex items-start gap-2">
                     <span className="font-bold text-amber-700">1.</span>
-                    <span>Pay <strong>{currencySymbol}{pinPrice.toLocaleString()}</strong> per student at the school bursary or via direct bank transfer to the account above.</span>
+                    <span>
+                      Pay <strong>{formattedPinPrice}</strong> per student at the school bursary office
+                      {hasBankAccount ? ' or via direct bank transfer to the account above.' : '.'}
+                    </span>
                   </p>
                   <p className="flex items-start gap-2">
                     <span className="font-bold text-amber-700">2.</span>
